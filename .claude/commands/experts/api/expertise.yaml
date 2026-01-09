@@ -1,0 +1,330 @@
+# API Implementation Expertise
+# Multi-Agent Orchestration System - FastAPI REST and WebSocket Architecture
+
+overview:
+  description: "FastAPI-based REST API and WebSocket server for orchestrating multi-agent workflows with PostgreSQL backend"
+  framework: "FastAPI with async support"
+  server_config:
+    backend_host: "127.0.0.1"
+    backend_port: 9403
+    frontend_port: 5175
+    websocket_url: "ws://127.0.0.1:9403/ws"
+  middleware:
+    cors:
+      origins: "Configurable via CORS_ORIGINS env var"
+      credentials: true
+      methods: "*"
+      headers: "*"
+
+core_implementation:
+  main_server:
+    file: "apps/orchestrator_3_stream/backend/main.py"
+    lines: 1079
+    purpose: "FastAPI application entry point with all endpoint definitions"
+
+    app_config:
+      title: "Orchestrator 3 Stream API"
+      version: "1.0.0"
+      lifespan: "Async context manager for startup/shutdown"
+
+    lifespan_events:
+      startup:
+        - "Initialize database connection pool"
+        - "Load or create orchestrator from CLI args or fresh"
+        - "Initialize AgentManager"
+        - "Initialize OrchestratorService"
+        - "Initialize AutocompleteService"
+        - "Store services in app.state"
+      shutdown:
+        - "Close database connection pool"
+        - "Logger shutdown"
+
+    cli_arguments:
+      --session: "Resume existing orchestrator session by session_id"
+      --cwd: "Set working directory for orchestrator and agents"
+
+  config_module:
+    file: "apps/orchestrator_3_stream/backend/modules/config.py"
+    lines: 197
+    purpose: "Environment variable loading and configuration constants"
+
+    key_settings:
+      BACKEND_HOST: "127.0.0.1 (env: BACKEND_HOST)"
+      BACKEND_PORT: "9403 (env: BACKEND_PORT)"
+      FRONTEND_HOST: "127.0.0.1 (env: FRONTEND_HOST)"
+      FRONTEND_PORT: "5175 (env: FRONTEND_PORT)"
+      DATABASE_URL: "PostgreSQL connection string"
+      DATABASE_POOL_SIZE: "10 (connection pool min)"
+      DATABASE_MAX_OVERFLOW: "20 (connection pool max)"
+      CORS_ORIGINS: "Comma-separated allowed origins"
+      DEFAULT_MODEL: "claude-opus-4-5-20251101"
+      FAST_MODEL: "claude-haiku-4-5-20251001"
+      IDE_COMMAND: "code (or cursor)"
+      IDE_ENABLED: "true/false"
+
+    functions:
+      set_working_dir: "Runtime override of working directory"
+      get_working_dir: "Returns current working directory"
+
+rest_endpoints:
+  health:
+    route: "GET /health"
+    lines: "220-228"
+    purpose: "Health check endpoint"
+    response:
+      status: "healthy"
+      service: "orchestrator-3-stream"
+      websocket_connections: "integer (count)"
+
+  get_orchestrator:
+    route: "GET /get_orchestrator"
+    lines: "231-300"
+    purpose: "Get orchestrator info, slash commands, templates, tools, and ADW workflows"
+    response:
+      status: "success/error"
+      orchestrator: "Object with id, session_id, status, working_dir, tokens, cost, metadata"
+      slash_commands: "List of available commands from .claude/commands/"
+      agent_templates: "List from SubagentRegistry"
+      orchestrator_tools: "List of management tools"
+      adw_workflows: "List of available ADW workflow types"
+
+  get_headers:
+    route: "GET /get_headers"
+    lines: "303-320"
+    purpose: "Get header information for frontend"
+    response:
+      status: "success/error"
+      cwd: "Current working directory"
+
+  open_file:
+    route: "POST /api/open-file"
+    lines: "386-455"
+    purpose: "Open file in configured IDE (Cursor or VS Code)"
+    request_model: "OpenFileRequest"
+    request_fields:
+      file_path: "string (absolute path)"
+
+  load_chat:
+    route: "POST /load_chat"
+    lines: "458-484"
+    purpose: "Load chat history for orchestrator agent"
+    request_model: "LoadChatRequest"
+    request_fields:
+      orchestrator_agent_id: "string (UUID)"
+      limit: "integer (default 50)"
+
+  send_chat:
+    route: "POST /send_chat"
+    lines: "487-520"
+    purpose: "Send message to orchestrator agent (async processing)"
+    request_model: "SendChatRequest"
+    request_fields:
+      message: "string"
+      orchestrator_agent_id: "string (UUID)"
+    notes: "Returns immediately; processing via asyncio.create_task, streaming via WebSocket"
+
+  get_events:
+    route: "GET /get_events"
+    lines: "523-619"
+    purpose: "Get unified events for EventStream component"
+    query_params:
+      agent_id: "UUID string (optional)"
+      task_slug: "string (optional)"
+      event_types: "comma-separated or 'all' (default: agent_logs,orchestrator_chat)"
+      limit: "integer (default 50)"
+      offset: "integer (default 0)"
+
+  list_agents:
+    route: "GET /list_agents"
+    lines: "622-658"
+    purpose: "List active agents for sidebar display"
+
+  autocomplete_generate:
+    route: "POST /autocomplete-generate"
+    lines: "661-683"
+    purpose: "Generate autocomplete suggestions for user input"
+    request_model: "AutocompleteGenerateRequest"
+
+  autocomplete_update:
+    route: "POST /autocomplete-update"
+    lines: "686-715"
+    purpose: "Update autocomplete completion history for learning"
+    request_model: "AutocompleteUpdateRequest"
+
+adw_endpoints:
+  list_adws:
+    route: "POST /adws"
+    lines: "845-876"
+    purpose: "List AI Developer Workflows for an orchestrator"
+    request_model: "ListAdwsRequest"
+
+  get_adw:
+    route: "GET /adws/{adw_id}"
+    lines: "879-912"
+    purpose: "Get single ADW by ID with full status details"
+
+  get_adw_events:
+    route: "POST /adws/{adw_id}/events"
+    lines: "915-980"
+    purpose: "Get events for ADW swimlane display"
+    request_model: "GetAdwEventsRequest"
+
+  get_adw_summary:
+    route: "GET /adws/{adw_id}/summary"
+    lines: "983-1057"
+    purpose: "Get ADW summary with step breakdown"
+
+websocket_endpoint:
+  route: "ws /ws"
+  lines: "718-822"
+  purpose: "WebSocket endpoint for real-time updates and message routing"
+  manager: "websocket_manager.py (WebSocketManager class)"
+
+  connection_flow:
+    - "Client connects to /ws"
+    - "ws_manager.connect(websocket)"
+    - "Enter receive loop"
+    - "Parse JSON messages by 'type' field"
+    - "Route to appropriate broadcast method"
+    - "On disconnect, cleanup via ws_manager.disconnect()"
+
+  incoming_message_types:
+    adw_broadcast:
+      subtypes: ["adw_created", "adw_updated", "adw_event", "adw_step_change", "adw_status", "adw_event_summary_update"]
+    agent_broadcast:
+      subtypes: ["agent_created", "agent_status_changed", "agent_updated"]
+
+  outgoing_event_types:
+    - "connection_established"
+    - "chat_stream"
+    - "chat_typing"
+    - "orchestrator_chat"
+    - "agent_created"
+    - "agent_updated"
+    - "agent_deleted"
+    - "agent_status_changed"
+    - "agent_log"
+    - "agent_summary_update"
+    - "thinking_block"
+    - "tool_use_block"
+    - "orchestrator_updated"
+    - "system_log"
+    - "error"
+    - "heartbeat"
+    - "adw_created"
+    - "adw_updated"
+    - "adw_event"
+    - "adw_step_change"
+    - "adw_event_summary_update"
+    - "autocomplete_started"
+    - "autocomplete_completed"
+
+pydantic_models:
+  request_models:
+    LoadChatRequest:
+      file: "main.py"
+      lines: "201-206"
+      fields:
+        orchestrator_agent_id: "str"
+        limit: "Optional[int] = 50"
+
+    SendChatRequest:
+      file: "main.py"
+      lines: "208-213"
+      fields:
+        message: "str"
+        orchestrator_agent_id: "str"
+
+    OpenFileRequest:
+      file: "main.py"
+      lines: "381-383"
+      fields:
+        file_path: "str"
+
+    ListAdwsRequest:
+      file: "main.py"
+      lines: "830-834"
+      fields:
+        orchestrator_agent_id: "str"
+        status: "Optional[str] = None"
+        limit: "Optional[int] = 20"
+
+    GetAdwEventsRequest:
+      file: "main.py"
+      lines: "837-842"
+      fields:
+        adw_id: "str"
+        limit: "Optional[int] = 2000"
+        event_type: "Optional[str] = None"
+        include_payload: "Optional[bool] = True"
+
+  autocomplete_models:
+    file: "modules/autocomplete_models.py"
+    lines: 113
+    models:
+      AutocompleteItem: "completion: str, reasoning: str"
+      AutocompleteGenerateRequest: "user_input: str, orchestrator_agent_id: str"
+      AutocompleteResponse: "status, autocompletes, total_items, orchestrator_agent_id, timestamp"
+      AutocompleteUpdateRequest: "orchestrator_agent_id, completion_type, user_input_on_enter, user_input_before_completion, autocomplete_item, reasoning"
+
+error_handling:
+  patterns:
+    - "HTTPException for client errors (400, 403, 404)"
+    - "HTTPException(500) for server errors with detail message"
+    - "All exceptions logged via logger.error()"
+    - "WebSocketDisconnect handled gracefully"
+
+  common_error_responses:
+    400: "Bad request (validation failed)"
+    403: "Forbidden (feature disabled)"
+    404: "Resource not found"
+    500: "Internal server error"
+
+discovery_functions:
+  discover_slash_commands:
+    import_from: "modules.slash_command_parser"
+    purpose: "Scans .claude/commands/ directory for available slash commands"
+
+  discover_adw_workflows:
+    lines: "335-378"
+    purpose: "Scans adws/adw_workflows/*.py for available ADW workflow types"
+
+app_state:
+  stored_services:
+    orchestrator_service: "OrchestratorService instance"
+    orchestrator: "OrchestratorAgent Pydantic model"
+    autocomplete_service: "AutocompleteService instance"
+
+key_file_locations:
+  core:
+    main: "apps/orchestrator_3_stream/backend/main.py"
+    config: "apps/orchestrator_3_stream/backend/modules/config.py"
+    websocket_manager: "apps/orchestrator_3_stream/backend/modules/websocket_manager.py"
+
+  services:
+    orchestrator_service: "apps/orchestrator_3_stream/backend/modules/orchestrator_service.py"
+    agent_manager: "apps/orchestrator_3_stream/backend/modules/agent_manager.py"
+    autocomplete_service: "apps/orchestrator_3_stream/backend/modules/autocomplete_service.py"
+
+  models:
+    database_models: "apps/orchestrator_3_stream/backend/modules/orch_database_models.py"
+    autocomplete_models: "apps/orchestrator_3_stream/backend/modules/autocomplete_models.py"
+
+  database:
+    operations: "apps/orchestrator_3_stream/backend/modules/database.py"
+
+best_practices:
+  - "Use Pydantic models for request/response validation"
+  - "Return consistent response structure with status field"
+  - "Log all HTTP requests with status codes"
+  - "Use HTTPException for error responses"
+  - "Store services in app.state for endpoint access"
+  - "Use asyncio.create_task for fire-and-forget operations"
+  - "Always serialize UUIDs and datetimes for JSON responses"
+
+architecture_summary: |
+  The API layer provides a comprehensive REST interface for the multi-agent
+  orchestration system built on FastAPI. Key features include REST endpoints
+  for health checks, orchestrator management, chat operations, agent listing,
+  autocomplete suggestions, and ADW workflow management. The WebSocket /ws
+  endpoint handles bidirectional communication for real-time updates.

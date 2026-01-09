@@ -93,7 +93,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   // ═══════════════════════════════════════════════════════════
 
   // View mode toggle (logs vs ADW swimlanes)
-  const viewMode = ref<ViewMode>('logs')
+  const viewMode = ref<ViewMode>('open-positions')
 
   // ADW list
   const adws = ref<AiDeveloperWorkflow[]>([])

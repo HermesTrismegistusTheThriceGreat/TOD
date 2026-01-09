@@ -111,8 +111,9 @@ const mockPositions = ref<PositionData[]>([
   overflow-y: auto;
   padding: var(--spacing-lg);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(680px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fill, minmax(900px, 1fr));
+  grid-auto-rows: min-content;
+  gap: 24px;
   align-content: start;
 }
 

@@ -1,0 +1,414 @@
+# Options Skew Analysis Expertise
+# Systematic framework for analyzing options volatility skew and selecting optimal trading strategies
+
+overview:
+  description: "Framework for analyzing options volatility skew patterns to identify trading opportunities"
+  core_principle: "High IV + Steep Skew = Optimal Premium Selling | Low IV + Steep Skew = Caution (Specific Risk Priced In)"
+  decision_threshold: "IV Rank 50% divides buy vs sell strategies"
+
+core_concepts:
+  volatility_skew:
+    definition: "Uneven distribution of implied volatility (IV) across option strike prices with same expiration"
+    purpose: "Reveals market sentiment about directional risk and creates tradeable opportunities"
+
+  iv_rank:
+    formula: "(Current IV - 52w Low) / (52w High - 52w Low) × 100"
+    range: "0-100"
+    threshold: 50
+    interpretation:
+      above_50: "High IV - favor selling strategies"
+      below_50: "Low IV - favor buying strategies"
+
+  skew_25_delta:
+    formula: "IV(25Δ put) - IV(25Δ call)"
+    interpretation:
+      positive: "Put skew - puts more expensive"
+      negative: "Call skew - calls more expensive"
+      near_zero: "Flat skew - balanced"
+
+  skew_normalized:
+    formula: "skew_25_delta / ATM IV"
+    purpose: "Cross-asset comparison"
+    thresholds:
+      steep_negative: "> 0.20"
+      flat: "-0.05 to 0.10"
+      forward: "< -0.15"
+
+  liquidity_score:
+    formula: "(OI / 1000) + (Volume / 5000) + (1 / Spread)"
+    minimum: 3
+    interpretation:
+      below_3: "DO NOT TRADE"
+      3_to_6: "Marginal - reduce position size 50%"
+      6_to_10: "Good - normal sizing"
+      above_10: "Excellent - ideal conditions"
+
+data_structures:
+  required_fields:
+    - "underlying.symbol"
+    - "volatility_metrics.iv_rank"
+    - "skew_metrics.skew_25_delta"
+    - "liquidity_metrics.atm_bid_ask_spread"
+    - "liquidity_metrics.atm_open_interest"
+    - "market_context.days_to_expiration"
+
+  underlying:
+    symbol: "string - ticker"
+    asset_class: "enum: equity, etf, commodity, crypto"
+    current_price: "float"
+
+  volatility_metrics:
+    iv_rank: "float 0-100"
+    atm_iv: "float - at-the-money IV percentage"
+    hv_20: "float - 20-day historical volatility"
+    iv_hv_ratio: "float - premium/discount indicator"
+
+  skew_metrics:
+    skew_25_delta: "float - primary skew measure"
+    skew_normalized: "float - for cross-asset comparison"
+    put_skew: "IV(25Δ put) - IV(ATM)"
+    call_skew: "IV(25Δ call) - IV(ATM)"
+    skew_rank: "float 0-100 - historical percentile"
+
+  term_structure:
+    shape: "enum: contango, backwardation, flat"
+    front_month_iv: "float"
+    second_month_iv: "float"
+
+  liquidity_metrics:
+    atm_bid_ask_spread: "float in dollars"
+    atm_open_interest: "integer contracts"
+    total_option_volume: "integer daily"
+    put_call_volume_ratio: "float"
+
+  market_context:
+    vix_level: "float"
+    days_to_earnings: "integer or null"
+    days_to_expiration: "integer"
+
+pattern_recognition:
+  steep_negative_skew:
+    aka: "Put Skew"
+    criteria:
+      equities_etfs: "skew_25_delta > 3.5"
+      normalized: "skew_normalized > 0.20"
+    interpretation: "Strong demand for downside protection"
+    visual: "IV slopes downward from low to high strikes"
+
+  flat_skew:
+    aka: "Neutral"
+    criteria:
+      equities_etfs: "skew_25_delta between -1.0 and 2.0"
+      normalized: "skew_normalized between -0.05 and 0.10"
+    interpretation: "Balanced supply/demand, uncertain direction"
+
+  forward_skew:
+    aka: "Call Skew"
+    criteria:
+      commodities: "skew_25_delta < -2.0"
+      normalized: "skew_normalized < -0.15"
+    interpretation: "Demand for upside protection, common in commodities"
+    visual: "IV slopes upward from low to high strikes"
+
+  volatility_smile:
+    aka: "Both Wings Elevated"
+    criteria: "put_skew > 2.0 AND call_skew > 1.5"
+    alternative: "days_to_earnings between 0 and 14"
+    interpretation: "Binary event approaching, large move expected"
+
+  classification_algorithm:
+    step_1: "Check for smile: (put_skew > 2.0 AND call_skew > 1.5) OR (0 <= days_to_earnings <= 14)"
+    step_2_commodity: "Forward if skew_25_delta < -2.0, Negative if > 1.0, else Flat"
+    step_2_equity: "Steep Negative if > 3.5, Flat if -1.0 to 2.0, Forward if < -1.0, else Negative"
+
+  asset_class_norms:
+    equities:
+      typical: "Negative (put skew)"
+      normal_range: "2.0 to 5.0"
+      extreme: "> 7.0"
+    etfs:
+      typical: "Negative (put skew)"
+      normal_range: "1.5 to 4.5"
+    commodities:
+      typical: "Positive (call skew)"
+      normal_range: "-3.0 to 0"
+      extreme: "< -5.0"
+
+decision_logic:
+  primary_flow:
+    step_1: "Validate all required fields present - ABORT if missing"
+    step_2: "Check liquidity score >= 3 - ABORT if insufficient"
+    step_3: "Identify skew pattern"
+    step_4: "Check IV environment (IV Rank vs 50%)"
+    step_5: "Check contraindications"
+    step_6: "Calculate confidence score"
+    step_7: "Generate recommendation based on confidence"
+
+  contraindications:
+    vix_above_30:
+      action: "CAUTION - high risk environment, avoid short vol"
+    backwardation_short_vol:
+      action: "ABORT - spike risk"
+    binary_event_near:
+      condition: "days_to_earnings < 7"
+      action: "ABORT unless specifically trading event"
+    steep_skew_low_iv:
+      condition: "skew_25_delta > 5.0 AND iv_rank < 30%"
+      action: "ABORT - market pricing specific risk"
+    rapidly_changing_skew:
+      condition: "skew shifts > 20% in 5 days"
+      action: "ABORT - unstable signal"
+
+strategies:
+  quick_selection_matrix:
+    - skew: "Steep Negative"
+      iv_rank: ">70%"
+      bullish: "Bull Put Spread"
+      bearish: "Put Ratio Spread"
+      neutral: "Iron Condor"
+
+    - skew: "Steep Negative"
+      iv_rank: "<30%"
+      bullish: "Risk Reversal"
+      bearish: "Put Debit Spread"
+      neutral: "Skip (specific risk priced in)"
+
+    - skew: "Flat"
+      iv_rank: ">70%"
+      neutral: "Iron Condor, Short Straddle"
+
+    - skew: "Flat"
+      iv_rank: "<30%"
+      neutral: "Long Straddle, Long Strangle"
+
+    - skew: "Forward"
+      iv_rank: ">70%"
+      bearish: "Bear Call Spread"
+      bullish: "Call Ratio Spread"
+
+    - skew: "Forward"
+      iv_rank: "<30%"
+      bullish: "Call Debit Spread, Call Backspread"
+
+    - skew: "Smile"
+      iv_rank: ">70%"
+      neutral: "Iron Butterfly, Short Straddle"
+
+    - skew: "Smile"
+      iv_rank: "<30%"
+      any: "Skip - wait for IV expansion"
+
+  key_strategies:
+    bull_put_spread:
+      structure: "Sell OTM put, buy further OTM put"
+      optimal_skew: "Negative"
+      iv_rank: ">50%"
+      dte_range: "7-45"
+      bias: "Bullish"
+      benefit: "Sell elevated put premium with capped risk"
+
+    bear_call_spread:
+      structure: "Sell OTM call, buy further OTM call"
+      optimal_skew: "Forward/Flat"
+      iv_rank: ">50%"
+      dte_range: "7-45"
+      bias: "Bearish"
+      benefit: "Sell elevated call premium"
+
+    iron_condor:
+      structure: "Sell OTM call spread + OTM put spread"
+      optimal_skew: "Flat or mild"
+      iv_rank: "40-75%"
+      dte_range: "14-45"
+      bias: "Neutral"
+      benefit: "High probability, defined risk, range-bound profit"
+      strike_selection: "Sell 16-30 delta puts/calls"
+
+    risk_reversal:
+      structure: "Sell OTM put, buy OTM call (or inverse)"
+      optimal_skew: "Steep negative"
+      iv_rank: "Any"
+      dte_range: "30-90"
+      bias: "Bullish"
+      benefit: "Exploit skew - sell expensive put, buy cheap call"
+
+    long_straddle:
+      optimal_skew: "Flat"
+      iv_rank: "<30%"
+      dte_range: "30-60"
+      bias: "Neutral"
+      benefit: "Cheap ATM, expect vol spike"
+
+    calendar_spread:
+      structure: "Sell near-term, buy same-strike longer-term"
+      optimal_skew: "Term divergence"
+      dte_details: "Front 14-30 DTE, back +1 expiration"
+      benefit: "Profit from term structure normalization"
+
+  strike_selection:
+    iron_condors: "Sell 16-30 delta puts/calls"
+    bull_put_spread: "Sell 20-30 delta put"
+    bear_call_spread: "Sell 20-30 delta call"
+    calendar_spreads: "ATM or 40-50 delta"
+    spread_width: "5-10 points for SPY/QQQ"
+
+scoring_algorithm:
+  base_score: 50
+
+  additions:
+    iv_rank_alignment: "+15 (IV Rank >70% for sell OR <30% for buy)"
+    stable_skew_pattern: "+10 (same classification 5+ days)"
+    excellent_liquidity: "+10 (score >6)"
+    term_structure_support: "+5 (contango for short vol, backwardation for long)"
+    put_call_confirmation: "+5 (P/C ratio confirms skew direction)"
+    highly_liquid_etf: "+5 (SPY, QQQ, IWM)"
+    trend_alignment: "+5 (market regime supports strategy)"
+    proven_setup: "+5 (previously profitable configuration)"
+
+  subtractions:
+    binary_event_near: "-10 (event within 7 days)"
+    crisis_mode: "-15 (VIX >30)"
+    marginal_liquidity: "-10 (score 3-6)"
+    conflicting_signals: "-10 (skew vs IV rank disagreement)"
+    rapidly_changing_skew: "-20 (>20% shift in 5 days)"
+    steep_skew_low_iv: "-15 (specific risk being priced)"
+    term_structure_conflict: "-10 (backwardation with short vol)"
+    gamma_risk: "-5 (DTE <7)"
+    illiquid_small_cap: "-10"
+    first_time_underlying: "-5"
+
+  interpretation:
+    below_40: "REJECT - do not trade"
+    40_to_50: "Very Low - paper trade only"
+    50_to_60: "Low - skip or 25% position"
+    60_to_70: "Moderate-Low - 50% position"
+    70_to_80: "Moderate - 75% position"
+    80_to_90: "High - 100% position"
+    above_90: "Very High - 100-125% position"
+
+liquidity_requirements:
+  hard_minimums:
+    open_interest: "100 contracts at target strikes"
+    bid_ask_spread: "$0.30 standard, $0.50 for underlying >$500"
+    total_option_volume: "5000 contracts daily"
+    underlying_volume_swing: "500,000 shares daily"
+    underlying_volume_day: "1,000,000 shares daily"
+    violation_action: "REJECT trade"
+
+  preferred:
+    open_interest: "1000 contracts"
+    bid_ask_spread: "$0.10 standard, $0.05 for SPY/QQQ"
+    total_option_volume: "10,000 contracts"
+    underlying_volume: "2,000,000 shares"
+
+  multi_leg_rules:
+    - "Check liquidity at ALL strikes involved"
+    - "Use WORST liquidity metric across legs"
+    - "Iron Condors: all 4 strikes must meet minimums"
+
+  optimal_trading_times:
+    good: ["10:00-11:30 ET", "13:30-15:30 ET"]
+    avoid: ["First/last 15 min", "11:30-13:30 ET lunch"]
+
+risk_management:
+  abort_conditions:
+    - "Rapidly changing skew (>20% in 5 days)"
+    - "Liquidity score <3 OR any hard minimum violated"
+    - "Days to earnings <7 (unless trading event)"
+    - "Steep skew (>5.0) + Low IV Rank (<30%)"
+    - "Backwardation + Short volatility strategy"
+    - "VIX >30 for new short vol positions"
+    - "Extreme skew (>7.0) without IV expansion"
+
+  entry_rules:
+    - "Always limit orders, never market"
+    - "Target fill at mid-price or better"
+    - "Scale in if confidence 60-80%, full if >80%"
+
+  exit_rules:
+    - "Profit target: 50% of max profit"
+    - "Stop loss: 2x credit (short premium) or -50% (debit)"
+    - "Exit at 7 DTE regardless of P&L"
+    - "Exit immediately if VIX spikes >10 points in day"
+
+  position_sizing:
+    - "Never risk >2% of account on single trade"
+    - "Never risk >10% of account on single underlying"
+    - "Use confidence score to scale position"
+    - "Reduce size 50% in marginal liquidity"
+
+  pre_trade_checklist:
+    - "Liquidity Score ≥3?"
+    - "All required data fields present?"
+    - "Confidence Score ≥60?"
+    - "No binary events <7 days?"
+    - "VIX <30?"
+    - "No backwardation if selling vol?"
+    - "Skew stable?"
+    - "If steep skew, is IV Rank >50%?"
+    - "Position size ≤2% account risk?"
+    - "Stop loss and profit targets defined?"
+
+best_practices:
+  key_principles:
+    - "Always validate liquidity first - no edge without tradeable liquidity"
+    - "IV Rank determines buy vs sell"
+    - "Skew pattern determines strategy type"
+    - "Contraindications are hard rules - do not override"
+    - "Confidence scoring ensures consistency"
+    - "Define exits before entry, stick to rules"
+
+  critical_mistakes_to_avoid:
+    - "Selling premium when steep skew + low IV rank (market knows something)"
+    - "Holding through binary events unintentionally"
+    - "Ignoring liquidity metrics"
+    - "Trading when VIX >30 with short vol"
+    - "Selling volatility in backwardation"
+    - "Using market orders on options"
+    - "Exceeding position size limits"
+
+  red_flags:
+    - "Skew changing >20% in 5 days"
+    - "Both put and call skew elevated near earnings"
+    - "Call skew > put skew in equities (unusual)"
+    - "Low volume with high open interest"
+    - "Extreme skew without IV rank expansion"
+
+thresholds:
+  iv_rank_zones:
+    very_low: "0-20% - Strong Buy"
+    low: "20-30% - Buy"
+    below_average: "30-50% - Slight Buy"
+    above_average: "50-70% - Slight Sell"
+    high: "70-85% - Sell"
+    very_high: "85-100% - Strong Sell"
+
+  vix_levels:
+    extreme_low: "<12 - Buy vol, avoid selling"
+    low: "12-15 - Slight buy bias"
+    normal: "15-20 - Neutral"
+    elevated: "20-25 - Slight sell bias"
+    high: "25-30 - Sell vol cautiously"
+    very_high: "30-40 - Avoid short vol"
+    extreme: ">40 - Crisis mode, only buy vol"
+
+  cboe_skew_index:
+    normal: "100-115 - Low tail risk"
+    moderate: "115-130 - Moderate hedging"
+    elevated: "130-145 - High tail risk"
+    extreme: ">145 - Major crash protection demanded"
+
+  equity_skew_25_delta:
+    very_low: "<1.0 - Unusual, investigate"
+    low: "1.0-2.0 - Below normal"
+    normal: "2.0-3.5 - Typical"
+    elevated: "3.5-5.0 - Actionable"
+    high: "5.0-7.0 - Strong signal"
+    extreme: ">7.0 - Very steep, caution"
+
+  put_call_ratio:
+    extreme_bullish: "<0.70 - Complacency"
+    bullish: "0.70-0.85"
+    neutral: "0.85-1.15"
+    bearish: "1.15-1.50 - Hedging"
+    extreme_bearish: ">1.50 - Fear"

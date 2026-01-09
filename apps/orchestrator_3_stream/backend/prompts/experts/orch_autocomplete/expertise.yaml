@@ -1,20 +1,65 @@
-orchestrator_agent_id: e0230a36-a9b1-43b6-9a68-ae4fd19473cc
-completion_agent_id: 3caaa6a9-8ef9-4cbb-aeec-94f578314bce
+orchestrator_agent_id: 84ccde07-f8e3-43c6-a570-770c80564f87
+completion_agent_id: b072359f-dfeb-4972-a3c4-bce6571247b6
 previous_completions:
 - completion_type: none
-  user_input_on_enter: "Please use  /orch_plan_w_scouts_build_review to do the following:\
-    \ ## Task: Stage IronCondorCard components on Open Positions page\n\n### Context\n\
-    - I have an `IronCondorCard.vue` component ready (Element Plus + Vue 3) -card\
-    \ has not been tested in our ui to see if it works\n- Need to render multiple\
-    \ cards on the existing Open Positions page\n- This is frontend-only work - no\
-    \ backend integration yet\n\n### Deliverable\nRender 2-3 IronCondorCard components\
-    \ on the Open Positions page using hardcoded placeholder data.\n\n### Requirements\n\
-    1. Import and register the IronCondorCard component\n2. Create a placeholder array\
-    \ of position data (mock 2-3 different positions - iron condor, iron butterfly,\
-    \ etc.)\n3. Loop through and render a card for each position\n4. Basic layout/grid\
-    \ to display multiple cards\n5. No API calls - all data hardcoded in the page\
-    \ component\n\n### Out of scope\n- Backend integration\n- State management (Pinia)\n\
-    - Loading states for API\n- Error handling\n### Validation \n### Files to modify\n\
-    - /Users/muzz/Desktop/tac/orchestrator-agent-with-adws/apps/orchestrator_3_stream/frontend/src/components/OpenPositions.vue\n\
-    - /Users/muzz/Desktop/tac/orchestrator-agent-with-adws/IronCondorCard.vue"
+  user_input_on_enter: 'We were in the middle of  /orch_plan_w_scouts_build_review
+    when the orchestrator connection to codebase got interrupted. Staging plan located
+    here: /Users/muzz/Desktop/tac/TOD/specs/ironcondor-staging-plan.md and /Users/muzz/Desktop/tac/TOD/specs/stage-ironcondor-card-open-positions.md,
+    are already availble. Please respawn the agents and complete the task. Use scout
+    agent to see where the new feature integration got interupted.'
   order: 1
+- completion_type: autocomplete
+  user_input_before_completion: 'Looks great, let''s us  /orch_plan_w_scouts_build_review,
+    to add the following adjustments to the cards: "The position card needs layout
+    adjustments:
+
+
+    Increase min-width so content isn''t truncated
+
+    Card should fit viewport without vertical scroll (no overflow)
+
+    ''Sum of 4 legs'' should render inline/horizontal alongside the leg items, not
+    vertically stacked under the P/L figure" '
+  autocomplete_item: Review the CSS layout
+  reasoning: Natural next step to validate all styling changes meet specifications
+  order: 2
+- completion_type: none
+  user_input_on_enter: Create an agent to /fix the ironcondorcard and have a /review
+    agent check the work. Card still has a scroll bar
+  order: 3
+- completion_type: none
+  user_input_on_enter: /question do any of our tools or agents use playwright to review
+    changes to the frontend?
+  order: 4
+- completion_type: none
+  user_input_on_enter: 'yes'
+  order: 5
+- completion_type: none
+  user_input_on_enter: Something is up, our UI is dark them. The open positions page
+    is also dark them, is ui validator at 127.0.0.1:5175?
+  order: 6
+- completion_type: none
+  user_input_on_enter: That's amazing! What is the proper way to submit a /question
+    to the /api expert through this chat/interface?
+  order: 7
+- completion_type: none
+  user_input_on_enter: Please create an agent to review and make note of all mentions
+    of Alpaca or Supabase in skew-analysis-guide.md in /ai_docs. And create a build
+    agent to edit the file and remove these mentions. This document is to be more
+    of an in-depth training guide and I want to keep it agnostic of technology at
+    this point. It's purpose is to teach about options skew analysis, we will use
+    it another step later
+  order: 8
+- completion_type: none
+  user_input_on_enter: Make a new agent expert , use skew-analysis-guide.md to build
+    the expertise, implement multiple agents to assist with this large file this will
+    help manage the large context of the file at least 4 agents 400 max lines per
+    agent, or whatever logic works best. a 1300 line file is bound to cause context
+    rot for one agent meta-agent
+  order: 9
+- completion_type: none
+  user_input_on_enter: /experts:api:question we have a new card on Open Positions
+    page that is going to have a number of new api's from our backend (backend api's
+    not created yet). What file/s would we need to add these api's to start rough
+    them into the frontend?
+  order: 10
