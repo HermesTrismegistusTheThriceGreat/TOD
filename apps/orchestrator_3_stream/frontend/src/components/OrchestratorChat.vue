@@ -38,7 +38,7 @@
         <h3>O-Agent</h3>
       </div>
 
-      <!-- Right section: cost and context window display -->
+      <!-- Right section: cost, context window, and clear button -->
       <div class="header-right">
         <div class="cost-display">
           <span class="cost-label">Cost:</span>
@@ -48,6 +48,25 @@
           <span class="context-label">Context:</span>
           <span class="context-value">{{ contextWindowDisplay }}</span>
         </div>
+        <button
+          class="clear-btn"
+          @click="handleClearChat"
+          title="Clear chat history"
+        >
+          <svg
+            class="clear-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <path
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -262,6 +281,11 @@ const handleToggleWidth = () => {
   store.toggleChatWidth();
 };
 
+// Handler for clear chat button
+const handleClearChat = () => {
+  store.clearChat();
+};
+
 // Scroll to bottom on mount (when app loads with existing messages)
 onMounted(() => {
   // Use setTimeout to ensure DOM is fully rendered
@@ -388,6 +412,37 @@ onMounted(() => {
   font-weight: 700;
   font-family: var(--font-mono);
   font-size: 0.75rem;
+}
+
+/* Clear Button */
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: rgb(239, 68, 68);
+}
+
+.clear-btn:active {
+  transform: scale(0.95);
+}
+
+.clear-icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* Context window color states */
@@ -715,6 +770,11 @@ onMounted(() => {
 
   .cost-value::before {
     content: "$";
+  }
+
+  /* Hide clear button on mobile - use /clear command instead */
+  .clear-btn {
+    display: none;
   }
 
   /* Reduce message area padding */

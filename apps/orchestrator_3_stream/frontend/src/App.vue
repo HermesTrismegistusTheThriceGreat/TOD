@@ -17,7 +17,7 @@
         @collapse-change="handleSidebarCollapse"
       />
 
-      <!-- Center Column: EventStream or AdwSwimlanes based on view mode -->
+      <!-- Center Column: EventStream, AdwSwimlanes, or OpenPositions based on view mode -->
       <EventStream
         v-if="store.viewMode === 'logs'"
         ref="eventStreamRef"
@@ -28,7 +28,11 @@
         @set-filter="handleSetFilter"
       />
       <AdwSwimlanes
-        v-else
+        v-else-if="store.viewMode === 'adws'"
+        class="app-content center"
+      />
+      <OpenPositions
+        v-else-if="store.viewMode === 'open-positions'"
         class="app-content center"
       />
 
@@ -56,6 +60,7 @@ import AppHeader from './components/AppHeader.vue'
 import AgentList from './components/AgentList.vue'
 import EventStream from './components/EventStream.vue'
 import AdwSwimlanes from './components/AdwSwimlanes.vue'
+import OpenPositions from './components/OpenPositions.vue'
 import OrchestratorChat from './components/OrchestratorChat.vue'
 import GlobalCommandInput from './components/GlobalCommandInput.vue'
 import { useOrchestratorStore } from './stores/orchestratorStore'

@@ -357,11 +357,30 @@ const handlePillClick = (index: number) => {
   textareaRef.value?.dispatchEvent(event);
 };
 
+// Client-side commands that don't get sent to the orchestrator
+const CLIENT_COMMANDS: Record<string, () => void> = {
+  '/clear': () => {
+    store.clearChat();
+    console.log('[GlobalCommandInput] Chat cleared via /clear command');
+  },
+};
+
 // Methods
 const sendMessage = () => {
   if (!message.value.trim() || !isConnected.value) return;
 
   const messageToSend = message.value.trim();
+
+  // Check for client-side commands first
+  const command = messageToSend.toLowerCase();
+  if (CLIENT_COMMANDS[command]) {
+    CLIENT_COMMANDS[command]();
+    message.value = "";
+    inputBeforeCompletion.value = "";
+    clearAutocomplete();
+    store.hideCommandInput();
+    return; // Don't send to orchestrator
+  }
 
   // Track completion history if autocomplete was shown but not used
   if (hasAutocompleteItems.value) {

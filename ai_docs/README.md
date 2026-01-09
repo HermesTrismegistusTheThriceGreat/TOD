@@ -23,3 +23,5 @@ The following URLs will be scraped and cached locally:
 - https://docs.claude.com/en/docs/about-claude/models/overview
 - https://docs.claude.com/en/api/agent-sdk/cost-tracking
 - https://platform.claude.com/docs/en/agent-sdk/structured-outputs
+- https://docs.alpaca.markets/docs/alpaca-mcp-server
+- https://docs.alpaca.markets/

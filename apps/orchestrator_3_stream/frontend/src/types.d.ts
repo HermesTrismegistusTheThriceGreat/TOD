@@ -449,7 +449,7 @@ export interface AdwStepSummary {
 }
 
 // View mode for center column
-export type ViewMode = 'logs' | 'adws'
+export type ViewMode = 'logs' | 'adws' | 'open-positions'
 
 // ADW API Response Types
 export interface ListAdwsResponse {

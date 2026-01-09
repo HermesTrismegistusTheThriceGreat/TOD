@@ -71,6 +71,14 @@
           >
             PROMPT <span class="btn-hint">(Cmd+K)</span>
           </button>
+          <button
+            class="btn-prompt"
+            :class="{ active: store.viewMode === 'open-positions' }"
+            @click="store.setViewMode('open-positions')"
+            title="View open positions"
+          >
+            POSITIONS
+          </button>
         </div>
       </div>
     </div>
