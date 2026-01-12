@@ -41,7 +41,7 @@
 
     <!-- Positions Grid -->
     <div v-else class="positions-grid">
-      <IronCondorCard
+      <OpenPositionCard
         v-for="position in positions"
         :key="position.id"
         :initial-data="position"
@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Loading, Warning, Refresh } from '@element-plus/icons-vue'
-import IronCondorCard from './IronCondorCard.vue'
+import OpenPositionCard from './OpenPositionCard.vue'
 import { useAlpacaPositions } from '../composables/useAlpacaPositions'
 
 // Use the Alpaca positions composable

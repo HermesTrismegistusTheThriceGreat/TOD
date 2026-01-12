@@ -25,8 +25,8 @@ export interface RawOptionLeg {
   pnl_percent?: number
 }
 
-/** Raw iron condor position from backend (snake_case) */
-export interface RawIronCondorPosition {
+/** Raw open position from backend (snake_case) */
+export interface RawOpenPosition {
   id: string
   ticker: string
   strategy: string
@@ -51,7 +51,7 @@ export interface RawOptionPriceUpdate {
 /** Raw API response for positions */
 export interface RawGetPositionsResponse {
   status: 'success' | 'error'
-  positions: RawIronCondorPosition[]
+  positions: RawOpenPosition[]
   total_count: number
   message?: string
 }
@@ -59,7 +59,34 @@ export interface RawGetPositionsResponse {
 /** Raw API response for single position */
 export interface RawGetPositionResponse {
   status: 'success' | 'error'
-  position?: RawIronCondorPosition
+  position?: RawOpenPosition
+  message?: string
+}
+
+/** Raw close order result from backend (snake_case) */
+export interface RawCloseOrderResult {
+  symbol: string
+  order_id: string
+  status: 'submitted' | 'filled' | 'failed'
+  filled_qty: number
+  filled_avg_price?: number
+  error_message?: string
+}
+
+/** Raw close strategy response from backend (snake_case) */
+export interface RawCloseStrategyResponse {
+  status: 'success' | 'partial' | 'error'
+  position_id: string
+  orders: RawCloseOrderResult[]
+  message?: string
+  total_legs: number
+  closed_legs: number
+}
+
+/** Raw close leg response from backend (snake_case) */
+export interface RawCloseLegResponse {
+  status: 'success' | 'error'
+  order?: RawCloseOrderResult
   message?: string
 }
 
@@ -83,8 +110,8 @@ export interface OptionLeg {
   pnlPercent?: number
 }
 
-/** Iron condor position (frontend camelCase) */
-export interface IronCondorPosition {
+/** Open position (frontend camelCase) */
+export interface OpenPosition {
   id: string
   ticker: string
   strategy: string
@@ -109,7 +136,7 @@ export interface OptionPriceUpdate {
 /** API response for positions (frontend) */
 export interface GetPositionsResponse {
   status: 'success' | 'error'
-  positions: IronCondorPosition[]
+  positions: OpenPosition[]
   totalCount: number
   message?: string
 }
@@ -117,13 +144,40 @@ export interface GetPositionsResponse {
 /** API response for single position (frontend) */
 export interface GetPositionResponse {
   status: 'success' | 'error'
-  position?: IronCondorPosition
+  position?: OpenPosition
   message?: string
 }
 
 /** Request for subscribing to prices */
 export interface SubscribePricesRequest {
   symbols: string[]
+}
+
+/** Close order result (frontend camelCase) */
+export interface CloseOrderResult {
+  symbol: string
+  orderId: string
+  status: 'submitted' | 'filled' | 'failed'
+  filledQty: number
+  filledAvgPrice?: number
+  errorMessage?: string
+}
+
+/** Close strategy response (frontend camelCase) */
+export interface CloseStrategyResponse {
+  status: 'success' | 'partial' | 'error'
+  positionId: string
+  orders: CloseOrderResult[]
+  message?: string
+  totalLegs: number
+  closedLegs: number
+}
+
+/** Close leg response (frontend camelCase) */
+export interface CloseLegResponse {
+  status: 'success' | 'error'
+  order?: CloseOrderResult
+  message?: string
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -153,7 +207,7 @@ export function transformOptionLeg(raw: RawOptionLeg): OptionLeg {
 /**
  * Transform raw position from backend to frontend format.
  */
-export function transformPosition(raw: RawIronCondorPosition): IronCondorPosition {
+export function transformPosition(raw: RawOpenPosition): OpenPosition {
   return {
     id: raw.id,
     ticker: raw.ticker,
@@ -204,6 +258,45 @@ export function transformPositionResponse(raw: RawGetPositionResponse): GetPosit
   }
 }
 
+/**
+ * Transform raw close order result from backend.
+ */
+export function transformCloseOrderResult(raw: RawCloseOrderResult): CloseOrderResult {
+  return {
+    symbol: raw.symbol,
+    orderId: raw.order_id,
+    status: raw.status,
+    filledQty: raw.filled_qty,
+    filledAvgPrice: raw.filled_avg_price,
+    errorMessage: raw.error_message,
+  }
+}
+
+/**
+ * Transform raw close strategy response from backend.
+ */
+export function transformCloseStrategyResponse(raw: RawCloseStrategyResponse): CloseStrategyResponse {
+  return {
+    status: raw.status,
+    positionId: raw.position_id,
+    orders: raw.orders.map(transformCloseOrderResult),
+    message: raw.message,
+    totalLegs: raw.total_legs,
+    closedLegs: raw.closed_legs,
+  }
+}
+
+/**
+ * Transform raw close leg response from backend.
+ */
+export function transformCloseLegResponse(raw: RawCloseLegResponse): CloseLegResponse {
+  return {
+    status: raw.status,
+    order: raw.order ? transformCloseOrderResult(raw.order) : undefined,
+    message: raw.message,
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════
@@ -228,7 +321,7 @@ export function calculateLegPnl(leg: OptionLeg): { dollars: number; percent: num
 /**
  * Extract all option symbols from positions for price subscription.
  */
-export function extractSymbolsFromPositions(positions: IronCondorPosition[]): string[] {
+export function extractSymbolsFromPositions(positions: OpenPosition[]): string[] {
   const symbols: string[] = []
 
   for (const position of positions) {
@@ -247,4 +340,4 @@ export function extractSymbolsFromPositions(positions: IronCondorPosition[]): st
 // ═══════════════════════════════════════════════════════════
 
 /** Ticker position (alias for backwards compatibility) */
-export type TickerPosition = IronCondorPosition
+export type TickerPosition = OpenPosition

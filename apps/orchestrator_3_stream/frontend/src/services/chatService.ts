@@ -45,7 +45,7 @@ export interface PositionUpdateMessage {
   type: 'position_update'
   position: {
     symbol: string
-    [key: string]: any  // Allow additional fields from IronCondorPosition
+    [key: string]: any  // Allow additional fields from OpenPosition
   }
   timestamp: string
 }

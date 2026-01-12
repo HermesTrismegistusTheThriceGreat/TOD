@@ -339,6 +339,61 @@ class GetPositionsResponse(BaseModel):
     message: Optional[str] = None
 
 
+# ═══════════════════════════════════════════════════════════
+# CLOSE POSITION MODELS
+# ═══════════════════════════════════════════════════════════
+
+class CloseOrderResult(BaseModel):
+    """Result of a single close order"""
+    model_config = ConfigDict(from_attributes=True)
+
+    symbol: str
+    order_id: str
+    status: Literal['submitted', 'filled', 'failed']
+    filled_qty: int = 0
+    filled_avg_price: Optional[float] = None
+    error_message: Optional[str] = None
+
+
+class CloseStrategyRequest(BaseModel):
+    """Request to close an entire strategy (all legs)"""
+    model_config = ConfigDict(from_attributes=True)
+
+    position_id: str
+    order_type: Literal['market', 'limit'] = 'market'
+    limit_price_offset: Optional[float] = None  # For limit orders: offset from mid price
+
+
+class CloseStrategyResponse(BaseModel):
+    """Response for close strategy operation"""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'partial', 'error']
+    position_id: str
+    orders: List[CloseOrderResult] = []
+    message: Optional[str] = None
+    total_legs: int = 0
+    closed_legs: int = 0
+
+
+class CloseLegRequest(BaseModel):
+    """Request to close a single leg"""
+    model_config = ConfigDict(from_attributes=True)
+
+    leg_id: str
+    order_type: Literal['market', 'limit'] = 'market'
+    limit_price: Optional[float] = None
+
+
+class CloseLegResponse(BaseModel):
+    """Response for close leg operation"""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'error']
+    order: Optional[CloseOrderResult] = None
+    message: Optional[str] = None
+
+
 class GetPositionResponse(BaseModel):
     """Response for GET /api/positions/{id}"""
     model_config = ConfigDict(from_attributes=True)
@@ -382,4 +437,9 @@ __all__ = [
     "GetPositionResponse",
     "SubscribePricesRequest",
     "SubscribePricesResponse",
+    "CloseOrderResult",
+    "CloseStrategyRequest",
+    "CloseStrategyResponse",
+    "CloseLegRequest",
+    "CloseLegResponse",
 ]

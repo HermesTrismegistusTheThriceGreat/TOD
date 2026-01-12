@@ -1,13 +1,13 @@
 /**
  * useAlpacaPositions Composable
  *
- * Manages fetching and state of iron condor positions.
+ * Manages fetching and state of open positions.
  * Integrates with orchestrator store for WebSocket updates.
  */
 
 import { ref, computed, onMounted } from 'vue'
 import { useOrchestratorStore } from '../stores/orchestratorStore'
-import type { IronCondorPosition } from '../types/alpaca'
+import type { OpenPosition } from '../types/alpaca'
 import { extractSymbolsFromPositions } from '../types/alpaca'
 import * as alpacaService from '../services/alpacaService'
 
@@ -41,7 +41,7 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
   const positionCount = computed(() => store.alpacaPositionCount)
 
   // Get current position (for single position mode)
-  const currentPosition = computed<IronCondorPosition | null>(() => {
+  const currentPosition = computed<OpenPosition | null>(() => {
     if (positionId) {
       return store.getAlpacaPositionById(positionId) || null
     }

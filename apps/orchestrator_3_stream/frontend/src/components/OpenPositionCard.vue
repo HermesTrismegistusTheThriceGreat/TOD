@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { Timer, Loading, Warning } from '@element-plus/icons-vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { useAlpacaPositions } from '../composables/useAlpacaPositions'
 import { useAlpacaPriceStream } from '../composables/useAlpacaPriceStream'
-import type { OptionLeg, IronCondorPosition } from '../types/alpaca'
+import * as alpacaService from '../services/alpacaService'
+import type { OptionLeg, OpenPosition } from '../types/alpaca'
 import { calculateLegPnl } from '../types/alpaca'
 
 // Props
 const props = defineProps<{
   positionId?: string
-  initialData?: IronCondorPosition
+  initialData?: OpenPosition
   /** Use mock data (for development/demo) */
   useMockData?: boolean
 }>()
@@ -32,10 +34,12 @@ const {
 const { getMidPrice, connectionStatus } = useAlpacaPriceStream()
 
 // Local state
-const position = ref<IronCondorPosition | null>(null)
+const position = ref<OpenPosition | null>(null)
+const closingStrategy = ref(false)
+const closingLegId = ref<string | null>(null)
 
 // Mock data for development
-const mockPosition: IronCondorPosition = {
+const mockPosition: OpenPosition = {
   id: 'mock-1',
   ticker: 'SPY',
   strategy: 'Iron Condor',
@@ -189,6 +193,68 @@ const formatPrice = (value: number) => {
   return `$${value.toFixed(2)}`
 }
 
+// Close handlers
+async function handleCloseStrategy() {
+  if (!position.value) return
+
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to close all ${position.value.legs.length} legs of this ${position.value.strategy}? This will submit market orders to close all positions.`,
+      'Close Strategy',
+      { confirmButtonText: 'Close All', cancelButtonText: 'Cancel', type: 'warning' }
+    )
+
+    closingStrategy.value = true
+    const result = await alpacaService.closeStrategy(position.value.id)
+
+    if (result.status === 'success') {
+      ElMessage.success(`Successfully closed ${result.closedLegs} legs`)
+      await refresh()
+    } else if (result.status === 'partial') {
+      ElMessage.warning(`Partially closed: ${result.closedLegs}/${result.totalLegs} legs. ${result.message || ''}`)
+      await refresh()
+    } else {
+      ElMessage.error(result.message || 'Failed to close strategy')
+    }
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('Failed to close strategy')
+      console.error('Close strategy error:', e)
+    }
+  } finally {
+    closingStrategy.value = false
+  }
+}
+
+async function handleCloseLeg(leg: OptionLeg) {
+  if (!position.value) return
+
+  try {
+    await ElMessageBox.confirm(
+      `Close ${leg.direction} ${leg.optionType} $${leg.strike} (${leg.quantity} contracts)?`,
+      'Close Leg',
+      { confirmButtonText: 'Close', cancelButtonText: 'Cancel', type: 'warning' }
+    )
+
+    closingLegId.value = leg.id
+    const result = await alpacaService.closeLeg(position.value.id, leg.id)
+
+    if (result.status === 'success') {
+      ElMessage.success(`Closed ${leg.symbol}`)
+      await refresh()
+    } else {
+      ElMessage.error(result.message || 'Failed to close leg')
+    }
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('Failed to close leg')
+      console.error('Close leg error:', e)
+    }
+  } finally {
+    closingLegId.value = null
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   if (props.initialData) {
@@ -234,8 +300,14 @@ onMounted(() => {
             <span class="status-dot"></span>
             <span class="status-text">{{ connectionStatus }}</span>
           </div>
-          <!-- TODO: Backend Dev - Connect this button to the close strategy endpoint -->
-          <el-button type="danger" size="small">Close Strategy</el-button>
+          <el-button
+            type="danger"
+            size="small"
+            :loading="closingStrategy"
+            @click="handleCloseStrategy"
+          >
+            {{ closingStrategy ? 'Closing...' : 'Close Strategy' }}
+          </el-button>
         </div>
       </div>
 
@@ -281,9 +353,17 @@ onMounted(() => {
             </el-table-column>
 
             <el-table-column label="Actions" min-width="120" align="center">
-              <template #default>
-                <!-- Note: Backend API connection pending -->
-                <el-button class="close-leg-btn" size="small" type="danger" plain>Close Leg</el-button>
+              <template #default="{ row }">
+                <el-button
+                  class="close-leg-btn"
+                  size="small"
+                  type="danger"
+                  plain
+                  :loading="closingLegId === row.id"
+                  @click="handleCloseLeg(row)"
+                >
+                  {{ closingLegId === row.id ? 'Closing...' : 'Close Leg' }}
+                </el-button>
               </template>
             </el-table-column>
 

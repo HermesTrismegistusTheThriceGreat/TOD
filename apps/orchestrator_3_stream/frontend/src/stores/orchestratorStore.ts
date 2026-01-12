@@ -33,7 +33,7 @@ import { getEvents } from '../services/eventService'
 import * as autocompleteService from '../services/autocompleteService'
 import * as adwService from '../services/adwService'
 import { DEFAULT_EVENT_HISTORY_LIMIT } from '../config/constants'
-import type { IronCondorPosition, OptionPriceUpdate } from '../types/alpaca'
+import type { OpenPosition, OptionPriceUpdate } from '../types/alpaca'
 import { transformPosition, transformPriceUpdate } from '../types/alpaca'
 import { useAgentPulse } from '../composables/useAgentPulse'
 
@@ -118,7 +118,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   // ═══════════════════════════════════════════════════════════
 
   // Positions list
-  const alpacaPositions = ref<IronCondorPosition[]>([])
+  const alpacaPositions = ref<OpenPosition[]>([])
 
   // Price cache using shallowRef for proper Map reactivity
   // IMPORTANT: Use shallowRef + triggerRef for Map reactivity
@@ -410,7 +410,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   /**
    * Set positions from API response.
    */
-  function setAlpacaPositions(positions: IronCondorPosition[]) {
+  function setAlpacaPositions(positions: OpenPosition[]) {
     alpacaPositions.value = positions
   }
 

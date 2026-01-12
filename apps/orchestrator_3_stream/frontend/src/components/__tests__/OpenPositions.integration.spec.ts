@@ -4,7 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { nextTick, ref, computed } from 'vue'
 import OpenPositions from '../OpenPositions.vue'
 import { useOrchestratorStore } from '../../stores/orchestratorStore'
-import type { IronCondorPosition, OptionLeg } from '../../types/alpaca'
+import type { OpenPosition, OptionLeg } from '../../types/alpaca'
 
 /**
  * Integration Tests for OpenPositions.vue
@@ -55,13 +55,13 @@ vi.mock('../../services/eventService', () => ({
   getEvents: vi.fn().mockResolvedValue({ events: [] }),
 }))
 
-// Mock IronCondorCard
-vi.mock('../IronCondorCard.vue', () => ({
+// Mock OpenPositionCard
+vi.mock('../OpenPositionCard.vue', () => ({
   default: {
-    name: 'IronCondorCard',
+    name: 'OpenPositionCard',
     props: ['initialData', 'positionId', 'useMockData'],
     template: `
-      <div class="integration-iron-condor-card" :data-ticker="initialData?.ticker">
+      <div class="integration-open-position-card" :data-ticker="initialData?.ticker">
         <span class="ticker">{{ initialData?.ticker }}</span>
         <span v-for="leg in initialData?.legs" :key="leg.id" class="leg-price" :data-symbol="leg.symbol">
           {{ leg.currentPrice }}
@@ -112,7 +112,7 @@ describe('OpenPositions Integration', () => {
   describe('Store -> Component Data Flow', () => {
     it('should update position data when store price changes', async () => {
       // Setup: Initial position
-      const initialPosition: IronCondorPosition = {
+      const initialPosition: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
         strategy: 'Iron Condor',
@@ -157,7 +157,7 @@ describe('OpenPositions Integration', () => {
     })
 
     it('should handle rapid price updates without data loss', async () => {
-      const position: IronCondorPosition = {
+      const position: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
         strategy: 'Iron Condor',
@@ -240,7 +240,7 @@ describe('OpenPositions Integration', () => {
 
   describe('Price Cache Management', () => {
     it('should cache prices correctly', async () => {
-      const position: IronCondorPosition = {
+      const position: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
         strategy: 'Iron Condor',
@@ -317,7 +317,7 @@ describe('OpenPositions Integration', () => {
 
   describe('P/L Calculations', () => {
     it('should calculate P/L when price updates', async () => {
-      const position: IronCondorPosition = {
+      const position: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
         strategy: 'Iron Condor',

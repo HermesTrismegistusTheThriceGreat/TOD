@@ -20,7 +20,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import AssetClass
+from alpaca.trading.enums import AssetClass, OrderSide, TimeInForce
+from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
 from alpaca.data.live import OptionDataStream
 
 from .config import (
@@ -37,6 +38,9 @@ from .alpaca_models import (
     OptionLeg,
     IronCondorPosition,
     OptionPriceUpdate,
+    CloseOrderResult,
+    CloseStrategyResponse,
+    CloseLegResponse,
 )
 from .circuit_breaker import CircuitBreaker, CircuitBreakerOpenError
 from .rate_limiter import RateLimiter
@@ -406,7 +410,7 @@ class AlpacaService:
                 # Rate limit by symbol
                 was_sent = await self._rate_limiter.throttle(
                     key=symbol,
-                    data=update.model_dump(),
+                    data=update.model_dump(mode='json'),
                     send_callback=send_update
                 )
 
@@ -458,6 +462,182 @@ class AlpacaService:
         """Remove price callback"""
         if callback in self._price_callbacks:
             self._price_callbacks.remove(callback)
+
+    # ═══════════════════════════════════════════════════════════
+    # POSITION CLOSING (REST)
+    # ═══════════════════════════════════════════════════════════
+
+    def _determine_close_side(self, direction: str) -> OrderSide:
+        """
+        Determine the order side needed to close a position.
+
+        Short positions: buy to close
+        Long positions: sell to close
+        """
+        return OrderSide.BUY if direction == 'Short' else OrderSide.SELL
+
+    async def close_leg(
+        self,
+        symbol: str,
+        quantity: int,
+        direction: str,
+        order_type: str = 'market',
+        limit_price: Optional[float] = None
+    ) -> CloseOrderResult:
+        """
+        Close a single option leg.
+
+        Args:
+            symbol: OCC option symbol
+            quantity: Number of contracts to close
+            direction: 'Long' or 'Short' (current position direction)
+            order_type: 'market' or 'limit'
+            limit_price: Price for limit orders (required if order_type is 'limit')
+
+        Returns:
+            CloseOrderResult with order details
+        """
+        try:
+            async with self._circuit_breaker:
+                client = self._get_trading_client()
+                side = self._determine_close_side(direction)
+
+                logger.info(f"Closing leg: {symbol} qty={quantity} direction={direction} side={side.value}")
+
+                # Create order request
+                if order_type == 'limit' and limit_price is not None:
+                    order_request = LimitOrderRequest(
+                        symbol=symbol,
+                        qty=quantity,
+                        side=side,
+                        time_in_force=TimeInForce.DAY,
+                        limit_price=limit_price
+                    )
+                else:
+                    order_request = MarketOrderRequest(
+                        symbol=symbol,
+                        qty=quantity,
+                        side=side,
+                        time_in_force=TimeInForce.DAY
+                    )
+
+                # Submit order via TradingClient (sync call, run in executor)
+                loop = asyncio.get_running_loop()
+                order = await loop.run_in_executor(
+                    None, client.submit_order, order_request
+                )
+
+                logger.info(f"Order submitted: {order.id} status={order.status}")
+
+                return CloseOrderResult(
+                    symbol=symbol,
+                    order_id=str(order.id),
+                    status='submitted' if order.status.value in ['new', 'pending_new', 'accepted'] else 'filled',
+                    filled_qty=int(order.filled_qty) if order.filled_qty else 0,
+                    filled_avg_price=float(order.filled_avg_price) if order.filled_avg_price else None
+                )
+
+        except CircuitBreakerOpenError:
+            logger.warning(f"Circuit breaker open - cannot close leg {symbol}")
+            return CloseOrderResult(
+                symbol=symbol,
+                order_id='',
+                status='failed',
+                error_message='Circuit breaker open - API unavailable'
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to close leg {symbol}: {e}")
+            return CloseOrderResult(
+                symbol=symbol,
+                order_id='',
+                status='failed',
+                error_message=str(e)
+            )
+
+    async def close_strategy(
+        self,
+        position_id: str,
+        order_type: str = 'market'
+    ) -> CloseStrategyResponse:
+        """
+        Close an entire strategy (all legs).
+
+        Args:
+            position_id: UUID of the position to close
+            order_type: 'market' or 'limit'
+
+        Returns:
+            CloseStrategyResponse with all order results
+        """
+        # Get position from cache or fetch
+        position = self._positions_cache.get(position_id)
+        if not position:
+            position = await self.get_position_by_id(position_id)
+
+        if not position:
+            logger.error(f"Position not found: {position_id}")
+            return CloseStrategyResponse(
+                status='error',
+                position_id=position_id,
+                message=f'Position not found: {position_id}'
+            )
+
+        logger.info(f"Closing strategy: {position_id} ({position.ticker} {position.strategy}) with {len(position.legs)} legs")
+
+        orders: List[CloseOrderResult] = []
+        closed_count = 0
+
+        # Close each leg
+        for leg in position.legs:
+            result = await self.close_leg(
+                symbol=leg.symbol,
+                quantity=leg.quantity,
+                direction=leg.direction,
+                order_type=order_type
+            )
+            orders.append(result)
+
+            if result.status != 'failed':
+                closed_count += 1
+
+        # Determine overall status
+        total_legs = len(position.legs)
+        if closed_count == total_legs:
+            status = 'success'
+            message = f'Successfully closed all {total_legs} legs'
+            # Clear position from cache on full success
+            if position_id in self._positions_cache:
+                del self._positions_cache[position_id]
+        elif closed_count > 0:
+            status = 'partial'
+            message = f'Closed {closed_count}/{total_legs} legs'
+        else:
+            status = 'error'
+            message = 'Failed to close any legs'
+
+        logger.info(f"Close strategy result: {status} - {message}")
+
+        # Broadcast status update via WebSocket
+        if self._ws_manager:
+            await self._ws_manager.broadcast_alpaca_status(
+                "strategy_closed",
+                {
+                    "position_id": position_id,
+                    "status": status,
+                    "closed_legs": closed_count,
+                    "total_legs": total_legs
+                }
+            )
+
+        return CloseStrategyResponse(
+            status=status,
+            position_id=position_id,
+            orders=orders,
+            message=message,
+            total_legs=total_legs,
+            closed_legs=closed_count
+        )
 
     # ═══════════════════════════════════════════════════════════
     # LIFECYCLE

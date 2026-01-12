@@ -41,6 +41,10 @@ from modules.alpaca_models import (
     GetPositionResponse,
     SubscribePricesRequest,
     SubscribePricesResponse,
+    CloseStrategyRequest,
+    CloseStrategyResponse,
+    CloseLegRequest,
+    CloseLegResponse,
 )
 
 logger = get_logger()
@@ -1231,6 +1235,131 @@ async def get_circuit_status(request: Request):
             "status": "error",
             "message": str(e)
         }
+
+
+@app.post("/api/positions/{position_id}/close-strategy", response_model=CloseStrategyResponse, tags=["Alpaca"])
+async def close_strategy(request: Request, position_id: str, close_request: CloseStrategyRequest):
+    """
+    Close an entire strategy (all legs) for a position.
+
+    Submits orders to close all legs of the specified position.
+    Uses market orders by default for immediate execution.
+
+    Args:
+        position_id: UUID of the position to close
+        close_request: Request with order type settings
+
+    Returns:
+        CloseStrategyResponse with order results for each leg
+    """
+    try:
+        logger.http_request("POST", f"/api/positions/{position_id}/close-strategy")
+        alpaca_service = get_alpaca_service(request.app)
+
+        if not alpaca_service.is_configured:
+            logger.http_request("POST", f"/api/positions/{position_id}/close-strategy", 200)
+            return CloseStrategyResponse(
+                status="error",
+                position_id=position_id,
+                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file."
+            )
+
+        result = await alpaca_service.close_strategy(
+            position_id=position_id,
+            order_type=close_request.order_type
+        )
+
+        logger.http_request("POST", f"/api/positions/{position_id}/close-strategy", 200)
+        return result
+
+    except Exception as e:
+        logger.error(f"Failed to close strategy {position_id}: {e}")
+        return CloseStrategyResponse(
+            status="error",
+            position_id=position_id,
+            message=str(e)
+        )
+
+
+@app.post("/api/positions/{position_id}/close-leg", response_model=CloseLegResponse, tags=["Alpaca"])
+async def close_leg(request: Request, position_id: str, close_request: CloseLegRequest):
+    """
+    Close a single leg of a position.
+
+    Submits an order to close the specified leg.
+    Uses market orders by default for immediate execution.
+
+    Args:
+        position_id: UUID of the position containing the leg
+        close_request: Request with leg_id and order type settings
+
+    Returns:
+        CloseLegResponse with order result
+    """
+    try:
+        logger.http_request("POST", f"/api/positions/{position_id}/close-leg")
+        alpaca_service = get_alpaca_service(request.app)
+
+        if not alpaca_service.is_configured:
+            logger.http_request("POST", f"/api/positions/{position_id}/close-leg", 200)
+            return CloseLegResponse(
+                status="error",
+                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file."
+            )
+
+        # Get position to find the leg
+        position = await alpaca_service.get_position_by_id(position_id)
+        if not position:
+            logger.http_request("POST", f"/api/positions/{position_id}/close-leg", 200)
+            return CloseLegResponse(
+                status="error",
+                message=f"Position not found: {position_id}"
+            )
+
+        # Find the leg
+        leg = None
+        for l in position.legs:
+            if l.id == close_request.leg_id:
+                leg = l
+                break
+
+        if not leg:
+            logger.http_request("POST", f"/api/positions/{position_id}/close-leg", 200)
+            return CloseLegResponse(
+                status="error",
+                message=f"Leg not found: {close_request.leg_id}"
+            )
+
+        # Close the leg
+        result = await alpaca_service.close_leg(
+            symbol=leg.symbol,
+            quantity=leg.quantity,
+            direction=leg.direction,
+            order_type=close_request.order_type,
+            limit_price=close_request.limit_price
+        )
+
+        if result.status == 'failed':
+            logger.http_request("POST", f"/api/positions/{position_id}/close-leg", 200)
+            return CloseLegResponse(
+                status="error",
+                order=result,
+                message=result.error_message or "Failed to close leg"
+            )
+
+        logger.http_request("POST", f"/api/positions/{position_id}/close-leg", 200)
+        return CloseLegResponse(
+            status="success",
+            order=result,
+            message=f"Order submitted for {leg.symbol}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to close leg in position {position_id}: {e}")
+        return CloseLegResponse(
+            status="error",
+            message=str(e)
+        )
 
 
 if __name__ == "__main__":

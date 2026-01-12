@@ -3,10 +3,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { ref, computed } from 'vue'
 import OpenPositions from '../OpenPositions.vue'
-import type { IronCondorPosition } from '../../types/alpaca'
+import type { OpenPosition } from '../../types/alpaca'
 
 // Mock useAlpacaPositions composable - must be before imports
-const mockPositions = ref<IronCondorPosition[]>([])
+const mockPositions = ref<OpenPosition[]>([])
 const mockLoading = ref(false)
 const mockError = ref<string | null>(null)
 const mockHasPositions = computed(() => mockPositions.value.length > 0)
@@ -24,12 +24,12 @@ vi.mock('../../composables/useAlpacaPositions', () => ({
   }),
 }))
 
-// Mock IronCondorCard
-vi.mock('../IronCondorCard.vue', () => ({
+// Mock OpenPositionCard
+vi.mock('../OpenPositionCard.vue', () => ({
   default: {
-    name: 'IronCondorCard',
+    name: 'OpenPositionCard',
     props: ['initialData', 'positionId', 'useMockData'],
-    template: '<div class="mock-iron-condor-card" :data-ticker="initialData?.ticker">{{ initialData?.ticker }}</div>',
+    template: '<div class="mock-open-position-card" :data-ticker="initialData?.ticker">{{ initialData?.ticker }}</div>',
   },
 }))
 
@@ -130,7 +130,7 @@ describe('OpenPositions.vue', () => {
       const wrapper = mount(OpenPositions, globalConfig)
 
       expect(wrapper.find('.empty-state').exists()).toBe(true)
-      expect(wrapper.text()).toContain('No open iron condor positions')
+      expect(wrapper.text()).toContain('No open option positions')
     })
 
     it('should call refresh when check again clicked', async () => {
@@ -146,7 +146,7 @@ describe('OpenPositions.vue', () => {
   })
 
   describe('Positions Grid', () => {
-    it('should render IronCondorCard for each position', async () => {
+    it('should render OpenPositionCard for each position', async () => {
       mockPositions.value = [
         {
           id: 'pos-1',
@@ -168,7 +168,7 @@ describe('OpenPositions.vue', () => {
 
       const wrapper = mount(OpenPositions, globalConfig)
 
-      const cards = wrapper.findAll('.mock-iron-condor-card')
+      const cards = wrapper.findAll('.mock-open-position-card')
       expect(cards).toHaveLength(2)
       expect(cards[0].text()).toBe('SPY')
       expect(cards[1].text()).toBe('QQQ')
