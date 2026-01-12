@@ -1,14 +1,49 @@
 <template>
   <div class="open-positions">
+    <!-- Header with refresh button -->
     <div class="open-positions-header">
       <h2>Open Positions</h2>
-      <span class="position-count">{{ mockPositions.length }} positions</span>
+      <div class="header-actions">
+        <el-button
+          :icon="Refresh"
+          circle
+          size="small"
+          :loading="loading"
+          @click="handleRefresh"
+          title="Refresh positions"
+        />
+        <span class="position-count">{{ displayCount }}</span>
+      </div>
     </div>
 
-    <div class="positions-grid">
+    <!-- Loading State -->
+    <div v-if="loading && !hasPositions" class="state-container loading-state">
+      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+      <span>Loading positions from Alpaca...</span>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="state-container error-state">
+      <el-icon :size="32"><Warning /></el-icon>
+      <span class="error-message">{{ error }}</span>
+      <el-button type="primary" size="small" @click="handleRefresh">
+        Retry
+      </el-button>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="!hasPositions" class="state-container empty-state">
+      <span>No open option positions</span>
+      <el-button type="primary" size="small" @click="handleRefresh">
+        Check Again
+      </el-button>
+    </div>
+
+    <!-- Positions Grid -->
+    <div v-else class="positions-grid">
       <IronCondorCard
-        v-for="(position, index) in mockPositions"
-        :key="index"
+        v-for="position in positions"
+        :key="position.id"
         :initial-data="position"
       />
     </div>
@@ -16,63 +51,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { Loading, Warning, Refresh } from '@element-plus/icons-vue'
 import IronCondorCard from './IronCondorCard.vue'
+import { useAlpacaPositions } from '../composables/useAlpacaPositions'
 
-// Type definitions (matching IronCondorCard's internal types)
-interface OptionLeg {
-  id: string
-  direction: 'Long' | 'Short'
-  strike: number
-  optionType: 'Call' | 'Put'
-  quantity: number
-  entryPrice: number
-  currentPrice: number
+// Use the Alpaca positions composable
+const {
+  positions,
+  loading,
+  error,
+  hasPositions,
+  positionCount,
+  refresh,
+} = useAlpacaPositions({
+  autoFetch: true,
+  autoSubscribe: true,
+})
+
+// Computed for display
+const displayCount = computed(() => {
+  if (loading.value) return '...'
+  return `${positionCount.value} position${positionCount.value !== 1 ? 's' : ''}`
+})
+
+// Refresh handler with loading feedback
+const handleRefresh = async () => {
+  await refresh()
 }
-
-interface PositionData {
-  ticker: string
-  strategy: string
-  expiryDate: string
-  legs: OptionLeg[]
-}
-
-// Mock data for staging
-const mockPositions = ref<PositionData[]>([
-  {
-    ticker: 'SPY',
-    strategy: 'Iron Condor',
-    expiryDate: '2026-01-17',
-    legs: [
-      { id: '1', direction: 'Short', strike: 588, optionType: 'Call', quantity: 10, entryPrice: 4.04, currentPrice: 3.25 },
-      { id: '2', direction: 'Long', strike: 597, optionType: 'Call', quantity: 10, entryPrice: 0.53, currentPrice: 0.09 },
-      { id: '3', direction: 'Long', strike: 573, optionType: 'Put', quantity: 10, entryPrice: 1.47, currentPrice: 0.53 },
-      { id: '4', direction: 'Short', strike: 578, optionType: 'Put', quantity: 10, entryPrice: 2.90, currentPrice: 1.57 },
-    ]
-  },
-  {
-    ticker: 'QQQ',
-    strategy: 'Iron Butterfly',
-    expiryDate: '2026-01-24',
-    legs: [
-      { id: '5', direction: 'Long', strike: 510, optionType: 'Call', quantity: 5, entryPrice: 1.20, currentPrice: 0.85 },
-      { id: '6', direction: 'Short', strike: 520, optionType: 'Call', quantity: 5, entryPrice: 8.50, currentPrice: 6.20 },
-      { id: '7', direction: 'Short', strike: 520, optionType: 'Put', quantity: 5, entryPrice: 7.80, currentPrice: 5.90 },
-      { id: '8', direction: 'Long', strike: 530, optionType: 'Put', quantity: 5, entryPrice: 1.35, currentPrice: 0.95 },
-    ]
-  },
-  {
-    ticker: 'IWM',
-    strategy: 'Iron Condor',
-    expiryDate: '2026-01-10',
-    legs: [
-      { id: '9', direction: 'Short', strike: 225, optionType: 'Call', quantity: 15, entryPrice: 2.10, currentPrice: 0.15 },
-      { id: '10', direction: 'Long', strike: 230, optionType: 'Call', quantity: 15, entryPrice: 0.45, currentPrice: 0.02 },
-      { id: '11', direction: 'Long', strike: 210, optionType: 'Put', quantity: 15, entryPrice: 0.38, currentPrice: 0.05 },
-      { id: '12', direction: 'Short', strike: 215, optionType: 'Put', quantity: 15, entryPrice: 1.85, currentPrice: 0.08 },
-    ]
-  }
-])
 </script>
 
 <style scoped>
@@ -101,11 +107,48 @@ const mockPositions = ref<PositionData[]>([
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .position-count {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
+/* State Containers */
+.state-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px;
+  color: var(--text-muted);
+}
+
+.loading-state .el-icon {
+  color: var(--el-color-primary);
+}
+
+.error-state {
+  color: var(--el-color-danger);
+}
+
+.error-state .error-message {
+  max-width: 400px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.empty-state {
+  color: var(--text-muted);
+}
+
+/* Positions Grid */
 .positions-grid {
   flex: 1;
   overflow-y: auto;
@@ -124,7 +167,7 @@ const mockPositions = ref<PositionData[]>([
   }
 }
 
-/* Scrollbar styling (matching existing patterns) */
+/* Scrollbar styling */
 .positions-grid::-webkit-scrollbar {
   width: 6px;
 }

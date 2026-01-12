@@ -8,6 +8,55 @@ import { apiClient } from './api'
 import type { LoadChatRequest, LoadChatResponse, SendChatRequest, SendChatResponse } from '../types'
 import { DEFAULT_CHAT_HISTORY_LIMIT } from '../config/constants'
 
+// ============================================================================
+// Alpaca Price Streaming Types
+// ============================================================================
+
+export interface OptionPriceUpdateMessage {
+  type: 'option_price_update'
+  update: {
+    symbol: string
+    bid_price: number
+    ask_price: number
+    mid_price: number
+    last_price?: number
+    volume: number
+    timestamp: string
+  }
+  timestamp: string
+}
+
+export interface OptionPriceBatchMessage {
+  type: 'option_price_batch'
+  updates: Array<{
+    symbol: string
+    bid_price: number
+    ask_price: number
+    mid_price: number
+    last_price?: number
+    volume?: number
+    timestamp?: string
+  }>
+  count: number
+  timestamp: string
+}
+
+export interface PositionUpdateMessage {
+  type: 'position_update'
+  position: {
+    symbol: string
+    [key: string]: any  // Allow additional fields from IronCondorPosition
+  }
+  timestamp: string
+}
+
+export interface AlpacaStatusMessage {
+  type: 'alpaca_status'
+  status: 'connected' | 'disconnected' | 'error' | 'streaming_started' | 'streaming_stopped'
+  details: Record<string, any>
+  timestamp: string
+}
+
 /**
  * Get orchestrator agent information
  */
@@ -73,6 +122,11 @@ export interface WebSocketCallbacks {
   onAdwEvent?: (data: any) => void
   onAdwStepChange?: (data: any) => void
   onAdwEventSummaryUpdate?: (data: any) => void
+  // Alpaca price streaming events
+  onOptionPriceUpdate?: (data: OptionPriceUpdateMessage) => void
+  onOptionPriceBatch?: (data: OptionPriceBatchMessage) => void
+  onPositionUpdate?: (data: PositionUpdateMessage) => void
+  onAlpacaStatus?: (data: AlpacaStatusMessage) => void
   onError: (error: any) => void
   onConnected?: () => void
   onDisconnected?: () => void
@@ -179,6 +233,23 @@ export function connectWebSocket(
 
         case 'adw_event_summary_update':
           callbacks.onAdwEventSummaryUpdate?.(message)
+          break
+
+        // Alpaca price updates
+        case 'option_price_update':
+          callbacks.onOptionPriceUpdate?.(message as OptionPriceUpdateMessage)
+          break
+
+        case 'option_price_batch':
+          callbacks.onOptionPriceBatch?.(message as OptionPriceBatchMessage)
+          break
+
+        case 'position_update':
+          callbacks.onPositionUpdate?.(message as PositionUpdateMessage)
+          break
+
+        case 'alpaca_status':
+          callbacks.onAlpacaStatus?.(message as AlpacaStatusMessage)
           break
 
         case 'error':

@@ -5,7 +5,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef, triggerRef } from 'vue'
 import type {
   Agent,
   AgentLog,
@@ -33,6 +33,8 @@ import { getEvents } from '../services/eventService'
 import * as autocompleteService from '../services/autocompleteService'
 import * as adwService from '../services/adwService'
 import { DEFAULT_EVENT_HISTORY_LIMIT } from '../config/constants'
+import type { IronCondorPosition, OptionPriceUpdate } from '../types/alpaca'
+import { transformPosition, transformPriceUpdate } from '../types/alpaca'
 import { useAgentPulse } from '../composables/useAgentPulse'
 
 // Default orchestrator agent ID (will be loaded from backend on init)
@@ -110,6 +112,24 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   // ADW loading states
   const adwsLoading = ref<boolean>(false)
   const adwEventsLoading = ref<boolean>(false)
+
+  // ═══════════════════════════════════════════════════════════
+  // ALPACA POSITION STATE
+  // ═══════════════════════════════════════════════════════════
+
+  // Positions list
+  const alpacaPositions = ref<IronCondorPosition[]>([])
+
+  // Price cache using shallowRef for proper Map reactivity
+  // IMPORTANT: Use shallowRef + triggerRef for Map reactivity
+  const alpacaPriceCache = shallowRef<Map<string, OptionPriceUpdate>>(new Map())
+
+  // Loading and error states
+  const alpacaPositionsLoading = ref<boolean>(false)
+  const alpacaPositionsError = ref<string | null>(null)
+
+  // Alpaca connection status
+  const alpacaConnectionStatus = ref<'connected' | 'disconnected' | 'error'>('disconnected')
 
   // ═══════════════════════════════════════════════════════════
   // GETTERS
@@ -196,6 +216,24 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
 
   // ADW steps from events (for swimlane lanes)
   const adwSteps = computed(() => Object.keys(adwEventsByStep.value))
+
+  // ═══════════════════════════════════════════════════════════
+  // ALPACA GETTERS
+  // ═══════════════════════════════════════════════════════════
+
+  const hasAlpacaPositions = computed(() => alpacaPositions.value.length > 0)
+
+  const alpacaPositionCount = computed(() => alpacaPositions.value.length)
+
+  // Get a specific position by ID
+  const getAlpacaPositionById = computed(() => {
+    return (id: string) => alpacaPositions.value.find(p => p.id === id)
+  })
+
+  // Get cached price for a symbol
+  const getAlpacaPrice = computed(() => {
+    return (symbol: string) => alpacaPriceCache.value.get(symbol)
+  })
 
   // ═══════════════════════════════════════════════════════════
   // ACTIONS - CHAT
@@ -363,6 +401,99 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   function clearAutocomplete() {
     autocompleteItems.value = []
     autocompleteError.value = null
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ALPACA ACTIONS
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Set positions from API response.
+   */
+  function setAlpacaPositions(positions: IronCondorPosition[]) {
+    alpacaPositions.value = positions
+  }
+
+  /**
+   * Update a single option price in the cache.
+   * Uses triggerRef for proper Map reactivity.
+   */
+  function updateAlpacaPrice(symbol: string, update: OptionPriceUpdate) {
+    // Set in map
+    alpacaPriceCache.value.set(symbol, update)
+
+    // CRITICAL: Trigger reactivity for shallowRef Map
+    triggerRef(alpacaPriceCache)
+
+    // Update currentPrice in all matching legs
+    for (const position of alpacaPositions.value) {
+      for (const leg of position.legs) {
+        if (leg.symbol === symbol) {
+          leg.currentPrice = update.midPrice
+
+          // Recalculate P/L
+          const multiplier = leg.direction === 'Short' ? 1 : -1
+          const priceDiff = (leg.entryPrice - leg.currentPrice) * multiplier
+          leg.pnlDollars = priceDiff * leg.quantity * 100
+
+          if (leg.entryPrice !== 0) {
+            const dirMult = leg.direction === 'Short' ? -1 : 1
+            leg.pnlPercent = ((leg.currentPrice - leg.entryPrice) / leg.entryPrice) * 100 * dirMult
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Update batch of prices.
+   */
+  function updateAlpacaPriceBatch(updates: OptionPriceUpdate[]) {
+    for (const update of updates) {
+      alpacaPriceCache.value.set(update.symbol, update)
+    }
+    // Single trigger for batch
+    triggerRef(alpacaPriceCache)
+
+    // Update legs
+    for (const update of updates) {
+      for (const position of alpacaPositions.value) {
+        for (const leg of position.legs) {
+          if (leg.symbol === update.symbol) {
+            leg.currentPrice = update.midPrice
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Set Alpaca loading state.
+   */
+  function setAlpacaLoading(loading: boolean) {
+    alpacaPositionsLoading.value = loading
+  }
+
+  /**
+   * Set Alpaca error state.
+   */
+  function setAlpacaError(error: string | null) {
+    alpacaPositionsError.value = error
+  }
+
+  /**
+   * Clear Alpaca price cache.
+   */
+  function clearAlpacaPriceCache() {
+    alpacaPriceCache.value.clear()
+    triggerRef(alpacaPriceCache)
+  }
+
+  /**
+   * Update Alpaca connection status.
+   */
+  function setAlpacaConnectionStatus(status: 'connected' | 'disconnected' | 'error') {
+    alpacaConnectionStatus.value = status
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -775,6 +906,35 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
         onAdwEvent: handleAdwEvent,
         onAdwStepChange: handleAdwStepChange,
         onAdwEventSummaryUpdate: handleAdwEventSummaryUpdate,
+        // Alpaca handlers
+        onOptionPriceUpdate: (message: any) => {
+          if (message.update) {
+            const update = transformPriceUpdate(message.update)
+            updateAlpacaPrice(update.symbol, update)
+          }
+        },
+        onOptionPriceBatch: (message: any) => {
+          if (message.updates) {
+            const updates = message.updates.map(transformPriceUpdate)
+            updateAlpacaPriceBatch(updates)
+          }
+        },
+        onPositionUpdate: (message: any) => {
+          if (message.position) {
+            const position = transformPosition(message.position)
+            const index = alpacaPositions.value.findIndex(p => p.id === position.id)
+            if (index >= 0) {
+              alpacaPositions.value[index] = position
+            } else {
+              alpacaPositions.value.push(position)
+            }
+          }
+        },
+        onAlpacaStatus: (message: any) => {
+          if (message.status) {
+            setAlpacaConnectionStatus(message.status)
+          }
+        },
         onError: handleWebSocketError,
         onConnected: () => {
           isConnected.value = true
@@ -1480,6 +1640,12 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     allAdwEventsByStep,
     adwsLoading,
     adwEventsLoading,
+    // Alpaca State
+    alpacaPositions,
+    alpacaPriceCache,
+    alpacaPositionsLoading,
+    alpacaPositionsError,
+    alpacaConnectionStatus,
 
     // Getters
     activeAgents,
@@ -1496,6 +1662,11 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     completedAdws,
     failedAdws,
     adwSteps,
+    // Alpaca Getters
+    hasAlpacaPositions,
+    alpacaPositionCount,
+    getAlpacaPositionById,
+    getAlpacaPrice,
 
     // Actions
     selectAgent,
@@ -1543,6 +1714,15 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     toggleViewMode,
     fetchAdws,
     selectAdw,
-    fetchAdwEvents
+    fetchAdwEvents,
+
+    // Alpaca Actions
+    setAlpacaPositions,
+    updateAlpacaPrice,
+    updateAlpacaPriceBatch,
+    setAlpacaLoading,
+    setAlpacaError,
+    clearAlpacaPriceCache,
+    setAlpacaConnectionStatus,
   }
 })

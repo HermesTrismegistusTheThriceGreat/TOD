@@ -1,65 +1,129 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Timer } from '@element-plus/icons-vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { Timer, Loading, Warning } from '@element-plus/icons-vue'
+import { useAlpacaPositions } from '../composables/useAlpacaPositions'
+import { useAlpacaPriceStream } from '../composables/useAlpacaPriceStream'
+import type { OptionLeg, IronCondorPosition } from '../types/alpaca'
+import { calculateLegPnl } from '../types/alpaca'
 
-// Types for API response
-interface OptionLeg {
-  id: string
-  direction: 'Long' | 'Short'
-  strike: number
-  optionType: 'Call' | 'Put'
-  quantity: number
-  entryPrice: number
-  currentPrice: number
-}
-
-interface PositionData {
-  ticker: string
-  strategy: string
-  expiryDate: string
-  legs: OptionLeg[]
-}
-
-// Props - pass position ID to fetch from API OR initialData for direct injection
+// Props
 const props = defineProps<{
   positionId?: string
-  initialData?: PositionData
+  initialData?: IronCondorPosition
+  /** Use mock data (for development/demo) */
+  useMockData?: boolean
 }>()
 
-// State
-const loading = ref(false)
-const position = ref<PositionData | null>(null)
+// Composables
+const {
+  positions,
+  currentPosition,
+  loading,
+  error,
+  hasPositions,
+  refresh,
+  getCachedPrice,
+} = useAlpacaPositions({
+  autoFetch: !props.useMockData && !props.initialData,
+  autoSubscribe: !props.useMockData,
+  positionId: props.positionId,
+})
 
-// Placeholder data - replace with API call
-const placeholderData: PositionData = {
+const { getMidPrice, connectionStatus } = useAlpacaPriceStream()
+
+// Local state
+const position = ref<IronCondorPosition | null>(null)
+
+// Mock data for development
+const mockPosition: IronCondorPosition = {
+  id: 'mock-1',
   ticker: 'SPY',
   strategy: 'Iron Condor',
-  expiryDate: '2026-01-10',
+  expiryDate: '2026-01-17',
+  createdAt: new Date().toISOString(),
   legs: [
-    { id: '1', direction: 'Short', strike: 688, optionType: 'Call', quantity: 10, entryPrice: 4.04, currentPrice: 3.25 },
-    { id: '2', direction: 'Long', strike: 697, optionType: 'Call', quantity: 10, entryPrice: 0.53, currentPrice: 0.09 },
-    { id: '3', direction: 'Long', strike: 683, optionType: 'Put', quantity: 10, entryPrice: 1.47, currentPrice: 0.53 },
-    { id: '4', direction: 'Short', strike: 688, optionType: 'Put', quantity: 10, entryPrice: 2.90, currentPrice: 1.57 },
+    {
+      id: '1',
+      symbol: 'SPY260117C00695000',
+      direction: 'Short',
+      strike: 695,
+      optionType: 'Call',
+      quantity: 10,
+      entryPrice: 4.04,
+      currentPrice: 3.25,
+      expiryDate: '2026-01-17',
+      underlying: 'SPY'
+    },
+    {
+      id: '2',
+      symbol: 'SPY260117C00700000',
+      direction: 'Long',
+      strike: 700,
+      optionType: 'Call',
+      quantity: 10,
+      entryPrice: 0.53,
+      currentPrice: 0.09,
+      expiryDate: '2026-01-17',
+      underlying: 'SPY'
+    },
+    {
+      id: '3',
+      symbol: 'SPY260117P00680000',
+      direction: 'Long',
+      strike: 680,
+      optionType: 'Put',
+      quantity: 10,
+      entryPrice: 1.47,
+      currentPrice: 0.53,
+      expiryDate: '2026-01-17',
+      underlying: 'SPY'
+    },
+    {
+      id: '4',
+      symbol: 'SPY260117P00685000',
+      direction: 'Short',
+      strike: 685,
+      optionType: 'Put',
+      quantity: 10,
+      entryPrice: 2.90,
+      currentPrice: 1.57,
+      expiryDate: '2026-01-17',
+      underlying: 'SPY'
+    },
   ]
 }
 
-// API fetch function - implement your endpoint here
-const fetchPosition = async (id: string) => {
-  loading.value = true
-  try {
-    // TODO: Replace with actual API call
-    // const response = await fetch(`/api/positions/${id}`)
-    // position.value = await response.json()
-
-    // Using placeholder for now
-    await new Promise(resolve => setTimeout(resolve, 300)) // Simulate network delay
-    position.value = placeholderData
-  } catch (error) {
-    console.error('Failed to fetch position:', error)
-  } finally {
-    loading.value = false
+// Watch for position changes
+watch([currentPosition, positions], () => {
+  if (props.initialData) {
+    position.value = props.initialData
+  } else if (props.useMockData) {
+    position.value = mockPosition
+  } else if (currentPosition.value) {
+    position.value = currentPosition.value
+  } else if (positions.value.length > 0) {
+    position.value = positions.value[0]
   }
-}
+}, { immediate: true })
+
+// Update prices from WebSocket cache
+watch(
+  () => [position.value, getMidPrice],
+  () => {
+    if (!position.value) return
+
+    for (const leg of position.value.legs) {
+      const price = getMidPrice(leg.symbol)
+      if (price !== undefined) {
+        leg.currentPrice = price
+        const pnl = calculateLegPnl(leg)
+        leg.pnlDollars = pnl.dollars
+        leg.pnlPercent = pnl.percent
+      }
+    }
+  },
+  { deep: true }
+)
 
 // Computed values
 const daysToExpiry = computed(() => {
@@ -72,65 +136,91 @@ const daysToExpiry = computed(() => {
 const totalPnL = computed(() => {
   if (!position.value) return 0
   return position.value.legs.reduce((sum, leg) => {
-    return sum + calculateLegPnL(leg).dollars
+    const pnl = calculateLegPnl(leg)
+    return sum + pnl.dollars
   }, 0)
 })
 
 const sortedLegs = computed(() => {
   if (!position.value) return []
   const legs = [...position.value.legs]
-  
+
   const calls = legs.filter(l => l.optionType === 'Call')
   const puts = legs.filter(l => l.optionType === 'Put')
 
-  // Sort Calls: Long then Short (High Strike -> Low Strike often correlates, but sticking to Direction)
+  // Sort Calls: Short then Long (by strike descending)
   calls.sort((a, b) => {
-    if (a.direction === 'Long' && b.direction === 'Short') return -1
-    if (a.direction === 'Short' && b.direction === 'Long') return 1
-    return b.strike - a.strike // Secondary sort by strike descending
+    if (a.direction === 'Short' && b.direction === 'Long') return -1
+    if (a.direction === 'Long' && b.direction === 'Short') return 1
+    return b.strike - a.strike
   })
 
-  // Sort Puts: Short then Long
+  // Sort Puts: Short then Long (by strike descending)
   puts.sort((a, b) => {
     if (a.direction === 'Short' && b.direction === 'Long') return -1
     if (a.direction === 'Long' && b.direction === 'Short') return 1
-    return b.strike - a.strike // Secondary sort by strike descending
+    return b.strike - a.strike
   })
 
   return [...calls, ...puts]
 })
 
 // Helpers
-const calculateLegPnL = (leg: OptionLeg) => {
-  const multiplier = leg.direction === 'Short' ? 1 : -1
-  const priceDiff = (leg.entryPrice - leg.currentPrice) * multiplier
-  const dollars = priceDiff * leg.quantity * 100
-  const percent = ((leg.currentPrice - leg.entryPrice) / leg.entryPrice) * 100 * (leg.direction === 'Short' ? -1 : 1)
-  return { dollars, percent }
-}
-
 const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
 }
 
-const formatCurrency = (value: number) => `${value >= 0 ? '+' : ''}$${Math.abs(value).toLocaleString()}`
-const formatPercent = (value: number) => `(${value >= 0 ? '+' : ''}${value.toFixed(2)}%)`
+const formatCurrency = (value: number) => {
+  return `${value >= 0 ? '+' : ''}$${Math.abs(value).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`
+}
+
+const formatPercent = (value: number) => {
+  return `(${value >= 0 ? '+' : ''}${value.toFixed(2)}%)`
+}
+
+const formatPrice = (value: number) => {
+  return `$${value.toFixed(2)}`
+}
 
 // Lifecycle
 onMounted(() => {
   if (props.initialData) {
     position.value = props.initialData
-  } else if (props.positionId) {
-    fetchPosition(props.positionId)
-  } else {
-    position.value = placeholderData
+  } else if (props.useMockData) {
+    position.value = mockPosition
   }
 })
 </script>
 
 <template>
-  <el-card v-loading="loading" class="position-card">
-    <template v-if="position">
+  <el-card class="position-card">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <el-icon class="is-loading" :size="24"><Loading /></el-icon>
+      <span>Loading positions...</span>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <el-icon :size="24"><Warning /></el-icon>
+      <span>{{ error }}</span>
+      <el-button size="small" @click="refresh">Retry</el-button>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="!position" class="empty-state">
+      <span>No option positions found</span>
+    </div>
+
+    <!-- Position Content -->
+    <template v-else>
       <!-- Header -->
       <div class="card-header">
         <div class="header-title">
@@ -139,6 +229,11 @@ onMounted(() => {
           <span class="expiry-text">({{ formatDate(position.expiryDate) }})</span>
         </div>
         <div class="header-actions">
+          <!-- Connection Status Indicator -->
+          <div class="connection-status" :class="connectionStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">{{ connectionStatus }}</span>
+          </div>
           <!-- TODO: Backend Dev - Connect this button to the close strategy endpoint -->
           <el-button type="danger" size="small">Close Strategy</el-button>
         </div>
@@ -146,7 +241,7 @@ onMounted(() => {
 
       <!-- Main Content Flex Wrapper -->
       <div class="content-wrapper">
-        
+
         <!-- Left Sidebar: Stats -->
         <div class="stats-sidebar">
           <!-- P/L Circle -->
@@ -180,7 +275,7 @@ onMounted(() => {
                       {{ row.optionType }}
                     </span>
                   </div>
-                  <span class="strike">${{ row.strike }}</span>
+                  <span class="strike">{{ formatPrice(row.strike) }}</span>
                 </div>
               </template>
             </el-table-column>
@@ -199,18 +294,18 @@ onMounted(() => {
             </el-table-column>
 
             <el-table-column label="Entry" align="center" min-width="90">
-              <template #default="{ row }">${{ row.entryPrice.toFixed(2) }}</template>
+              <template #default="{ row }">{{ formatPrice(row.entryPrice) }}</template>
             </el-table-column>
 
             <el-table-column label="Current" align="center" min-width="90">
-              <template #default="{ row }">${{ row.currentPrice.toFixed(2) }}</template>
+              <template #default="{ row }">{{ formatPrice(row.currentPrice) }}</template>
             </el-table-column>
 
             <el-table-column label="P/L" align="center" min-width="140" header-align="center">
               <template #default="{ row }">
-                <span :class="calculateLegPnL(row).dollars >= 0 ? 'text-profit' : 'text-loss'">
-                  {{ formatCurrency(calculateLegPnL(row).dollars) }}
-                  <span class="pnl-pct">{{ formatPercent(calculateLegPnL(row).percent) }}</span>
+                <span :class="(row.pnlDollars || calculateLegPnl(row).dollars) >= 0 ? 'text-profit' : 'text-loss'">
+                  {{ formatCurrency(row.pnlDollars || calculateLegPnl(row).dollars) }}
+                  <span class="pnl-pct">{{ formatPercent(row.pnlPercent || calculateLegPnl(row).percent) }}</span>
                 </span>
               </template>
             </el-table-column>
@@ -231,7 +326,7 @@ onMounted(() => {
   --loss: #ef4444;
   --text: #e2e8f0;
   --text-muted: #94a3b8;
-  
+
   /* Custom Badge Colors */
   --color-short: #f59e0b;  /* Amber */
   --color-long: #10b981;   /* Emerald */
@@ -243,7 +338,7 @@ onMounted(() => {
   border-radius: 12px;
   color: var(--text);
   /* Adjusted for side-by-side layout: wider min-width */
-  min-width: 800px; 
+  min-width: 800px;
   overflow: hidden;
   height: fit-content;
 }
@@ -252,6 +347,60 @@ onMounted(() => {
 .position-card :deep(.el-card__body) {
   padding: 20px;
   overflow: visible;
+}
+
+/* Loading, Error, Empty States */
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--text-muted);
+}
+
+.error-state {
+  color: var(--loss);
+}
+
+.error-state .el-button {
+  margin-top: 8px;
+}
+
+/* Connection Status */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-right: 12px;
+}
+
+.connection-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.connection-status.connected .status-dot {
+  background: var(--profit);
+}
+
+.connection-status.disconnected .status-dot {
+  background: #f59e0b;
+}
+
+.connection-status.error .status-dot {
+  background: var(--loss);
+}
+
+.connection-status .status-text {
+  text-transform: capitalize;
+  color: var(--text-muted);
 }
 
 .card-header {
@@ -276,6 +425,11 @@ onMounted(() => {
 .expiry-text {
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
 }
 
 /* Main Layout Wrapper */
@@ -381,7 +535,7 @@ onMounted(() => {
   --el-table-border-color: var(--border);
   --el-table-text-color: var(--text);
   --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.04);
-  
+
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -458,29 +612,7 @@ onMounted(() => {
   margin-left: 4px;
 }
 
-.header-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.dev-note {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-style: italic;
-  opacity: 0.6;
-}
-
 .close-leg-btn {
-  /* Always visible now */
-  /* opacity: 0; */ 
   transition: opacity 0.2s ease;
 }
-
-/* 
-.legs-table :deep(.el-table__row:hover) .close-leg-btn {
-  opacity: 1;
-} 
-*/
 </style>

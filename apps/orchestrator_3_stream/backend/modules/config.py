@@ -177,6 +177,37 @@ IDE_COMMAND = os.getenv("IDE_COMMAND", "code")
 IDE_ENABLED = os.getenv("IDE_ENABLED", "true").lower() in ["true", "1", "yes"]
 
 # ============================================================================
+# ALPACA TRADING API CONFIGURATION
+# ============================================================================
+
+ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "")
+ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY", "")
+ALPACA_PAPER = os.getenv("ALPACA_PAPER", "true").lower() in ["true", "1", "yes"]
+ALPACA_DATA_FEED = os.getenv("ALPACA_DATA_FEED", "iex")  # 'iex' or 'sip'
+
+# Circuit breaker settings
+ALPACA_CIRCUIT_BREAKER_FAILURE_THRESHOLD = int(os.getenv("ALPACA_CB_FAILURE_THRESHOLD", "5"))
+ALPACA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT = int(os.getenv("ALPACA_CB_RECOVERY_TIMEOUT", "60"))
+
+# Cache settings
+ALPACA_PRICE_CACHE_TTL_SECONDS = int(os.getenv("ALPACA_PRICE_CACHE_TTL", "300"))  # 5 minutes
+
+# Rate limiting settings
+ALPACA_PRICE_THROTTLE_MS = int(os.getenv("ALPACA_PRICE_THROTTLE_MS", "200"))  # 200ms default
+
+# Validate Alpaca credentials
+# Check for empty OR placeholder values
+ALPACA_PLACEHOLDER_VALUES = ["your_api_key_here", "your_secret_key_here", "your-api-key", "your-secret-key", ""]
+_alpaca_key_invalid = not ALPACA_API_KEY or ALPACA_API_KEY.lower() in ALPACA_PLACEHOLDER_VALUES
+_alpaca_secret_invalid = not ALPACA_SECRET_KEY or ALPACA_SECRET_KEY.lower() in ALPACA_PLACEHOLDER_VALUES
+
+if _alpaca_key_invalid or _alpaca_secret_invalid:
+    config_logger.warning("Alpaca API credentials not configured or using placeholder values - trading features disabled")
+    # Clear the credentials so is_configured returns False
+    ALPACA_API_KEY = ""
+    ALPACA_SECRET_KEY = ""
+
+# ============================================================================
 # STARTUP CONFIGURATION LOGGING
 # ============================================================================
 

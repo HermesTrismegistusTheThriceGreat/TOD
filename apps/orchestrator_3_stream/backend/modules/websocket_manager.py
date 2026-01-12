@@ -274,6 +274,71 @@ class WebSocketManager:
         )
 
     # ========================================================================
+    # Alpaca Options Broadcasting
+    # ========================================================================
+
+    async def broadcast_option_price_update(self, update_data: dict):
+        """
+        Broadcast real-time option price update.
+
+        Used by AlpacaService to push price changes to frontend.
+        Rate limiting is handled by AlpacaService before calling this.
+
+        Args:
+            update_data: Dict with symbol, bid_price, ask_price, mid_price, timestamp
+        """
+        await self.broadcast({
+            "type": "option_price_update",
+            "update": update_data,
+            "timestamp": datetime.now().isoformat()
+        })
+
+    async def broadcast_option_price_batch(self, updates: list):
+        """
+        Broadcast batch of price updates for efficiency.
+
+        Use this when multiple symbols update simultaneously to reduce
+        WebSocket message count.
+
+        Args:
+            updates: List of price update dicts
+        """
+        await self.broadcast({
+            "type": "option_price_batch",
+            "updates": updates,
+            "count": len(updates),
+            "timestamp": datetime.now().isoformat()
+        })
+
+    async def broadcast_position_update(self, position_data: dict):
+        """
+        Broadcast position update (e.g., after order fill).
+
+        Args:
+            position_data: Full position data including all legs
+        """
+        await self.broadcast({
+            "type": "position_update",
+            "position": position_data,
+            "timestamp": datetime.now().isoformat()
+        })
+
+    async def broadcast_alpaca_status(self, status: str, details: dict = None):
+        """
+        Broadcast Alpaca connection status change.
+
+        Args:
+            status: Connection status (connected, disconnected, error)
+            details: Additional status details
+        """
+        await self.broadcast({
+            "type": "alpaca_status",
+            "status": status,
+            "details": details or {},
+            "timestamp": datetime.now().isoformat()
+        })
+
+    # ========================================================================
     # Connection Management
     # ========================================================================
 

@@ -10,7 +10,7 @@ import os
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -34,6 +34,13 @@ from modules.autocomplete_models import (
     AutocompleteGenerateRequest,
     AutocompleteUpdateRequest,
     AutocompleteResponse
+)
+from modules.alpaca_service import init_alpaca_service, get_alpaca_service
+from modules.alpaca_models import (
+    GetPositionsResponse,
+    GetPositionResponse,
+    SubscribePricesRequest,
+    SubscribePricesResponse,
 )
 
 logger = get_logger()
@@ -170,11 +177,22 @@ async def lifespan(app: FastAPI):
     app.state.autocomplete_service = autocomplete_service
     logger.success("Autocomplete service initialized")
 
+    # Initialize Alpaca service
+    logger.info("Initializing Alpaca service...")
+    alpaca_service = await init_alpaca_service(app)
+    alpaca_service.set_websocket_manager(ws_manager)
+    logger.success("Alpaca service initialized")
+
     logger.success("Backend initialization complete")
 
     yield  # Server runs
 
     # Shutdown
+    # Shutdown Alpaca service
+    if hasattr(app.state, 'alpaca_service'):
+        logger.info("Shutting down Alpaca service...")
+        await app.state.alpaca_service.shutdown()
+
     logger.info("Closing database connection pool...")
     await database.close_pool()
     logger.shutdown()
@@ -1055,6 +1073,164 @@ async def get_adw_summary(adw_id: str):
     except Exception as e:
         logger.error(f"Failed to get ADW summary for {adw_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# ALPACA TRADING ENDPOINTS
+# ════════════════════════════════════════════════════════════════════════════════
+
+
+@app.get("/api/positions", response_model=GetPositionsResponse, tags=["Alpaca"])
+async def get_positions(request: Request):
+    """
+    Get all iron condor positions from Alpaca.
+
+    Returns grouped iron condor positions with all leg details.
+    Positions are cached and circuit breaker protects against API failures.
+
+    Returns:
+        GetPositionsResponse with list of iron condor positions
+    """
+    try:
+        logger.http_request("GET", "/api/positions")
+        alpaca_service = get_alpaca_service(request.app)
+
+        if not alpaca_service.is_configured:
+            logger.http_request("GET", "/api/positions", 200)
+            return GetPositionsResponse(
+                status="error",
+                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file with your real API keys from https://alpaca.markets/"
+            )
+
+        positions = await alpaca_service.get_all_positions()
+
+        logger.http_request("GET", "/api/positions", 200)
+        return GetPositionsResponse(
+            status="success",
+            positions=positions,
+            total_count=len(positions)
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get positions: {e}")
+        return GetPositionsResponse(
+            status="error",
+            message=str(e)
+        )
+
+
+@app.get("/api/positions/{position_id}", response_model=GetPositionResponse, tags=["Alpaca"])
+async def get_position(request: Request, position_id: str):
+    """
+    Get a specific iron condor position by ID.
+
+    Args:
+        position_id: UUID of the position
+
+    Returns:
+        GetPositionResponse with position details or error
+    """
+    try:
+        logger.http_request("GET", f"/api/positions/{position_id}")
+        alpaca_service = get_alpaca_service(request.app)
+
+        if not alpaca_service.is_configured:
+            logger.http_request("GET", f"/api/positions/{position_id}", 200)
+            return GetPositionResponse(
+                status="error",
+                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file with your real API keys from https://alpaca.markets/"
+            )
+
+        position = await alpaca_service.get_position_by_id(position_id)
+
+        if position is None:
+            logger.http_request("GET", f"/api/positions/{position_id}", 200)
+            return GetPositionResponse(
+                status="error",
+                message=f"Position not found: {position_id}"
+            )
+
+        logger.http_request("GET", f"/api/positions/{position_id}", 200)
+        return GetPositionResponse(
+            status="success",
+            position=position
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get position {position_id}: {e}")
+        return GetPositionResponse(
+            status="error",
+            message=str(e)
+        )
+
+
+@app.post("/api/positions/subscribe-prices", response_model=SubscribePricesResponse, tags=["Alpaca"])
+async def subscribe_prices(request: Request, subscribe_request: SubscribePricesRequest):
+    """
+    Subscribe to real-time price updates for option symbols.
+
+    Call this after loading positions to start receiving
+    WebSocket price updates for the specified symbols.
+
+    Args:
+        subscribe_request: Request with list of OCC symbols
+
+    Returns:
+        SubscribePricesResponse with subscription status
+    """
+    try:
+        logger.http_request("POST", "/api/positions/subscribe-prices")
+        alpaca_service = get_alpaca_service(request.app)
+
+        if not alpaca_service.is_configured:
+            logger.http_request("POST", "/api/positions/subscribe-prices", 200)
+            return SubscribePricesResponse(
+                status="error",
+                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file with your real API keys from https://alpaca.markets/"
+            )
+
+        await alpaca_service.start_price_streaming(subscribe_request.symbols)
+
+        logger.http_request("POST", "/api/positions/subscribe-prices", 200)
+        return SubscribePricesResponse(
+            status="success",
+            message=f"Subscribed to {len(subscribe_request.symbols)} symbols",
+            symbols=subscribe_request.symbols
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to subscribe to prices: {e}")
+        return SubscribePricesResponse(
+            status="error",
+            message=str(e)
+        )
+
+
+@app.get("/api/positions/circuit-status", tags=["Alpaca"])
+async def get_circuit_status(request: Request):
+    """
+    Get current circuit breaker status for Alpaca API.
+
+    Returns:
+        Dict with circuit state and configuration
+    """
+    try:
+        logger.http_request("GET", "/api/positions/circuit-status")
+        alpaca_service = get_alpaca_service(request.app)
+
+        logger.http_request("GET", "/api/positions/circuit-status", 200)
+        return {
+            "status": "success",
+            "circuit_state": alpaca_service.circuit_state,
+            "is_configured": alpaca_service.is_configured,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get circuit status: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 if __name__ == "__main__":
