@@ -213,6 +213,95 @@ command_agent('builder', '/compact')
 
 **Note:** Check context usage via `report_cost` or after each `check_agent_status` call. Proactively suggest compacting before hitting 90%+ usage.
 
+## Token-Heavy Work Delegation (Gemini CLI)
+
+For tasks requiring analysis of large codebases or many files that would consume significant context, use the **Gemini CLI** via Bash. This preserves your context window for planning and coordination while leveraging Gemini's massive 2M token context.
+
+### When to Use Gemini CLI
+
+Use `gemini -p` via Bash when:
+- Analyzing entire directories (>20 files or >100KB total)
+- Reviewing codebases for patterns across many files
+- Comparing multiple large files simultaneously
+- Verifying feature implementations across the project
+- Scraping and analyzing large documentation sets
+- Processing large API responses or data dumps
+- Any read-only analysis that would consume >30% of your context
+
+### When NOT to Use Gemini CLI
+
+Continue using your agents or direct tools when:
+- Writing or editing code (Gemini CLI is read-only analysis)
+- Tasks requiring tool use (WebFetch, database, MCP servers)
+- Interactive debugging requiring back-and-forth
+- Small file analysis (<10 files, <50KB total)
+
+### Gemini CLI Syntax
+
+Use the `@` syntax to include files and directories:
+
+```bash
+# Single file analysis
+gemini -p "@src/main.py Explain this file's purpose and architecture"
+
+# Multiple files
+gemini -p "@package.json @src/index.js Analyze the dependencies used"
+
+# Entire directory
+gemini -p "@src/ Summarize the architecture of this codebase"
+
+# Multiple directories
+gemini -p "@src/ @tests/ Analyze test coverage for the source code"
+
+# Current directory (use sparingly - can be large)
+gemini -p "@./ Give me an overview of this project structure"
+
+# All files flag (alternative to @./)
+gemini --all_files -p "Analyze the project structure and dependencies"
+```
+
+### Workflow Pattern for Token-Heavy Tasks
+
+1. **Plan** (You, Opus): Determine what analysis is needed and formulate the query
+2. **Delegate** (Gemini): Execute `gemini -p` via Bash with appropriate @ includes
+3. **Synthesize** (You, Opus): Interpret Gemini's output and decide next steps
+4. **Act** (Your Agents): Command agents to implement changes based on findings
+
+### Example Use Cases
+
+**Codebase Architecture Review:**
+```bash
+gemini -p "@src/ @lib/ Analyze the overall architecture. Identify: 1) Core modules 2) Data flow patterns 3) External dependencies 4) Potential improvements"
+```
+
+**Feature Implementation Verification:**
+```bash
+gemini -p "@src/ @middleware/ Is authentication fully implemented? List all auth-related endpoints, middleware, and any gaps"
+```
+
+**Test Coverage Analysis:**
+```bash
+gemini -p "@src/components/ @tests/ Which components lack test coverage? Provide specific file paths"
+```
+
+**Security Audit:**
+```bash
+gemini -p "@src/ @api/ Check for security issues: SQL injection, XSS, exposed secrets, improper input validation"
+```
+
+**Documentation Gap Analysis:**
+```bash
+gemini -p "@src/ @docs/ Which public APIs lack documentation? List functions missing docstrings"
+```
+
+### Important Notes
+
+- Paths in `@` syntax are relative to your current working directory
+- Gemini CLI is **read-only** - it cannot modify files or use tools
+- For very large outputs, ask Gemini to summarize or focus on specific aspects
+- If `gemini` command is not available, fall back to using scout agents with Read/Glob/Grep
+- Always verify critical findings by having an agent read the specific files mentioned
+
 ## Guidelines
 
 1. **Be Strategic**: Think about which agent is best suited for each task

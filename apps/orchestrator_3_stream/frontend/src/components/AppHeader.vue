@@ -79,6 +79,14 @@
           >
             POSITIONS
           </button>
+          <button
+            class="btn-prompt"
+            :class="{ active: store.viewMode === 'calendar' }"
+            @click="store.setViewMode('calendar')"
+            title="View calendar"
+          >
+            CALENDAR
+          </button>
         </div>
       </div>
     </div>

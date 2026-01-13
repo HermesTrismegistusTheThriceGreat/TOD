@@ -35,6 +35,10 @@
         v-else-if="store.viewMode === 'open-positions'"
         class="app-content center"
       />
+      <CalendarPage
+        v-else-if="store.viewMode === 'calendar'"
+        class="app-content center"
+      />
 
       <OrchestratorChat
         class="app-sidebar right"
@@ -61,6 +65,7 @@ import AgentList from './components/AgentList.vue'
 import EventStream from './components/EventStream.vue'
 import AdwSwimlanes from './components/AdwSwimlanes.vue'
 import OpenPositions from './components/OpenPositions.vue'
+import CalendarPage from './components/CalendarPage.vue'
 import OrchestratorChat from './components/OrchestratorChat.vue'
 import GlobalCommandInput from './components/GlobalCommandInput.vue'
 import { useOrchestratorStore } from './stores/orchestratorStore'

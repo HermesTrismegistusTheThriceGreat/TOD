@@ -518,7 +518,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
    * Cycles: logs -> adws -> open-positions -> logs
    */
   function toggleViewMode() {
-    const modes: ViewMode[] = ['logs', 'adws', 'open-positions']
+    const modes: ViewMode[] = ['logs', 'adws', 'open-positions', 'calendar']
     const currentIndex = modes.indexOf(viewMode.value)
     const newMode = modes[(currentIndex + 1) % modes.length]
     setViewMode(newMode)
