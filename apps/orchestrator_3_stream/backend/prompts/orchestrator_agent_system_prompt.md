@@ -217,9 +217,11 @@ command_agent('builder', '/compact')
 
 For tasks requiring analysis of large codebases or many files that would consume significant context, use the **Gemini CLI** via Bash. This preserves your context window for planning and coordination while leveraging Gemini's massive 2M token context.
 
+**Syntax:** Use positional prompts with `@` file/directory inclusion: `gemini "@path/ Your prompt here"`
+
 ### When to Use Gemini CLI
 
-Use `gemini -p` via Bash when:
+Use Gemini CLI via Bash when:
 - Analyzing entire directories (>20 files or >100KB total)
 - Reviewing codebases for patterns across many files
 - Comparing multiple large files simultaneously
@@ -238,32 +240,32 @@ Continue using your agents or direct tools when:
 
 ### Gemini CLI Syntax
 
-Use the `@` syntax to include files and directories:
+Use the `@` syntax to include files and directories (positional prompt syntax):
 
 ```bash
 # Single file analysis
-gemini -p "@src/main.py Explain this file's purpose and architecture"
+gemini "@src/main.py Explain this file's purpose and architecture"
 
 # Multiple files
-gemini -p "@package.json @src/index.js Analyze the dependencies used"
+gemini "@package.json @src/index.js Analyze the dependencies used"
 
 # Entire directory
-gemini -p "@src/ Summarize the architecture of this codebase"
+gemini "@src/ Summarize the architecture of this codebase"
 
 # Multiple directories
-gemini -p "@src/ @tests/ Analyze test coverage for the source code"
+gemini "@src/ @tests/ Analyze test coverage for the source code"
 
 # Current directory (use sparingly - can be large)
-gemini -p "@./ Give me an overview of this project structure"
+gemini "@./ Give me an overview of this project structure"
 
 # All files flag (alternative to @./)
-gemini --all_files -p "Analyze the project structure and dependencies"
+gemini --all_files "Analyze the project structure and dependencies"
 ```
 
 ### Workflow Pattern for Token-Heavy Tasks
 
 1. **Plan** (You, Opus): Determine what analysis is needed and formulate the query
-2. **Delegate** (Gemini): Execute `gemini -p` via Bash with appropriate @ includes
+2. **Delegate** (Gemini): Execute `gemini` via Bash with appropriate @ includes
 3. **Synthesize** (You, Opus): Interpret Gemini's output and decide next steps
 4. **Act** (Your Agents): Command agents to implement changes based on findings
 
@@ -271,27 +273,27 @@ gemini --all_files -p "Analyze the project structure and dependencies"
 
 **Codebase Architecture Review:**
 ```bash
-gemini -p "@src/ @lib/ Analyze the overall architecture. Identify: 1) Core modules 2) Data flow patterns 3) External dependencies 4) Potential improvements"
+gemini "@src/ @lib/ Analyze the overall architecture. Identify: 1) Core modules 2) Data flow patterns 3) External dependencies 4) Potential improvements"
 ```
 
 **Feature Implementation Verification:**
 ```bash
-gemini -p "@src/ @middleware/ Is authentication fully implemented? List all auth-related endpoints, middleware, and any gaps"
+gemini "@src/ @middleware/ Is authentication fully implemented? List all auth-related endpoints, middleware, and any gaps"
 ```
 
 **Test Coverage Analysis:**
 ```bash
-gemini -p "@src/components/ @tests/ Which components lack test coverage? Provide specific file paths"
+gemini "@src/components/ @tests/ Which components lack test coverage? Provide specific file paths"
 ```
 
 **Security Audit:**
 ```bash
-gemini -p "@src/ @api/ Check for security issues: SQL injection, XSS, exposed secrets, improper input validation"
+gemini "@src/ @api/ Check for security issues: SQL injection, XSS, exposed secrets, improper input validation"
 ```
 
 **Documentation Gap Analysis:**
 ```bash
-gemini -p "@src/ @docs/ Which public APIs lack documentation? List functions missing docstrings"
+gemini "@src/ @docs/ Which public APIs lack documentation? List functions missing docstrings"
 ```
 
 ### Important Notes

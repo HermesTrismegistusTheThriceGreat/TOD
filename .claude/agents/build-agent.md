@@ -2,7 +2,7 @@
 name: build-agent
 description: Use proactively when you need to delegate writing a single file as part of a parallel build workflow. Specialist for implementing one specific file based on detailed instructions and context.
 tools: Write, Read, Edit, Grep, Glob, Bash, TodoWrite
-model: opus
+model: sonnet
 color: blue
 ---
 

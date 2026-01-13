@@ -605,7 +605,7 @@ async def run_build_step(
     orchestrator_agent_id: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = ModelName.SONNET.value,
 ) -> tuple[bool, str | None, str | None]:
     """Run the /build step.
 

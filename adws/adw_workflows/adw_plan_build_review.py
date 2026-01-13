@@ -607,7 +607,7 @@ async def run_build_step(
     orchestrator_agent_id: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = ModelName.SONNET.value,
 ) -> tuple[bool, str | None, str | None]:
     """Run the /build step.
 
@@ -757,7 +757,7 @@ async def run_review_step(
     user_prompt: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,  # Use Opus for thorough review
+    model: str = ModelName.HAIKU.value,  # Use Haiku for cost-effective review
 ) -> tuple[bool, str | None, str | None, str | None]:
     """Run the /review step to validate completed work.
 
@@ -767,7 +767,7 @@ async def run_review_step(
         user_prompt: Original user prompt describing the work
         plan_path: Path to the plan file that was implemented
         working_dir: Working directory for the agent
-        model: Model to use (defaults to Opus for thorough analysis)
+        model: Model to use (defaults to Haiku for cost-effective review)
 
     Returns:
         Tuple of (success, session_id, agent_id, verdict)
@@ -979,7 +979,7 @@ async def run_workflow(adw_id: str) -> bool:
     prompt = input_data.get("prompt")
     working_dir = input_data.get("working_dir")
     model = input_data.get("model", ModelName.OPUS.value)
-    review_model = input_data.get("review_model", ModelName.OPUS.value)
+    review_model = input_data.get("review_model", ModelName.HAIKU.value)
 
     if not prompt:
         console.print("[red]No prompt found in ADW input_data[/red]")
