@@ -87,6 +87,14 @@
           >
             CALENDAR
           </button>
+          <button
+            class="btn-prompt"
+            :class="{ active: store.viewMode === 'trade-stats' }"
+            @click="store.setViewMode('trade-stats')"
+            title="View trade statistics"
+          >
+            TRADE STATS
+          </button>
         </div>
       </div>
     </div>

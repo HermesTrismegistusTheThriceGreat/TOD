@@ -420,6 +420,55 @@ class SubscribePricesResponse(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════
+# TRADE HISTORY MODELS
+# ═══════════════════════════════════════════════════════════
+
+class TradeResponse(BaseModel):
+    """Single trade (aggregated from orders with same trade_id)"""
+    model_config = ConfigDict(from_attributes=True)
+
+    trade_id: str
+    ticker: str  # underlying symbol
+    strategy: str  # iron_condor, vertical_spread, etc.
+    direction: Literal['Long', 'Short']  # dominant direction
+    entry_date: str  # ISO format date
+    exit_date: Optional[str] = None
+    entry_price: float  # total premium received/paid
+    exit_price: Optional[float] = None
+    quantity: int  # number of contracts (max across legs)
+    pnl: float  # total P&L in dollars
+    pnl_percent: float  # P&L as percentage
+    status: Literal['open', 'closed', 'expired']
+    leg_count: int  # number of legs in this trade
+    orders: List[dict] = []  # individual order details
+
+
+class TradeListResponse(BaseModel):
+    """Response for GET /api/trades"""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'error']
+    trades: List[TradeResponse] = []
+    total_count: int = 0
+    message: Optional[str] = None
+
+
+class TradeStatsResponse(BaseModel):
+    """Response for GET /api/trade-stats"""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'error']
+    total_pnl: float = 0.0
+    win_rate: float = 0.0  # percentage
+    total_trades: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    open_trades: int = 0
+    closed_trades: int = 0
+    message: Optional[str] = None
+
+
+# ═══════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════
 
@@ -442,4 +491,7 @@ __all__ = [
     "CloseStrategyResponse",
     "CloseLegRequest",
     "CloseLegResponse",
+    "TradeResponse",
+    "TradeListResponse",
+    "TradeStatsResponse",
 ]

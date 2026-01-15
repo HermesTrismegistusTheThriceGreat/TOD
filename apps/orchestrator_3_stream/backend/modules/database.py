@@ -376,6 +376,40 @@ async def update_orchestrator_session(
         return None
 
 
+async def clear_orchestrator_session(
+    orchestrator_agent_id: uuid.UUID,
+) -> Optional[Dict[str, Any]]:
+    """
+    Clear orchestrator's Claude SDK session ID to start fresh.
+
+    Sets session_id to NULL so the next interaction creates a new session.
+    The chat history remains in the database for reference.
+
+    Args:
+        orchestrator_agent_id: UUID of the orchestrator to clear
+
+    Returns:
+        Dictionary containing updated orchestrator data or None if not found
+    """
+    async with get_connection() as conn:
+        row = await conn.fetchrow(
+            """
+            UPDATE orchestrator_agents
+            SET session_id = NULL, updated_at = NOW()
+            WHERE id = $1 AND archived = false
+            RETURNING *
+            """,
+            orchestrator_agent_id,
+        )
+
+        if row:
+            result = dict(row)
+            if isinstance(result.get("metadata"), str):
+                result["metadata"] = json.loads(result["metadata"])
+            return result
+        return None
+
+
 async def update_orchestrator_costs(
     orchestrator_agent_id: uuid.UUID,
     input_tokens: int,

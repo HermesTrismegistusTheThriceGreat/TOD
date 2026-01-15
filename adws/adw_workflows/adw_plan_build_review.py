@@ -1074,7 +1074,6 @@ async def run_workflow(adw_id: str) -> bool:
             orchestrator_agent_id=orchestrator_agent_id,
             plan_path=plan_path,
             working_dir=working_dir,
-            model=model,
         )
 
         if not build_success:

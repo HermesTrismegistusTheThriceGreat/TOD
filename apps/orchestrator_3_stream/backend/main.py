@@ -36,6 +36,7 @@ from modules.autocomplete_models import (
     AutocompleteResponse
 )
 from modules.alpaca_service import init_alpaca_service, get_alpaca_service
+from modules.alpaca_sync_service import init_alpaca_sync_service, get_alpaca_sync_service
 from modules.alpaca_models import (
     GetPositionsResponse,
     GetPositionResponse,
@@ -45,6 +46,8 @@ from modules.alpaca_models import (
     CloseStrategyResponse,
     CloseLegRequest,
     CloseLegResponse,
+    TradeListResponse,
+    TradeStatsResponse,
 )
 
 logger = get_logger()
@@ -187,11 +190,30 @@ async def lifespan(app: FastAPI):
     alpaca_service.set_websocket_manager(ws_manager)
     logger.success("Alpaca service initialized")
 
+    # Initialize Alpaca Sync service
+    logger.info("Initializing Alpaca Sync service...")
+    alpaca_sync_service = await init_alpaca_sync_service(app, alpaca_service)
+    logger.success("Alpaca Sync service initialized")
+
+    # Auto-sync orders on startup if Alpaca is configured
+    if alpaca_service.is_configured:
+        try:
+            logger.info("Auto-syncing Alpaca orders...")
+            orders = await alpaca_sync_service.sync_orders()
+            logger.success(f"Auto-synced {len(orders)} orders from Alpaca")
+        except Exception as e:
+            logger.warning(f"Auto-sync failed (non-blocking): {e}")
+
     logger.success("Backend initialization complete")
 
     yield  # Server runs
 
     # Shutdown
+    # Shutdown Alpaca Sync service
+    if hasattr(app.state, 'alpaca_sync_service'):
+        logger.info("Shutting down Alpaca Sync service...")
+        await app.state.alpaca_sync_service.close()
+
     # Shutdown Alpaca service
     if hasattr(app.state, 'alpaca_service'):
         logger.info("Shutting down Alpaca service...")
@@ -539,6 +561,49 @@ async def send_chat(request: SendChatRequest):
 
     except Exception as e:
         logger.error(f"Failed to send chat message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/reset_context")
+async def reset_context():
+    """
+    Reset orchestrator context to start a fresh conversation.
+
+    Clears the session_id in memory AND database so:
+    - Next message starts a new Claude SDK session
+    - Context stays cleared even after backend restart
+    - Chat history remains in database for reference
+
+    Returns:
+        - status: success
+        - message: Confirmation message
+    """
+    try:
+        logger.http_request("POST", "/reset_context")
+
+        service: OrchestratorService = app.state.orchestrator_service
+        orchestrator_id = app.state.orchestrator.id
+
+        # Clear the session_id to start fresh on next message
+        old_session = service.session_id
+        service.session_id = None
+
+        # Also reset the flag so new session_id gets saved to DB
+        service.started_with_session = False
+
+        # Clear session_id in database (persists across restarts)
+        await database.clear_orchestrator_session(orchestrator_id)
+
+        logger.info(f"Context reset. Old session: {old_session[:20] if old_session else 'None'}...")
+
+        logger.http_request("POST", "/reset_context", 200)
+        return {
+            "status": "success",
+            "message": "Context cleared. Next message will start a fresh session.",
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to reset context: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1360,6 +1425,105 @@ async def close_leg(request: Request, position_id: str, close_request: CloseLegR
             status="error",
             message=str(e)
         )
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# TRADE HISTORY ENDPOINTS
+# ════════════════════════════════════════════════════════════════════════════════
+
+
+@app.get("/api/trades", response_model=TradeListResponse, tags=["Trades"])
+async def get_trades(
+    request: Request,
+    underlying: Optional[str] = None,
+    status: Optional[str] = None,  # open, closed, all
+    limit: int = 100,
+    offset: int = 0
+):
+    """
+    Get aggregated trade history.
+
+    Returns trades grouped by trade_id with P&L calculations.
+    Optionally filter by underlying symbol and/or status.
+
+    Args:
+        underlying: Filter by underlying symbol (e.g., "SPY")
+        status: Filter by status ("open", "closed", or None for all)
+        limit: Maximum number of trades to return
+        offset: Offset for pagination
+
+    Returns:
+        TradeListResponse with list of trades
+    """
+    try:
+        logger.http_request("GET", "/api/trades")
+        sync_service = get_alpaca_sync_service(request.app)
+        trades = await sync_service.get_trades(
+            underlying=underlying,
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+        logger.http_request("GET", "/api/trades", 200)
+        return TradeListResponse(
+            status="success",
+            trades=trades,
+            total_count=len(trades)
+        )
+    except Exception as e:
+        logger.error(f"Failed to get trades: {e}")
+        return TradeListResponse(status="error", message=str(e))
+
+
+@app.get("/api/trade-stats", response_model=TradeStatsResponse, tags=["Trades"])
+async def get_trade_stats(request: Request, status: Optional[str] = None):
+    """
+    Get trade summary statistics.
+
+    Returns aggregated statistics including total P&L, win rate,
+    and trade counts by status.
+
+    Args:
+        status: Filter by status ("open", "closed", or None for all)
+
+    Returns:
+        TradeStatsResponse with summary statistics
+    """
+    try:
+        logger.http_request("GET", "/api/trade-stats")
+        sync_service = get_alpaca_sync_service(request.app)
+        stats = await sync_service.get_trade_stats(status=status)
+        logger.http_request("GET", "/api/trade-stats", 200)
+        return TradeStatsResponse(status="success", **stats)
+    except Exception as e:
+        logger.error(f"Failed to get trade stats: {e}")
+        return TradeStatsResponse(status="error", message=str(e))
+
+
+@app.post("/api/sync-orders", tags=["Trades"])
+async def sync_orders(request: Request):
+    """
+    Trigger manual sync of orders from Alpaca.
+
+    Fetches order history from Alpaca API and persists to database.
+    Orders are automatically grouped into trades by trade_id.
+
+    Returns:
+        Dict with sync status and count of synced orders
+    """
+    try:
+        logger.http_request("POST", "/api/sync-orders")
+        sync_service = get_alpaca_sync_service(request.app)
+        orders = await sync_service.sync_orders()
+        logger.http_request("POST", "/api/sync-orders", 200)
+        return {
+            "status": "success",
+            "synced_count": len(orders),
+            "message": f"Synced {len(orders)} orders from Alpaca"
+        }
+    except Exception as e:
+        logger.error(f"Failed to sync orders: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

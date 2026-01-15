@@ -97,6 +97,16 @@ export async function sendMessage(
 }
 
 /**
+ * Reset orchestrator context to start a fresh conversation
+ * Clears the session so next message starts with clean context
+ * System prompt is always re-loaded, so no restart needed
+ */
+export async function resetContext(): Promise<{ status: string; message: string }> {
+  const response = await apiClient.post('/reset_context')
+  return response.data
+}
+
+/**
  * WebSocket connection callbacks
  */
 export interface WebSocketCallbacks {

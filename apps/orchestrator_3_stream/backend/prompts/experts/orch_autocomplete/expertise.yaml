@@ -1,64 +1,15 @@
-orchestrator_agent_id: b97a46cb-2ece-42a7-9e92-d3d0d25656d6
-completion_agent_id: 77f16535-078a-4d33-b55e-ff0443a6a75d
+orchestrator_agent_id: d340de1c-acd8-4584-9ba2-5ae4a814e4a1
+completion_agent_id: 648beaf6-848d-4200-ac80-08485e8973a8
 previous_completions:
 - completion_type: none
-  user_input_on_enter: What is the best command or prompt to use to update our agentic
-    layer so that the /build agents use Sonnet instead of Opus in the commands prompts
-    and adw's?
+  user_input_on_enter: Good news Trade Stats Page and Button Work! Which files should
+    I read to understand how the data is being transformed and brought in? I want
+    to think about different way to display data on the page need to look at the appropriate
+    files to understand what's going on, we just got it up and running yesterday /question
   order: 1
 - completion_type: none
-  user_input_on_enter: "Update the agentic layer so /build agents use Sonnet instead\
-    \ of Opus:\n\n1. In `.claude/agents/build-agent.md`: Change `model: opus` to `model:\
-    \ sonnet`\n\n2. In ADW workflows (`adws/adw_workflows/adw_plan_build.py`, `adw_plan_build_review.py`,\
-    \ `adw_plan_build_review_fix.py`):\n   - Change the default model for `run_build_step()`\
-    \ from `ModelName.OPUS.value` to `ModelName.SONNET.value`\n   - Keep plan and\
-    \ review steps on Opus (only change build step defaults)\n\nDo NOT change:\n-\
-    \ Plan steps (keep Opus for strategic planning)\n- Review steps (keep Opus for\
-    \ thorough validation)\n- The build_in_parallel.md command (already uses Sonnet)"
+  user_input_on_enter: Is our alpaca_orders table located on Neon DB /question?
   order: 2
 - completion_type: none
-  user_input_on_enter: Use a /plan agent a /build agent and a /review agent to implement
-    the change from the previous prompt. Have gemini do any heavy reviewing for you.
+  user_input_on_enter: /experts:database:question actually ask the database expet
   order: 3
-- completion_type: none
-  user_input_on_enter: Clear the agents and the context
-  order: 4
-- completion_type: none
-  user_input_on_enter: "Create a prompt similar to this for updating the /review agent,\
-    \ commands, and adw's to use Haiku instead of Opus: \"Update the agentic layer\
-    \ so /build agents use Sonnet instead of Opus:\n\n1. In `.claude/agents/build-agent.md`:\
-    \ Change `model: opus` to `model: sonnet`\n\n2. In ADW workflows (`adws/adw_workflows/adw_plan_build.py`,\
-    \ `adw_plan_build_review.py`, `adw_plan_build_review_fix.py`):\n   - Change the\
-    \ default model for `run_build_step()` from `ModelName.OPUS.value` to `ModelName.SONNET.value`\n\
-    \   - Keep plan and review steps on Opus (only change build step defaults)\n\n\
-    Do NOT change:\n- Plan steps (keep Opus for strategic planning)\n- Review steps\
-    \ (keep Opus for thorough validation)\n- The build_in_parallel.md command (already\
-    \ uses Sonnet)\""
-  order: 5
-- completion_type: none
-  user_input_on_enter: 'Please use a /plan agent, a /build agent, and a /review agent
-    to implement the following: Update the agentic layer so /review agents use Haiku
-    instead of Opus:
-
-    In .claude/agents/ - Check if there''s a review-agent.md or similar. If exists,
-    change model: opus to model: haiku
-
-    In ADW workflows (adws/adw_workflows/adw_plan_build_review.py, adw_plan_build_review_fix.py):
-
-    Change the default model for run_review_step() from ModelName.OPUS.value to ModelName.HAIKU.value
-
-    Keep plan, build, and fix steps unchanged
-
-    In .claude/commands/review.md (if exists) - Update any model specification to
-    use haiku
-
-    Do NOT change:
-
-    Plan steps (keep Opus for strategic planning)
-
-    Build steps (keep Sonnet for code implementation)
-
-    Fix steps (keep Opus for complex remediation)
-
-    Any other agents or workflows not related to review'
-  order: 6

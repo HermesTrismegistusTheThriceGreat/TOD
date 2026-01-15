@@ -53,6 +53,7 @@ MIGRATIONS = [
     "7_triggers.sql",
     "8_orchestrator_chat.sql",
     "9_ai_developer_workflows.sql",
+    "10_alpaca_orders.sql",
 ]
 
 def main():
@@ -174,6 +175,8 @@ def main():
         table.add_row("system_logs", "Application logs")
         table.add_row("orchestrator_chat", "Human-orchestrator chat history")
         table.add_row("ai_developer_workflows", "ADW execution tracking")
+        table.add_row("alpaca_orders", "Alpaca order history with trade grouping")
+        table.add_row("alpaca_positions", "Alpaca open positions")
         table.add_row("indexes", "Performance indexes")
         table.add_row("functions", "Trigger functions")
         table.add_row("triggers", "Auto-update triggers")

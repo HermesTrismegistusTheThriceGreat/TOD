@@ -2,7 +2,7 @@
 name: playwright-validator
 description: Specialized browser automation validator that uses Playwright MCP tools to execute and validate specific user actions on web pages. Use proactively to test web interactions, capture screenshots, and verify UI behaviors with comprehensive reporting.
 tools: mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate, mcp__playwright__browser_select, mcp__playwright__browser_hover, mcp__playwright__browser_press, mcp__playwright__browser_scroll, mcp__playwright__browser_get_cookies, mcp__playwright__browser_set_cookies, mcp__playwright__browser_clear_cookies, mcp__playwright__browser_reload, mcp__playwright__browser_back, mcp__playwright__browser_forward, mcp__playwright__browser_set_viewport, Write, Edit
-model: opus
+model: haiku
 color: cyan
 ---
 

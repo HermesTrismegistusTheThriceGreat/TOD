@@ -321,8 +321,30 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     }
   }
 
-  function clearChat() {
-    chatMessages.value = []
+  async function clearChat() {
+    try {
+      // Call backend to reset Claude SDK session
+      await chatService.resetContext()
+
+      // Clear local chat messages
+      chatMessages.value = []
+
+      // Reset token/cost counters in UI (context is cleared, start fresh)
+      if (orchestratorAgent.value) {
+        orchestratorAgent.value = {
+          ...orchestratorAgent.value,
+          input_tokens: 0,
+          output_tokens: 0,
+          total_cost: 0,
+        }
+      }
+
+      console.log('Context cleared successfully')
+    } catch (error) {
+      console.error('Failed to reset context:', error)
+      // Still clear local messages even if backend fails
+      chatMessages.value = []
+    }
   }
 
   function toggleChatWidth() {
@@ -518,7 +540,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
    * Cycles: logs -> adws -> open-positions -> logs
    */
   function toggleViewMode() {
-    const modes: ViewMode[] = ['logs', 'adws', 'open-positions', 'calendar']
+    const modes: ViewMode[] = ['logs', 'adws', 'open-positions', 'calendar', 'trade-stats']
     const currentIndex = modes.indexOf(viewMode.value)
     const newMode = modes[(currentIndex + 1) % modes.length]
     setViewMode(newMode)

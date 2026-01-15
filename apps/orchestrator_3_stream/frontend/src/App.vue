@@ -39,6 +39,10 @@
         v-else-if="store.viewMode === 'calendar'"
         class="app-content center"
       />
+      <TradeStats
+        v-else-if="store.viewMode === 'trade-stats'"
+        class="app-content center"
+      />
 
       <OrchestratorChat
         class="app-sidebar right"
@@ -66,6 +70,7 @@ import EventStream from './components/EventStream.vue'
 import AdwSwimlanes from './components/AdwSwimlanes.vue'
 import OpenPositions from './components/OpenPositions.vue'
 import CalendarPage from './components/CalendarPage.vue'
+import TradeStats from './components/TradeStats.vue'
 import OrchestratorChat from './components/OrchestratorChat.vue'
 import GlobalCommandInput from './components/GlobalCommandInput.vue'
 import { useOrchestratorStore } from './stores/orchestratorStore'

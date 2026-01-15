@@ -121,6 +121,28 @@ class AgentManager:
             f"AgentManager initialized for orchestrator {orchestrator_agent_id}"
         )
 
+    def _resolve_model_alias(self, model_input: str) -> str:
+        """
+        Resolve model alias to full model name.
+
+        Args:
+            model_input: Model name or alias (e.g., "haiku", "sonnet", "opus")
+
+        Returns:
+            Full model name (e.g., "claude-haiku-4-5-20251001")
+        """
+        model_aliases = {
+            "opus": "claude-opus-4-5-20251101",
+            "sonnet": "claude-sonnet-4-5-20250929",
+            "haiku": "claude-haiku-4-5-20251001",
+            "fast": "claude-haiku-4-5-20251001",  # Alias for haiku
+        }
+
+        if not isinstance(model_input, str):
+            return str(model_input)
+
+        return model_aliases.get(model_input.lower(), model_input)
+
     def _get_available_workflow_types(self) -> List[str]:
         """
         Discover available ADW workflow types from adws/adw_workflows/*.py files.
@@ -892,12 +914,16 @@ class AgentManager:
                 system_prompt = template.prompt_body
                 if template.frontmatter.model:
                     model = template.frontmatter.model
+                    self.logger.info(f"✅ Applied template model: {model}")
+                else:
+                    self.logger.warning(f"⚠️ Template '{template.frontmatter.name}' has no model specified, using default")
                 allowed_tools = template.frontmatter.tools
 
                 # Add template metadata
                 metadata = {
                     "template_name": template.frontmatter.name,
                     "template_color": template.frontmatter.color,
+                    "template_model": template.frontmatter.model,  # Store template model for persistence
                 }
 
                 # Log template application
@@ -1009,6 +1035,18 @@ class AgentManager:
             agent = await get_agent(agent_id)
             if not agent:
                 return {"ok": False, "error": "Agent not found"}
+
+            # Re-apply template model if agent was created from a template
+            if agent.metadata and agent.metadata.get("template_name"):
+                template_name = agent.metadata["template_name"]
+                template = self.subagent_registry.get_template(template_name)
+                if template and template.frontmatter.model:
+                    original_model = agent.model
+                    # Resolve model alias to full name
+                    resolved_model = self._resolve_model_alias(template.frontmatter.model)
+                    if original_model != resolved_model:
+                        self.logger.info(f"📝 Re-applying template '{template_name}' model: {original_model} → {resolved_model}")
+                        agent.model = resolved_model
 
             # Ensure file tracker exists for this agent
             if str(agent_id) not in self.file_trackers:

@@ -11,7 +11,7 @@ overview:
 core_implementation:
   database_module:
     file: "apps/orchestrator_3_stream/backend/modules/database.py"
-    lines: 1600
+    lines: 1964
     purpose: "Connection pooling and database operations"
 
     connection_pool:
@@ -43,6 +43,9 @@ core_implementation:
       - "AgentLog: agent_logs table"
       - "SystemLog: system_logs table"
       - "OrchestratorChat: orchestrator_chat table"
+      - "AiDeveloperWorkflow: ai_developer_workflows table"
+      - "AlpacaOrder: alpaca_orders table"
+      - "AlpacaPosition: alpaca_positions table"
 
     features:
       - "Automatic UUID conversion (asyncpg UUID <-> Python UUID)"
@@ -60,7 +63,7 @@ core_implementation:
   schema_migrations:
     directory: "apps/orchestrator_db/migrations/"
     runner: "apps/orchestrator_db/run_migrations.py"
-    pattern: "Numbered SQL files (0_*.sql, 1_*.sql, ..., 8_*.sql) executed in order"
+    pattern: "Numbered SQL files (0_*.sql through 10_*.sql) executed in order"
     idempotency: "Uses 'CREATE TABLE IF NOT EXISTS' and 'CREATE INDEX IF NOT EXISTS'"
     files:
       - "0_orchestrator_agents.sql"
@@ -72,6 +75,14 @@ core_implementation:
       - "6_functions.sql"
       - "7_triggers.sql"
       - "8_orchestrator_chat.sql"
+      - "9_ai_developer_workflows.sql"
+      - "10_alpaca_orders.sql"
+
+  alpaca_sync_service:
+    file: "apps/orchestrator_3_stream/backend/modules/alpaca_sync_service.py"
+    lines: 866
+    purpose: "Syncs Alpaca order/position data to database with trade grouping"
+    connection: "Separate asyncpg pool (min=2, max=10) using same DATABASE_URL"
 
 schema_structure:
   logging_architecture:
@@ -140,7 +151,7 @@ schema_structure:
         - "adw_id (TEXT): AI Developer Workflow identifier"
         - "adw_step (TEXT): ADW step identifier"
         - "entry_index (INTEGER): Sequential index for tail reading"
-        - "event_category (TEXT NOT NULL): hook, response"
+        - "event_category (TEXT NOT NULL): hook, response, adw_step"
         - "event_type (TEXT NOT NULL): PreToolUse, PostToolUse, text, thinking, tool_use, tool_result"
         - "content (TEXT): Primary text content"
         - "payload (JSONB DEFAULT '{}'): Structured event data"
@@ -215,6 +226,71 @@ schema_structure:
         - "idx_system_logs_level"
         - "idx_system_logs_timestamp"
         - "idx_system_logs_adw_id, idx_system_logs_adw_step (partial)"
+
+    ai_developer_workflows:
+      description: "Tracks ADW executions (id serves as adw_id in agent_logs/system_logs)"
+      pk: "id (UUID)"
+      fk: "orchestrator_agent_id -> orchestrator_agents.id ON DELETE CASCADE"
+      fields:
+        - "adw_name (TEXT NOT NULL): Workflow name (e.g., 'feature-auth')"
+        - "workflow_type (TEXT NOT NULL): Workflow type from adw_*.py filename"
+        - "description (TEXT)"
+        - "status (TEXT): pending, in_progress, completed, failed, cancelled"
+        - "current_step (TEXT): Current step slug"
+        - "total_steps, completed_steps (INTEGER)"
+        - "started_at, completed_at (TIMESTAMPTZ)"
+        - "duration_seconds (INTEGER)"
+        - "input_data, output_data (JSONB)"
+        - "error_message, error_step (TEXT), error_count (INTEGER)"
+        - "metadata (JSONB)"
+      indexes:
+        - "idx_adw_orchestrator, idx_adw_status, idx_adw_workflow_type"
+        - "idx_adw_created (DESC)"
+        - "idx_adw_active (partial: status IN pending, in_progress)"
+
+    alpaca_orders:
+      description: "Alpaca order history with trade grouping for multi-leg strategies"
+      pk: "id (UUID)"
+      unique: "alpaca_order_id"
+      key_concept: "trade_id links related orders (same underlying + expiry + 5min window)"
+      fields:
+        - "alpaca_order_id (TEXT NOT NULL UNIQUE): Alpaca's UUID"
+        - "trade_id (UUID NOT NULL): Groups related orders together"
+        - "strategy_type (TEXT): iron_condor, vertical_spread, strangle, straddle, single_leg, options"
+        - "leg_number (INTEGER): 1-4 for iron condors"
+        - "symbol (TEXT NOT NULL): OCC option symbol (e.g., SPY260117C00688000)"
+        - "underlying (TEXT NOT NULL): Ticker (SPY, QQQ)"
+        - "side (TEXT): buy, sell"
+        - "qty, filled_qty (DECIMAL)"
+        - "order_type (TEXT): market, limit, stop, stop_limit"
+        - "limit_price, stop_price, filled_avg_price (DECIMAL)"
+        - "status (TEXT): new, filled, canceled, expired, etc."
+        - "expiry_date (DATE), strike_price (DECIMAL), option_type (TEXT): call, put"
+        - "submitted_at, filled_at, expired_at, canceled_at (TIMESTAMPTZ)"
+        - "raw_data (JSONB)"
+      indexes:
+        - "idx_alpaca_orders_trade_id, idx_alpaca_orders_symbol, idx_alpaca_orders_underlying"
+        - "idx_alpaca_orders_status, idx_alpaca_orders_strategy"
+        - "idx_alpaca_orders_submitted (DESC), idx_alpaca_orders_filled (DESC)"
+        - "idx_alpaca_orders_trade_underlying (composite)"
+
+    alpaca_positions:
+      description: "Current open positions from Alpaca with trade linking"
+      pk: "id (UUID)"
+      constraint: "UNIQUE (symbol, is_open)"
+      fields:
+        - "trade_id (UUID, nullable): Links to related orders"
+        - "symbol (TEXT NOT NULL): OCC option symbol"
+        - "underlying (TEXT NOT NULL)"
+        - "qty (DECIMAL), side (TEXT): long, short"
+        - "avg_entry_price, current_price, market_value, cost_basis (DECIMAL)"
+        - "unrealized_pl, unrealized_plpc (DECIMAL): P/L dollars and percentage"
+        - "expiry_date (DATE), strike_price (DECIMAL), option_type (TEXT)"
+        - "is_open (BOOLEAN DEFAULT TRUE)"
+        - "raw_data (JSONB)"
+      indexes:
+        - "idx_alpaca_positions_trade_id, idx_alpaca_positions_symbol"
+        - "idx_alpaca_positions_underlying, idx_alpaca_positions_is_open"
 
 key_operations:
   orchestrator_management:
@@ -369,6 +445,48 @@ key_operations:
     list_orchestrator_chat:
       function: "list_orchestrator_chat (line 1549)"
       logic: "Gets orchestrator_chat with optional filtering"
+
+  alpaca_sync_operations:
+    file: "apps/orchestrator_3_stream/backend/modules/alpaca_sync_service.py"
+    note: "Uses separate asyncpg pool, same DATABASE_URL"
+
+    sync_orders:
+      function: "sync_orders (line 92)"
+      logic: "Fetches fill activities from Alpaca API, assigns trade_ids, persists to DB"
+      api: "Uses Alpaca Account Activities API (activity_types=FILL)"
+
+    assign_trade_id:
+      function: "_assign_trade_id (line 235)"
+      logic: "Groups orders by underlying+expiry, clusters by 5-min time window"
+
+    detect_strategy:
+      function: "_detect_strategy (line 301)"
+      logic: "Detects iron_condor (4 legs), vertical_spread (2 same type), straddle, strangle"
+
+    persist_orders:
+      function: "_persist_orders (line 360)"
+      logic: "Upserts to alpaca_orders with ON CONFLICT DO UPDATE"
+
+    sync_positions:
+      function: "sync_positions (line 454)"
+      logic: "Fetches positions from Alpaca, marks old as closed, upserts new"
+
+    get_trades:
+      function: "get_trades (line 676)"
+      logic: "Aggregates orders by trade_id, calculates P&L, determines status"
+      sql_pattern: "GROUP BY trade_id with SUM for premium/cost calculations"
+
+    get_trade_stats:
+      function: "get_trade_stats (line 791)"
+      logic: "Computes total_pnl, win_rate, trade counts by status"
+
+    get_orders_by_trade_id:
+      function: "get_orders_by_trade_id (line 573)"
+      logic: "Retrieves all orders for a specific trade group"
+
+    get_open_positions:
+      function: "get_open_positions (line 654)"
+      logic: "Retrieves positions WHERE is_open = TRUE"
 
 performance_tuning:
   indexes:

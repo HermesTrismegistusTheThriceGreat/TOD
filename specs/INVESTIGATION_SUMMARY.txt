@@ -1,0 +1,175 @@
+================================================================================
+SUBAGENT MODEL DEFAULTS INVESTIGATION - EXECUTIVE SUMMARY
+================================================================================
+
+CRITICAL ISSUE: Subagent model specifications reset to Opus every restart
+
+SEVERITY: 🔴 CRITICAL
+STATUS: Root cause identified with specific code locations
+
+BUSINESS IMPACT:
+- Review agents (haiku) execute as opus → 10x cost increase
+- Build agents (sonnet) execute as opus → cost + latency increase
+- Planning agents (opus) → no issue
+
+================================================================================
+FINDINGS
+================================================================================
+
+1. TEMPLATES ARE CORRECTLY DEFINED ✓
+   Location: .claude/agents/*.md
+   - scout-report-suggest-fast.md has "model: haiku"
+   - build-agent.md has "model: opus"
+   - All templates correctly specify models in YAML frontmatter
+
+2. TEMPLATES ARE CORRECTLY LOADED ✓
+   Location: backend/modules/subagent_loader.py
+   - SubagentRegistry correctly parses templates
+   - Model field is extracted and logged during load
+   - No issues with template discovery or parsing
+
+3. CONFIG HAS HARDCODED OPUS DEFAULT ❌
+   Location: backend/modules/config.py:90,146
+   - DEFAULT_MODEL = "claude-opus-4-5-20251101" (hardcoded)
+   - DEFAULT_AGENT_MODEL defaults to this value
+   - This is the ultimate fallback when model is ambiguous
+
+4. MODELS NOT PERSISTED TO DATABASE ❌
+   Location: backend/modules/agent_manager.py:920-927
+   - Model extracted from template correctly
+   - But template name/model NOT stored as agent metadata
+   - Only agent.model is stored (loses template association)
+
+5. NO RE-APPLICATION ON AGENT RESTART ❌
+   Location: backend/modules/agent_manager.py:1071-1083
+   - Agent loaded from database uses stored model
+   - Template is never re-consulted
+   - If DB has wrong model, it persists permanently
+
+================================================================================
+ROOT CAUSE CHAIN
+================================================================================
+
+Agent Creation:
+  ✓ Template loaded with haiku model
+  ✓ Model extracted from template
+  ✓ Model parameter set to haiku
+  ✓ create_agent() called with model=haiku
+  ✓ Agent stored in DB with haiku model
+
+Restart / Reload:
+  ✓ New AgentManager instance created
+  ✓ Agent loaded from database
+  ✓ Model from DB retrieved (should be haiku)
+  ✓ BUT...no re-application of template
+  ✓ BUT...no verification against template
+  ✓ IF DB had wrong model → it stays wrong forever
+
+Key Problem: Once stored in DB, if the fallback to Opus ever occurs,
+the template model is LOST and can never be recovered on restart.
+
+================================================================================
+CODE LOCATIONS CAUSING ISSUE
+================================================================================
+
+Location 1: DEFAULT FALLBACK (CRITICAL)
+  File: backend/modules/config.py
+  Lines: 89-146
+  Issue: Hardcoded DEFAULT_MODEL = "claude-opus-4-5-20251101"
+
+Location 2: AGENT CREATION FALLBACK (CRITICAL)
+  File: backend/modules/agent_manager.py
+  Lines: 920-927
+  Issue: model=model or config.DEFAULT_AGENT_MODEL
+  Risk: If model becomes None, silently falls back to Opus
+
+Location 3: NO TEMPLATE METADATA (CRITICAL)
+  File: backend/modules/agent_manager.py
+  Lines: 897-901
+  Issue: Template name stored in metadata, but NOT template model
+  Impact: No way to verify model matches template after restart
+
+Location 4: NO RE-APPLICATION ON LOAD (CRITICAL)
+  File: backend/modules/agent_manager.py
+  Lines: 1008-1018 (command_agent)
+  Issue: Agent loaded from DB, template never consulted
+  Impact: Wrong model persists forever after restart
+
+Location 5: NO CONSISTENCY CHECK (HIGH)
+  File: backend/modules/agent_manager.py
+  Missing: No method to verify agent model matches template
+  Impact: No way to detect silent model downgrades
+
+================================================================================
+RECOMMENDED FIXES (PRIORITY ORDER)
+================================================================================
+
+FIX 1 (HIGH): Add model extraction validation
+  - Lines 890-895: Log when model is extracted from template
+  - Lines 920-927: Validate model is NEVER empty before DB insert
+  - Add: "If model is None, log ERROR and use fallback"
+
+FIX 2 (CRITICAL): Store template model in agent metadata
+  - Lines 897-901: Expand metadata dict
+  - Add: "template_model": template.frontmatter.model
+  - Add: "template_tools": template.frontmatter.tools
+  - Creates audit trail of what template agent came from
+
+FIX 3 (CRITICAL): Re-apply template on agent load
+  - Lines 1008-1018: After loading agent from DB
+  - Check if agent.metadata["template_name"] exists
+  - If exists, reload template and verify/update model
+  - Log if model changed: "Re-applied template X: Y → Z"
+
+FIX 4 (MEDIUM): Better environment configuration
+  - Lines 146: Add logging for DEFAULT_AGENT_MODEL source
+  - Warn if using hardcoded default vs .env override
+
+FIX 5 (HIGH): Add consistency verification
+  - New method: verify_agent_model_consistency()
+  - Returns: agent_model, template_model, consistent flag
+  - Used for health checks and monitoring
+
+================================================================================
+IMPLEMENTATION TIMELINE
+================================================================================
+
+Phase 1 (1-2 hours): Immediate Prevention
+  - Fix 1: Model validation
+  - Fix 2: Template metadata
+  - Prevents new agents from getting wrong model
+
+Phase 2 (2-3 hours): Persistence Recovery
+  - Fix 3: Template re-application
+  - Fix 5: Consistency verification
+  - Fixes agents loaded after restart
+
+Phase 3 (1 hour): Monitoring
+  - Add health check endpoint
+  - Dashboard warnings for mismatches
+  - Audit logging for model changes
+
+================================================================================
+FILES TO MODIFY
+================================================================================
+
+1. backend/modules/agent_manager.py (5 changes)
+   - Lines 890-895: Add model validation logging
+   - Lines 897-901: Expand metadata
+   - Lines 920-927: Add fallback detection
+   - Lines 1008-1018: Add template re-application
+   - After 1123: Add verify_agent_model_consistency()
+
+2. backend/modules/config.py (1 change)
+   - Lines 146: Add environment logging
+
+================================================================================
+FULL REPORT
+================================================================================
+
+Detailed investigation with code snippets, test strategy, and impact
+assessment saved to:
+
+  /Users/muzz/Desktop/tac/TOD/specs/model_defaults_investigation.md
+
+================================================================================

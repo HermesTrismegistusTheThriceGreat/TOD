@@ -145,6 +145,12 @@ def get_working_dir() -> str:
 # Default model for managed agents
 DEFAULT_AGENT_MODEL = os.getenv("DEFAULT_AGENT_MODEL", DEFAULT_MODEL)
 
+# Log which model will be used as fallback for agents
+if DEFAULT_AGENT_MODEL == DEFAULT_MODEL:
+    config_logger.warning(f"⚠️ DEFAULT_AGENT_MODEL not set in .env, using Opus fallback: {DEFAULT_MODEL}")
+else:
+    config_logger.info(f"✅ DEFAULT_AGENT_MODEL loaded from .env: {DEFAULT_AGENT_MODEL}")
+
 # Agent system prompt template path
 AGENT_SYSTEM_PROMPT_TEMPLATE_PATH = os.getenv(
     "AGENT_SYSTEM_PROMPT_TEMPLATE_PATH",

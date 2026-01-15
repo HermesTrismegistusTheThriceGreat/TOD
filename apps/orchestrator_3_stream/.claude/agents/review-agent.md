@@ -2,7 +2,7 @@
 name: review-agent
 description: Use proactively when a review is requested or work validation is needed. Analyzes git diffs to validate completed work and produces risk-tiered reports with actionable recommendations.
 tools: Write, Read, Bash, Grep, Glob
-model: opus
+model: haiku
 color: yellow
 ---
 

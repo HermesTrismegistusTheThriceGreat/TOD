@@ -5,6 +5,7 @@
  */
 
 import axios from 'axios'
+import type { TradeListResponse, TradeStatsResponse } from '@/types/trades'
 
 // Get base URL from environment variables
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:9403'
@@ -39,3 +40,31 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// ═══════════════════════════════════════════════════════════
+// TRADE HISTORY API
+// ═══════════════════════════════════════════════════════════
+
+export const tradeApi = {
+  async getTrades(params?: {
+    underlying?: string
+    status?: 'open' | 'closed' | 'all'
+    limit?: number
+    offset?: number
+  }): Promise<TradeListResponse> {
+    const response = await apiClient.get('/api/trades', { params })
+    return response.data
+  },
+
+  async getTradeStats(status?: string): Promise<TradeStatsResponse> {
+    const response = await apiClient.get('/api/trade-stats', {
+      params: { status }
+    })
+    return response.data
+  },
+
+  async syncOrders(): Promise<{ status: string; synced_count?: number; message?: string }> {
+    const response = await apiClient.post('/api/sync-orders')
+    return response.data
+  }
+}
