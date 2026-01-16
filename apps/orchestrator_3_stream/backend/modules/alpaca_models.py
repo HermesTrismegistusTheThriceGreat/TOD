@@ -238,11 +238,36 @@ class IronCondorPosition(BaseModel):
             sc.strike < lc.strike
         )
 
+    def is_valid_iron_butterfly(self) -> bool:
+        """Verify this is a valid iron butterfly structure.
+
+        Iron Butterfly: 4 legs with short put strike == short call strike (ATM)
+        """
+        if len(self.legs) != 4:
+            return False
+
+        sp = self.short_put
+        lp = self.long_put
+        sc = self.short_call
+        lc = self.long_call
+
+        if not all([sp, lp, sc, lc]):
+            return False
+
+        # Iron Butterfly: short put and short call at SAME strike (ATM)
+        # Long put below, long call above
+        return (
+            lp.strike < sp.strike and
+            sp.strike == sc.strike and  # KEY DIFFERENCE: same strike
+            sc.strike < lc.strike
+        )
+
     def detect_strategy(self) -> str:
         """
         Detect the strategy type based on leg structure.
 
         Returns strategy type based on leg configuration:
+        - "Iron Butterfly": 4 legs with short strikes equal (ATM)
         - "Iron Condor": 4 legs with 2C+2P and valid strike ordering
         - "Vertical Spread": 2 legs of same type, different strikes
         - "Straddle": 2 legs, same strike, different types
@@ -252,9 +277,12 @@ class IronCondorPosition(BaseModel):
         if len(self.legs) == 0:
             return "Options"
 
-        # Check for Iron Condor (4 legs, valid structure)
-        if len(self.legs) == 4 and self.is_valid_iron_condor():
-            return "Iron Condor"
+        # Check for 4-leg strategies (check Iron Butterfly FIRST - more specific)
+        if len(self.legs) == 4:
+            if self.is_valid_iron_butterfly():
+                return "Iron Butterfly"
+            if self.is_valid_iron_condor():
+                return "Iron Condor"
 
         # Check for 2-leg strategies
         if len(self.legs) == 2:
@@ -443,6 +471,73 @@ class TradeResponse(BaseModel):
     orders: List[dict] = []  # individual order details
 
 
+class LegDetail(BaseModel):
+    """Individual leg within a trade with open/close matching."""
+    model_config = ConfigDict(from_attributes=True)
+
+    leg_number: int
+    description: str  # e.g., "423 Call"
+    symbol: str  # OCC symbol
+    strike: float
+    option_type: Literal['call', 'put']
+
+    # Open (entry) details
+    open_action: Literal['BUY', 'SELL']
+    open_fill: float  # filled_avg_price for opening order
+    open_date: Optional[str] = None
+
+    # Close (exit) details - None if position still open
+    close_action: Optional[Literal['BUY', 'SELL']] = None
+    close_fill: Optional[float] = None
+    close_date: Optional[str] = None
+
+    # Computed P&L
+    quantity: int
+    pnl_per_contract: float  # P&L per single contract
+    pnl_total: float  # P&L for all contracts (quantity * 100 * pnl_per_contract)
+    is_closed: bool = False
+
+
+class TradeSummary(BaseModel):
+    """Aggregated summary for all legs in a trade."""
+    model_config = ConfigDict(from_attributes=True)
+
+    opening_credit: float  # Net credit received at open (sell side - buy side)
+    closing_debit: float   # Net debit paid at close (buy side - sell side)
+    net_pnl_per_contract: float
+    net_pnl_total: float
+    leg_count: int
+    closed_legs: int
+    open_legs: int
+
+
+class DetailedTrade(BaseModel):
+    """Complete trade with leg-level detail."""
+    model_config = ConfigDict(from_attributes=True)
+
+    trade_id: str
+    ticker: str
+    strategy: str  # iron_butterfly, vertical_spread, etc.
+    direction: Literal['Long', 'Short']  # Net direction based on premium
+    status: Literal['open', 'closed', 'partial']  # partial = some legs closed
+    entry_date: str
+    exit_date: Optional[str] = None
+    expiry_date: Optional[str] = None
+
+    legs: List['LegDetail']
+    summary: 'TradeSummary'
+
+
+class DetailedTradeListResponse(BaseModel):
+    """Response for detailed trades endpoint."""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'error']
+    trades: List['DetailedTrade'] = []
+    total_count: int = 0
+    message: Optional[str] = None
+
+
 class TradeListResponse(BaseModel):
     """Response for GET /api/trades"""
     model_config = ConfigDict(from_attributes=True)
@@ -494,4 +589,8 @@ __all__ = [
     "TradeResponse",
     "TradeListResponse",
     "TradeStatsResponse",
+    "LegDetail",
+    "TradeSummary",
+    "DetailedTrade",
+    "DetailedTradeListResponse",
 ]

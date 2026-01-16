@@ -78,3 +78,66 @@ export interface TradeStatsErrorResponse {
   status: 'error'
   message: string
 }
+
+/**
+ * Individual leg with open/close matching
+ */
+export interface LegDetail {
+  leg_number: number
+  description: string  // e.g., "423 Call"
+  symbol: string
+  strike: number
+  option_type: 'call' | 'put'
+
+  // Open (entry) details
+  open_action: 'BUY' | 'SELL'
+  open_fill: number
+  open_date: string | null
+
+  // Close (exit) details
+  close_action: 'BUY' | 'SELL' | null
+  close_fill: number | null
+  close_date: string | null
+
+  // P&L
+  quantity: number
+  pnl_per_contract: number
+  pnl_total: number
+  is_closed: boolean
+}
+
+/**
+ * Aggregated summary for all legs in a trade
+ */
+export interface TradeSummary {
+  opening_credit: number    // Net credit received at open
+  closing_debit: number     // Net debit paid at close
+  net_pnl_per_contract: number
+  net_pnl_total: number
+  leg_count: number
+  closed_legs: number
+  open_legs: number
+}
+
+/**
+ * Complete trade with leg-level detail
+ */
+export interface DetailedTrade {
+  trade_id: string
+  ticker: string
+  strategy: string
+  direction: 'Long' | 'Short'
+  status: 'open' | 'closed' | 'partial'
+  entry_date: string
+  exit_date: string | null
+  expiry_date: string | null
+  legs: LegDetail[]
+  summary: TradeSummary
+}
+
+export interface DetailedTradeListResponse {
+  status: 'success' | 'error'
+  trades: DetailedTrade[]
+  total_count: number
+  message?: string
+}

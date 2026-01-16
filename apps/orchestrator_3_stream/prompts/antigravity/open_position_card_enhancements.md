@@ -19,8 +19,8 @@ Enhance the OpenPositionCard.vue component to display additional options market 
 
 Add the following columns to the `el-table` that displays the legs:
 
-#### A. Greeks Column
-Display the option Greeks for each leg. Show as a compact multi-line cell:
+#### A. Greek Columns
+Display the option Greeks for each leg. Show as invidudual columns uniform spacing with the other columns on the card:
 ```
 Delta: 0.45
 Gamma: 0.02

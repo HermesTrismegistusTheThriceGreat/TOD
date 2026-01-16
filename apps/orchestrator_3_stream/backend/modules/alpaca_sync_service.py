@@ -330,13 +330,20 @@ class AlpacaSyncService:
             elif option_type == 'put':
                 puts.append({'side': side, 'strike': strike})
 
-        # Check for Iron Condor (4 legs: 2 calls + 2 puts)
+        # Check for Iron Butterfly (4 legs: 2 calls + 2 puts, short strikes equal)
         if len(orders) == 4 and len(calls) == 2 and len(puts) == 2:
-            # Verify structure: long/short call + long/short put
-            call_sides = set(c['side'] for c in calls)
-            put_sides = set(p['side'] for p in puts)
-            if call_sides == {'buy', 'sell'} and put_sides == {'buy', 'sell'}:
-                return 'iron_condor'
+            short_call = next((c for c in calls if c['side'] == 'sell'), None)
+            short_put = next((p for p in puts if p['side'] == 'sell'), None)
+
+            if short_call and short_put:
+                if short_call['strike'] == short_put['strike']:
+                    return 'iron_butterfly'
+                else:
+                    # Different short strikes = Iron Condor
+                    call_sides = set(c['side'] for c in calls)
+                    put_sides = set(p['side'] for p in puts)
+                    if call_sides == {'buy', 'sell'} and put_sides == {'buy', 'sell'}:
+                        return 'iron_condor'
 
         # Check for 2-leg strategies
         if len(orders) == 2:
@@ -550,11 +557,11 @@ class AlpacaSyncService:
                             leg.strike,
                             leg.option_type.lower() if leg.option_type else None,
                             True,
-                            {
-                                'position_id': position.id,
+                            json.dumps({
+                                'position_id': str(position.id),
                                 'strategy': position.strategy,
                                 'ticker': position.ticker
-                            }
+                            })
                         )
 
                         if row:
@@ -787,6 +794,208 @@ class AlpacaSyncService:
                 })
 
             return trades
+
+    async def get_detailed_trades(
+        self,
+        underlying: Optional[str] = None,
+        status: Optional[str] = None,  # open, closed, partial, all
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[dict]:
+        """
+        Get trades with full leg-level detail and open/close matching.
+
+        For each trade:
+        1. Fetch all orders grouped by trade_id
+        2. Group orders by leg (symbol)
+        3. Match opening order with closing order per leg
+        4. Calculate per-leg P&L
+        5. Aggregate into summary
+
+        Returns:
+            List of DetailedTrade dictionaries
+        """
+        pool = await self._get_pool()
+
+        async with pool.acquire() as conn:
+            # Step 1: Get all trade_ids with basic info
+            trade_query = """
+                SELECT DISTINCT
+                    trade_id,
+                    underlying,
+                    strategy_type,
+                    MIN(expiry_date) as expiry_date,
+                    MIN(submitted_at) as entry_date
+                FROM alpaca_orders
+                WHERE ($1::TEXT IS NULL OR underlying = $1)
+                GROUP BY trade_id, underlying, strategy_type
+                ORDER BY entry_date DESC
+                LIMIT $2 OFFSET $3
+            """
+            trade_rows = await conn.fetch(trade_query, underlying, limit, offset)
+
+            if not trade_rows:
+                return []
+
+            detailed_trades = []
+
+            for trade_row in trade_rows:
+                trade_id = trade_row['trade_id']
+
+                # Step 2: Fetch all orders for this trade
+                orders_query = """
+                    SELECT
+                        alpaca_order_id, symbol, underlying, side,
+                        qty, filled_qty, filled_avg_price, status,
+                        option_type, strike_price, expiry_date,
+                        leg_number, submitted_at, filled_at
+                    FROM alpaca_orders
+                    WHERE trade_id = $1
+                    ORDER BY leg_number, submitted_at
+                """
+                orders = await conn.fetch(orders_query, trade_id)
+
+                # Step 3: Group orders by symbol (leg)
+                legs_by_symbol: Dict[str, List[dict]] = defaultdict(list)
+                for order in orders:
+                    legs_by_symbol[order['symbol']].append(dict(order))
+
+                # Step 4: Build leg details with open/close matching
+                leg_details = []
+                opening_credit = 0.0  # Net premium from opening legs (SELL - BUY)
+                closing_debit = 0.0   # Net premium for closing legs (BUY - SELL)
+                closed_legs = 0
+
+                for leg_num, (symbol, leg_orders) in enumerate(legs_by_symbol.items(), 1):
+                    # Sort by time to identify open vs close
+                    leg_orders.sort(key=lambda x: x['submitted_at'] or datetime.min)
+
+                    # First order is the opening order
+                    open_order = leg_orders[0]
+                    close_order = leg_orders[1] if len(leg_orders) > 1 else None
+
+                    # Determine open action
+                    open_action = 'SELL' if open_order['side'] == 'sell' else 'BUY'
+                    open_fill = float(open_order['filled_avg_price'] or 0)
+
+                    # Determine close action (opposite of open)
+                    close_action = None
+                    close_fill = None
+                    close_date = None
+                    is_closed = False
+
+                    if close_order:
+                        close_action = 'BUY' if close_order['side'] == 'buy' else 'SELL'
+                        close_fill = float(close_order['filled_avg_price'] or 0)
+                        close_date = close_order['filled_at'].isoformat() if close_order['filled_at'] else None
+                        is_closed = True
+                        closed_legs += 1
+
+                    # Calculate P&L per leg
+                    quantity = int(open_order['filled_qty'] or open_order['qty'] or 1)
+
+                    # Track opening credit/debit
+                    if open_action == 'SELL':
+                        # Sold to open: adds to opening credit
+                        opening_credit += open_fill * quantity * 100
+                    else:  # BUY to open
+                        # Bought to open: reduces net opening credit
+                        opening_credit -= open_fill * quantity * 100
+
+                    # Track closing debit/credit
+                    if is_closed:
+                        if close_action == 'BUY':
+                            # Bought to close: adds to closing debit
+                            closing_debit += close_fill * quantity * 100
+                        else:  # SELL to close
+                            # Sold to close: reduces net closing debit
+                            closing_debit -= close_fill * quantity * 100
+
+                    # Calculate per-leg P&L
+                    if open_action == 'SELL':
+                        if is_closed:
+                            pnl_per_contract = open_fill - close_fill
+                        else:
+                            pnl_per_contract = open_fill  # Unrealized
+                    else:
+                        if is_closed:
+                            pnl_per_contract = close_fill - open_fill
+                        else:
+                            pnl_per_contract = -open_fill  # Unrealized (cost)
+
+                    pnl_total = pnl_per_contract * quantity * 100
+
+                    # Build description (e.g., "423 Call")
+                    strike = open_order['strike_price']
+                    opt_type = (open_order['option_type'] or 'option').capitalize()
+                    description = f"{int(strike)} {opt_type}" if strike else symbol
+
+                    leg_details.append({
+                        'leg_number': leg_num,
+                        'description': description,
+                        'symbol': symbol,
+                        'strike': float(strike) if strike else 0,
+                        'option_type': (open_order['option_type'] or 'call').lower(),
+                        'open_action': open_action,
+                        'open_fill': open_fill,
+                        'open_date': open_order['submitted_at'].isoformat() if open_order['submitted_at'] else None,
+                        'close_action': close_action,
+                        'close_fill': close_fill,
+                        'close_date': close_date,
+                        'quantity': quantity,
+                        'pnl_per_contract': round(pnl_per_contract, 4),
+                        'pnl_total': round(pnl_total, 2),
+                        'is_closed': is_closed
+                    })
+
+                # Step 5: Build summary
+                net_pnl_total = opening_credit - closing_debit
+                # All legs in a strategy should have equal quantities, use first leg's quantity
+                quantity = leg_details[0]['quantity'] if leg_details else 1
+                net_pnl_per_contract = net_pnl_total / (quantity * 100) if quantity else 0
+
+                # Determine trade status
+                open_legs = len(leg_details) - closed_legs
+                if closed_legs == 0:
+                    trade_status = 'open'
+                elif open_legs == 0:
+                    trade_status = 'closed'
+                else:
+                    trade_status = 'partial'
+
+                # Filter by status if requested
+                if status and status != 'all' and trade_status != status:
+                    continue
+
+                # Determine direction (net credit = Short, net debit = Long)
+                direction = 'Short' if opening_credit > 0 else 'Long'
+
+                # Find exit date (latest close date)
+                exit_dates = [leg['close_date'] for leg in leg_details if leg['close_date']]
+                exit_date = max(exit_dates) if exit_dates else None
+
+                detailed_trades.append({
+                    'trade_id': str(trade_id),
+                    'ticker': trade_row['underlying'] or 'UNKNOWN',
+                    'strategy': trade_row['strategy_type'] or 'options',
+                    'direction': direction,
+                    'status': trade_status,
+                    'entry_date': trade_row['entry_date'].isoformat() if trade_row['entry_date'] else None,
+                    'exit_date': exit_date,
+                    'expiry_date': trade_row['expiry_date'].isoformat() if trade_row['expiry_date'] else None,
+                    'legs': leg_details,
+                    'summary': {
+                        'opening_credit': round(opening_credit, 2),
+                        'closing_debit': round(closing_debit, 2),
+                        'net_pnl_per_contract': round(net_pnl_per_contract, 4),
+                        'net_pnl_total': round(net_pnl_total, 2),
+                        'leg_count': len(leg_details),
+                        'closed_legs': closed_legs,
+                        'open_legs': open_legs
+                    }
+                })
+
+            return detailed_trades
 
     async def get_trade_stats(self, status: Optional[str] = None) -> dict:
         """

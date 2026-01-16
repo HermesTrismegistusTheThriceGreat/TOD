@@ -1,15 +1,3 @@
-orchestrator_agent_id: d340de1c-acd8-4584-9ba2-5ae4a814e4a1
-completion_agent_id: 648beaf6-848d-4200-ac80-08485e8973a8
-previous_completions:
-- completion_type: none
-  user_input_on_enter: Good news Trade Stats Page and Button Work! Which files should
-    I read to understand how the data is being transformed and brought in? I want
-    to think about different way to display data on the page need to look at the appropriate
-    files to understand what's going on, we just got it up and running yesterday /question
-  order: 1
-- completion_type: none
-  user_input_on_enter: Is our alpaca_orders table located on Neon DB /question?
-  order: 2
-- completion_type: none
-  user_input_on_enter: /experts:database:question actually ask the database expet
-  order: 3
+orchestrator_agent_id: 3b6353c9-77a0-4999-83ab-f7d5c9d75792
+completion_agent_id: null
+previous_completions: []

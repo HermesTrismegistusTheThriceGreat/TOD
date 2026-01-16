@@ -48,6 +48,7 @@ from modules.alpaca_models import (
     CloseLegResponse,
     TradeListResponse,
     TradeStatsResponse,
+    DetailedTradeListResponse,
 )
 
 logger = get_logger()
@@ -1473,6 +1474,51 @@ async def get_trades(
     except Exception as e:
         logger.error(f"Failed to get trades: {e}")
         return TradeListResponse(status="error", message=str(e))
+
+
+@app.get("/api/trades/detailed", response_model=DetailedTradeListResponse, tags=["Trades"])
+async def get_detailed_trades(
+    request: Request,
+    underlying: Optional[str] = None,
+    status: Optional[str] = None,  # open, closed, partial, all
+    limit: int = 50,
+    offset: int = 0
+):
+    """
+    Get detailed trade history with leg-level data.
+
+    Returns trades with full leg breakdown including:
+    - Open/close action and fill prices per leg
+    - Per-leg P&L calculations
+    - Aggregated summary per trade
+
+    Args:
+        underlying: Filter by underlying symbol (e.g., "SPY")
+        status: Filter by status ("open", "closed", "partial", or "all")
+        limit: Maximum number of trades to return (default 50)
+        offset: Offset for pagination
+
+    Returns:
+        DetailedTradeListResponse with list of detailed trades
+    """
+    try:
+        logger.http_request("GET", "/api/trades/detailed")
+        sync_service = get_alpaca_sync_service(request.app)
+        trades = await sync_service.get_detailed_trades(
+            underlying=underlying,
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+        logger.http_request("GET", "/api/trades/detailed", 200)
+        return DetailedTradeListResponse(
+            status="success",
+            trades=trades,
+            total_count=len(trades)
+        )
+    except Exception as e:
+        logger.error(f"Failed to get detailed trades: {e}")
+        return DetailedTradeListResponse(status="error", message=str(e))
 
 
 @app.get("/api/trade-stats", response_model=TradeStatsResponse, tags=["Trades"])

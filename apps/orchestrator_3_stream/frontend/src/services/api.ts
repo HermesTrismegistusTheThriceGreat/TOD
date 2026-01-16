@@ -5,7 +5,7 @@
  */
 
 import axios from 'axios'
-import type { TradeListResponse, TradeStatsResponse } from '@/types/trades'
+import type { TradeListResponse, TradeStatsResponse, DetailedTradeListResponse } from '@/types/trades'
 
 // Get base URL from environment variables
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:9403'
@@ -60,6 +60,16 @@ export const tradeApi = {
     const response = await apiClient.get('/api/trade-stats', {
       params: { status }
     })
+    return response.data
+  },
+
+  async getDetailedTrades(params?: {
+    underlying?: string
+    status?: 'open' | 'closed' | 'partial' | 'all'
+    limit?: number
+    offset?: number
+  }): Promise<DetailedTradeListResponse> {
+    const response = await apiClient.get('/api/trades/detailed', { params })
     return response.data
   },
 

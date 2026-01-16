@@ -79,7 +79,7 @@ LOG_DIR = Path(os.getenv("LOG_DIR", "backend/logs"))
 # ============================================================================
 
 CORS_ORIGINS = os.getenv(
-    "CORS_ORIGINS", f"http://{FRONTEND_HOST}:{FRONTEND_PORT}"
+    "CORS_ORIGINS", f"http://{FRONTEND_HOST}:{FRONTEND_PORT},http://localhost:{FRONTEND_PORT}"
 ).split(",")
 
 # ============================================================================
