@@ -145,6 +145,7 @@ docs/_build/
 dist-ssr/
 *.local
 .mcp.json
+.mcp.json.*
 
 # === AI Docs (cached documentation) ===
 ai_docs/*

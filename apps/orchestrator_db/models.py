@@ -564,6 +564,91 @@ class AlpacaPosition(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════
+# OPTION_GREEKS_SNAPSHOT MODEL
+# ═══════════════════════════════════════════════════════════
+
+
+class OptionGreeksSnapshot(BaseModel):
+    """
+    Option Greeks snapshot record from Alpaca API.
+
+    Maps to: option_greeks_snapshots table
+    """
+    id: UUID
+    snapshot_at: datetime
+    snapshot_type: Optional[Literal['london_session', 'us_session', 'asian_session', 'manual']] = None
+
+    # Option identifiers
+    symbol: str
+    underlying: str
+    expiry_date: date
+    strike_price: float
+    option_type: Literal['call', 'put']
+
+    # Greeks
+    delta: Optional[float] = None
+    gamma: Optional[float] = None
+    theta: Optional[float] = None
+    vega: Optional[float] = None
+    rho: Optional[float] = None
+    implied_volatility: Optional[float] = None
+
+    # Pricing
+    underlying_price: Optional[float] = None
+    bid_price: Optional[float] = None
+    ask_price: Optional[float] = None
+    mid_price: Optional[float] = None
+    last_trade_price: Optional[float] = None
+
+    # Volume
+    volume: int = 0
+    open_interest: int = 0
+
+    # Metadata
+    raw_data: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if v is None:
+            return None
+        if isinstance(v, UUID):
+            return v
+        return UUID(str(v))
+
+    @field_validator('strike_price', 'delta', 'gamma', 'theta', 'vega', 'rho',
+                     'implied_volatility', 'underlying_price', 'bid_price',
+                     'ask_price', 'mid_price', 'last_trade_price', mode='before')
+    @classmethod
+    def convert_decimal(cls, v):
+        """Convert Decimal to float"""
+        if v is None:
+            return None
+        if isinstance(v, Decimal):
+            return float(v)
+        return v
+
+    @field_validator('raw_data', mode='before')
+    @classmethod
+    def parse_raw_data(cls, v):
+        """Parse JSON string to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
+        return v
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat(),
+            date: lambda v: v.isoformat()
+        }
+
+
+# ═══════════════════════════════════════════════════════════
 # EXPORT PUBLIC API
 # ═══════════════════════════════════════════════════════════
 
@@ -577,4 +662,5 @@ __all__ = [
     "AiDeveloperWorkflow",
     "AlpacaOrder",
     "AlpacaPosition",
+    "OptionGreeksSnapshot",
 ]

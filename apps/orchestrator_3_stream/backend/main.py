@@ -37,6 +37,8 @@ from modules.autocomplete_models import (
 )
 from modules.alpaca_service import init_alpaca_service, get_alpaca_service
 from modules.alpaca_sync_service import init_alpaca_sync_service, get_alpaca_sync_service
+from modules.greeks_snapshot_service import init_greeks_snapshot_service, get_greeks_snapshot_service
+from modules.greeks_scheduler import init_greeks_scheduler, shutdown_greeks_scheduler
 from modules.alpaca_models import (
     GetPositionsResponse,
     GetPositionResponse,
@@ -205,11 +207,30 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Auto-sync failed (non-blocking): {e}")
 
+    # Initialize Greeks Snapshot service
+    logger.info("Initializing Greeks Snapshot service...")
+    greeks_service = await init_greeks_snapshot_service(app)
+    logger.success("Greeks Snapshot service initialized")
+
+    # Initialize Greeks Scheduler
+    logger.info("Initializing Greeks Scheduler...")
+    greeks_scheduler = init_greeks_scheduler(app)
+    logger.success("Greeks Scheduler initialized")
+
     logger.success("Backend initialization complete")
 
     yield  # Server runs
 
     # Shutdown
+    # Shutdown Greeks Scheduler
+    logger.info("Shutting down Greeks Scheduler...")
+    shutdown_greeks_scheduler()
+
+    # Shutdown Greeks Snapshot service
+    if hasattr(app.state, 'greeks_snapshot_service'):
+        logger.info("Shutting down Greeks Snapshot service...")
+        await app.state.greeks_snapshot_service.close()
+
     # Shutdown Alpaca Sync service
     if hasattr(app.state, 'alpaca_sync_service'):
         logger.info("Shutting down Alpaca Sync service...")
@@ -1426,6 +1447,123 @@ async def close_leg(request: Request, position_id: str, close_request: CloseLegR
             status="error",
             message=str(e)
         )
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# GREEKS SNAPSHOT ENDPOINTS
+# ════════════════════════════════════════════════════════════════════════════════
+
+
+@app.post("/api/greeks/snapshot", tags=["Greeks"])
+async def trigger_greeks_snapshot(request: Request, underlying: str = "GLD"):
+    """
+    Manually trigger a Greeks snapshot for an underlying.
+
+    Args:
+        underlying: Underlying symbol (default: GLD)
+
+    Returns:
+        Snapshot result with count of persisted records
+    """
+    try:
+        logger.http_request("POST", f"/api/greeks/snapshot?underlying={underlying}")
+        service = get_greeks_snapshot_service(request.app)
+
+        if not service.is_configured:
+            return {
+                "status": "error",
+                "message": "Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file."
+            }
+
+        count = await service.fetch_and_persist_snapshots(
+            underlying=underlying,
+            snapshot_type="manual"
+        )
+
+        logger.http_request("POST", f"/api/greeks/snapshot?underlying={underlying}", 200)
+        return {
+            "status": "success",
+            "underlying": underlying,
+            "records": count,
+            "message": f"Successfully persisted {count} Greeks snapshots for {underlying}"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to trigger Greeks snapshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/greeks/latest", tags=["Greeks"])
+async def get_latest_greeks(
+    request: Request,
+    underlying: str = "GLD",
+    limit: int = 100
+):
+    """
+    Get latest Greeks snapshots for an underlying.
+
+    Args:
+        underlying: Underlying symbol (default: GLD)
+        limit: Maximum records to return (default: 100)
+
+    Returns:
+        List of latest Greeks snapshots
+    """
+    try:
+        logger.http_request("GET", f"/api/greeks/latest?underlying={underlying}&limit={limit}")
+        service = get_greeks_snapshot_service(request.app)
+
+        snapshots = await service.get_latest_snapshots(underlying, limit)
+
+        logger.http_request("GET", f"/api/greeks/latest?underlying={underlying}&limit={limit}", 200)
+        return {
+            "status": "success",
+            "underlying": underlying,
+            "snapshots": [s.model_dump() for s in snapshots],
+            "count": len(snapshots)
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get latest Greeks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/greeks/history/{symbol}", tags=["Greeks"])
+async def get_greeks_history(
+    request: Request,
+    symbol: str,
+    days: int = 30,
+    limit: int = 1000
+):
+    """
+    Get Greeks history for a specific option symbol.
+
+    Args:
+        symbol: OCC option symbol (e.g., GLD260117C00175000)
+        days: Number of days of history (default: 30)
+        limit: Maximum records to return (default: 1000)
+
+    Returns:
+        Greeks history ordered by snapshot_at ASC
+    """
+    try:
+        logger.http_request("GET", f"/api/greeks/history/{symbol}?days={days}&limit={limit}")
+        service = get_greeks_snapshot_service(request.app)
+
+        history = await service.get_greeks_history(symbol, days, limit)
+
+        logger.http_request("GET", f"/api/greeks/history/{symbol}?days={days}&limit={limit}", 200)
+        return {
+            "status": "success",
+            "symbol": symbol,
+            "history": [h.model_dump() for h in history],
+            "count": len(history),
+            "days": days
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get Greeks history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ════════════════════════════════════════════════════════════════════════════════

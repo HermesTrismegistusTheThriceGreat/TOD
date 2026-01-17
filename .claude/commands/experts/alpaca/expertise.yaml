@@ -1,0 +1,671 @@
+# Alpaca Trading Platform Expertise
+# Commission-Free Trading API for Stocks, Crypto, and Options
+
+overview:
+  description: "Alpaca Trading API provides commission-free trading for stocks, ETFs, crypto, and options with comprehensive market data and real-time WebSocket streaming"
+  platform: "Alpaca Markets"
+  api_types:
+    - "Trading API (REST + WebSocket)"
+    - "Market Data API (Historical + Real-time)"
+    - "Broker API (White-label brokerage)"
+  supported_assets:
+    - "US Equities (5000+ stocks)"
+    - "Cryptocurrency (20+ pairs)"
+    - "US Options (American style)"
+    - "ETFs"
+  key_features:
+    - "Commission-free trading"
+    - "Paper trading environment"
+    - "Fractional shares ($1 minimum)"
+    - "Real-time WebSocket streaming"
+    - "Python SDK (alpaca-py)"
+    - "MCP Server integration"
+
+documentation_files:
+  base_directory: "alpaca_docs/"
+  key_files:
+    - "README.md"
+    - "trading-api-overview.md"
+    - "getting-started.md"
+    - "post-order.md"
+    - "get-account.md"
+    - "get-all-orders.md"
+    - "get-all-positions.md"
+    - "websocket-streaming.md"
+    - "options-trading-overview.md"
+    - "options-trading.md"
+    - "option-chain-snapshots.md"
+    - "market-data-api.md"
+    - "streaming-market-data.md"
+    - "alpaca-mcp-server.md"
+    - "alpaca-mcp-server-github.md"
+    - "alpaca-py-github-readme.md"
+    - "broker-api.md"
+    - "alpaca-elite.md"
+    - "alpaca-elite-smart-router.md"
+
+api_endpoints:
+  base_urls:
+    paper_trading: "https://paper-api.alpaca.markets"
+    live_trading: "https://api.alpaca.markets"
+    websocket_paper: "wss://paper-api.alpaca.markets/stream"
+    websocket_live: "wss://api.alpaca.markets/stream"
+    market_data: "https://data.alpaca.markets"
+
+  authentication:
+    method: "API Key Headers"
+    headers:
+      key_id: "APCA-API-KEY-ID"
+      secret_key: "APCA-API-SECRET-KEY"
+    note: "Paper and live keys are different; use appropriate endpoint"
+
+  account_endpoints:
+    get_account:
+      method: "GET"
+      path: "/v2/account"
+      purpose: "Retrieve account information, balances, buying power, and status"
+      key_response_fields:
+        - "id, account_number, status, currency"
+        - "cash, equity, portfolio_value"
+        - "buying_power, daytrading_buying_power, regt_buying_power"
+        - "options_buying_power, non_marginable_buying_power"
+        - "multiplier (1=cash, 2=margin, 4=PDT)"
+        - "pattern_day_trader, daytrade_count"
+        - "options_approved_level, options_trading_level"
+        - "long_market_value, short_market_value"
+        - "initial_margin, maintenance_margin"
+
+    get_portfolio_history:
+      method: "GET"
+      path: "/v2/account/portfolio/history"
+      purpose: "Get historical portfolio equity and P&L data"
+
+  order_endpoints:
+    post_order:
+      method: "POST"
+      path: "/v2/orders"
+      purpose: "Place a new order (market, limit, stop, trailing stop)"
+      required_fields:
+        - "symbol (string) - Asset to trade"
+        - "side (enum) - buy or sell"
+        - "type (enum) - market, limit, stop, stop_limit, trailing_stop"
+        - "time_in_force (enum) - day, gtc, opg, cls, ioc, fok"
+      optional_fields:
+        - "qty (string) - Number of shares (fractional allowed for market/day)"
+        - "notional (string) - Dollar amount (market orders only)"
+        - "limit_price (string) - Required for limit/stop_limit"
+        - "stop_price (string) - Required for stop/stop_limit"
+        - "trail_price (string) - For trailing_stop"
+        - "trail_percent (string) - For trailing_stop"
+        - "extended_hours (boolean) - Pre/after market trading"
+        - "client_order_id (string) - Custom identifier (max 128 chars)"
+        - "order_class (enum) - simple, bracket, oco, oto, mleg"
+        - "position_intent (enum) - buy_to_open, buy_to_close, sell_to_open, sell_to_close"
+      response_codes:
+        200: "Order created successfully"
+        403: "Insufficient buying power or shares"
+        422: "Invalid parameters"
+
+    get_orders:
+      method: "GET"
+      path: "/v2/orders"
+      purpose: "List orders with filtering options"
+      query_params:
+        - "status (string) - Filter by order status"
+        - "limit (integer) - Max results to return"
+        - "after (timestamp) - Orders after this time"
+        - "until (timestamp) - Orders before this time"
+
+    get_order_by_id:
+      method: "GET"
+      path: "/v2/orders/{order_id}"
+      purpose: "Get single order details"
+
+    cancel_order:
+      method: "DELETE"
+      path: "/v2/orders/{order_id}"
+      purpose: "Cancel a specific order"
+
+    cancel_all_orders:
+      method: "DELETE"
+      path: "/v2/orders"
+      purpose: "Cancel all open orders"
+
+  position_endpoints:
+    get_all_positions:
+      method: "GET"
+      path: "/v2/positions"
+      purpose: "List all open positions with P&L details"
+      response_fields:
+        - "asset_id, symbol, asset_class"
+        - "qty, market_value, cost_basis"
+        - "unrealized_pl, unrealized_plpc"
+        - "current_price, lastday_price"
+        - "change_today"
+
+    get_position:
+      method: "GET"
+      path: "/v2/positions/{symbol_or_asset_id}"
+      purpose: "Get specific position details"
+
+    close_position:
+      method: "DELETE"
+      path: "/v2/positions/{symbol_or_asset_id}"
+      purpose: "Close a position (market order)"
+      query_params:
+        - "qty (string) - Partial close quantity"
+        - "percentage (string) - Partial close percentage"
+
+    close_all_positions:
+      method: "DELETE"
+      path: "/v2/positions"
+      purpose: "Close all open positions"
+
+  asset_endpoints:
+    get_assets:
+      method: "GET"
+      path: "/v2/assets"
+      purpose: "List tradable assets"
+      query_params:
+        - "status (string) - active, inactive"
+        - "asset_class (string) - us_equity, crypto, us_option"
+
+    get_asset:
+      method: "GET"
+      path: "/v2/assets/{symbol_or_asset_id}"
+      purpose: "Get asset details and trading status"
+
+  market_data_endpoints:
+    stock_bars:
+      method: "GET"
+      path: "/v2/stocks/{symbol}/bars"
+      purpose: "Historical OHLCV bars for stocks"
+      query_params:
+        - "timeframe (string) - 1Min, 5Min, 15Min, 1Hour, 1Day"
+        - "start (timestamp) - Start time"
+        - "end (timestamp) - End time"
+        - "limit (integer) - Max bars to return"
+
+    stock_latest_quote:
+      method: "GET"
+      path: "/v2/stocks/{symbol}/quotes/latest"
+      purpose: "Latest bid/ask quote for stock"
+
+    stock_latest_trade:
+      method: "GET"
+      path: "/v2/stocks/{symbol}/trades/latest"
+      purpose: "Latest trade execution for stock"
+
+    stock_snapshot:
+      method: "GET"
+      path: "/v2/stocks/{symbol}/snapshot"
+      purpose: "Comprehensive snapshot with quote, trade, bars"
+
+    crypto_bars:
+      method: "GET"
+      path: "/v2/crypto/{symbol}/bars"
+      purpose: "Historical OHLCV bars for crypto"
+
+    crypto_latest_quote:
+      method: "GET"
+      path: "/v2/crypto/{symbol}/quotes/latest"
+      purpose: "Latest bid/ask for crypto"
+
+    option_contracts:
+      method: "GET"
+      path: "/v2/options/contracts"
+      purpose: "Search option contracts by underlying"
+      query_params:
+        - "underlying_symbol (string) - Underlying stock symbol"
+        - "expiration_date (date) - Filter by expiration"
+        - "strike_price (number) - Filter by strike"
+        - "type (string) - call or put"
+
+    option_latest_quote:
+      method: "GET"
+      path: "/v2/options/{symbol}/quotes/latest"
+      purpose: "Latest quote for option contract with Greeks"
+
+order_types:
+  market:
+    description: "Execute immediately at best available price"
+    asset_support: "Stocks, crypto, options"
+    time_in_force: "day, gtc (stocks); gtc, ioc (crypto); day (options)"
+    fractional: "Yes for stocks with day TIF"
+
+  limit:
+    description: "Execute at specified price or better"
+    asset_support: "Stocks, crypto, options"
+    requires: "limit_price parameter"
+    time_in_force: "day, gtc, opg, cls, ioc, fok (stocks); gtc, ioc (crypto); day (options)"
+
+  stop:
+    description: "Trigger market order when stop price reached"
+    asset_support: "Stocks only"
+    requires: "stop_price parameter"
+    time_in_force: "day, gtc"
+
+  stop_limit:
+    description: "Trigger limit order when stop price reached"
+    asset_support: "Stocks, crypto"
+    requires: "stop_price and limit_price parameters"
+    time_in_force: "day, gtc (stocks); gtc, ioc (crypto)"
+
+  trailing_stop:
+    description: "Dynamic stop order that trails market price"
+    asset_support: "Stocks only"
+    requires: "trail_price OR trail_percent parameter"
+    time_in_force: "day, gtc"
+
+time_in_force_values:
+  day:
+    description: "Valid for current trading day only"
+    regular_hours: "9:30am - 4:00pm ET"
+    extended_hours: "Available with extended_hours=true"
+    asset_support: "Stocks, options"
+
+  gtc:
+    description: "Good-til-canceled, persists across days"
+    note: "Subject to corporate action price adjustments"
+    asset_support: "Stocks, crypto"
+
+  opg:
+    description: "Market/limit on open (opening auction only)"
+    submission_cutoff: "Before 9:28am ET (or queued for next day)"
+    asset_support: "Stocks"
+
+  cls:
+    description: "Market/limit on close (closing auction only)"
+    submission_cutoff: "Before 3:50pm ET (or queued for next day)"
+    asset_support: "Stocks"
+
+  ioc:
+    description: "Immediate-or-cancel, unfilled portion canceled"
+    asset_support: "Stocks, crypto"
+
+  fok:
+    description: "Fill-or-kill, entire order must fill or cancel"
+    asset_support: "Stocks"
+
+order_statuses:
+  common:
+    new: "Order routed to exchanges for execution"
+    partially_filled: "Order partially filled"
+    filled: "Order completely filled (terminal state)"
+    done_for_day: "Order done for day, updates resume next trading day"
+    canceled: "Order canceled (terminal state)"
+    expired: "Order expired based on time_in_force (terminal state)"
+    replaced: "Order replaced by another order (terminal state)"
+    pending_cancel: "Waiting to be canceled"
+    pending_replace: "Waiting to be replaced"
+
+  rare:
+    accepted: "Received by Alpaca, not yet routed"
+    pending_new: "Routed to exchanges, not yet accepted"
+    accepted_for_bidding: "Received by exchanges, being evaluated"
+    stopped: "Stopped with guaranteed trade pending"
+    rejected: "Order rejected (terminal state)"
+    suspended: "Order suspended, not eligible for trading"
+    calculated: "Completed with pending settlement calculations"
+
+options_trading:
+  overview:
+    style: "American style"
+    support: "US-listed equities options"
+    levels: "Level 1-3 trading"
+    contract_unit: "100 shares per contract"
+    exercise: "API-based exercise capability"
+    hours: "No extended hours trading"
+    fractional: "Not supported"
+
+  trading_levels:
+    level_0:
+      description: "Options trading disabled"
+    level_1:
+      description: "Covered calls and cash-secured puts"
+      requirements:
+        covered_call: "Must own 100 shares per contract"
+        cash_secured_put: "Buying power = (strike × 100) - premium"
+    level_2:
+      description: "Level 1 + long calls/puts"
+      requirements:
+        buying_power: "Premium cost must not exceed options_buying_power"
+    level_3:
+      description: "Level 2 + spreads/straddles/multi-leg strategies"
+      order_class: "mleg required for multi-leg orders"
+
+  order_parameters:
+    order_class: "simple (single leg) or mleg (multi-leg)"
+    type: "market or limit"
+    time_in_force: "day only"
+    position_intent: "buy_to_open, buy_to_close, sell_to_open, sell_to_close"
+    legs: "Array of order legs (max 4 for mleg)"
+    limit_price_notation:
+      debit: "Positive value = cost to be paid"
+      credit: "Negative value = amount to be received"
+
+  post_trade_activities:
+    exercise:
+      endpoint: "POST /v2/positions/{symbol}/exercise"
+      description: "Exercise held option contract during market hours"
+      result:
+        - "OPEXC activity removes option position"
+        - "OPTRD activity records stock transaction"
+      call_exercise: "Buys stock at strike price"
+      put_exercise: "Sells stock at strike price"
+
+    assignment:
+      description: "Seller obligation fulfillment"
+      result:
+        - "OPASN activity removes short position"
+        - "OPTRD activity documents fulfillment"
+      call_assignment: "Obligates stock sale at strike"
+      put_assignment: "Obligates stock purchase at strike"
+
+    expiration:
+      timing: "Starts 3:30 PM ET on expiration day"
+      itm_long: "Auto-exercise if account has resources"
+      itm_short: "Auto-assign covered calls and cash-secured puts"
+      otm: "Expire worthless"
+      underfunded: "Liquidate while in-the-money"
+
+websocket_streaming:
+  connection:
+    protocol: "RFC6455 WebSocket"
+    endpoints:
+      paper: "wss://paper-api.alpaca.markets/stream"
+      live: "wss://api.alpaca.markets/stream"
+    codecs: "JSON or MessagePack"
+    note: "Paper endpoint uses binary frames"
+
+  authentication:
+    action: "auth"
+    payload:
+      key: "API key ID"
+      secret: "API secret key"
+    responses:
+      authorized:
+        stream: "authorization"
+        status: "authorized"
+      unauthorized:
+        stream: "authorization"
+        status: "unauthorized"
+
+  subscription:
+    action: "listen"
+    streams:
+      - "trade_updates"
+    acknowledgement:
+      stream: "listening"
+      data: "List of subscribed streams"
+    note: "Send empty streams array to unsubscribe"
+
+  trade_updates_events:
+    common:
+      new: "Order routed to exchanges"
+      fill:
+        fields: "timestamp, price, qty, position_qty"
+        description: "Order completely filled"
+      partial_fill:
+        fields: "timestamp, price, qty, position_qty"
+        description: "Partial fill occurred"
+      canceled:
+        fields: "timestamp"
+        description: "Order cancelation processed"
+      expired:
+        fields: "timestamp"
+        description: "Order reached end of lifespan"
+      done_for_day: "Order done for day"
+      replaced:
+        fields: "timestamp"
+        description: "Order replacement processed"
+
+    rare:
+      accepted: "Received but not yet routed"
+      rejected: "Order rejected with timestamp"
+      pending_new: "Routed but not yet accepted"
+      stopped: "Trade guaranteed but not yet occurred"
+      pending_cancel: "Awaiting cancelation"
+      pending_replace: "Awaiting replacement"
+      calculated: "Settlement calculations pending"
+      suspended: "Not eligible for trading"
+      order_replace_rejected: "Replacement rejected"
+      order_cancel_rejected: "Cancelation rejected"
+
+  message_structure:
+    stream: "trade_updates"
+    data:
+      event: "Event type (fill, partial_fill, etc.)"
+      order: "Complete order object (matches REST API)"
+      timestamp: "Event timestamp (for fills/partial fills)"
+      price: "Execution price (for fills/partial fills)"
+      qty: "Execution quantity (for fills/partial fills)"
+      position_qty: "Total position size after event"
+      position_qtys: "Multi-leg position quantities"
+      legs: "Array of leg executions (for mleg orders)"
+
+alpaca_py_sdk:
+  overview:
+    package: "alpaca-py"
+    python_version: "3.7+"
+    installation: "pip install alpaca-py"
+    pypi: "https://pypi.org/project/alpaca-py/"
+    github: "https://github.com/alpacahq/alpaca-py"
+
+  key_features:
+    - "OOP design with Pydantic request/response models"
+    - "Runtime data validation via Pydantic"
+    - "Asset-specific clients (Stock, Crypto, Option)"
+    - "Historical and real-time market data"
+    - "WebSocket streaming (CryptoDataStream, StockDataStream, OptionDataStream)"
+    - "Broker API support via BrokerClient"
+
+  client_classes:
+    trading:
+      TradingClient: "Place orders, manage positions for stocks/crypto/options"
+
+    market_data:
+      StockHistoricalDataClient: "Historical stock data"
+      CryptoHistoricalDataClient: "Historical crypto data (no keys required)"
+      OptionHistoricalDataClient: "Historical options data"
+      StockDataStream: "Real-time stock data streaming"
+      CryptoDataStream: "Real-time crypto data streaming"
+      OptionDataStream: "Real-time options data streaming"
+
+    broker:
+      BrokerClient: "White-label brokerage API"
+
+  request_models_pattern:
+    GetOrdersRequest: "For TradingClient.get_orders()"
+    CryptoBarsRequest: "For CryptoHistoricalDataClient.get_crypto_bars()"
+    MarketOrderRequest: "For TradingClient.submit_order()"
+    note: "Each method has unique request model for type safety"
+
+  authentication:
+    api_key_id: "APCA-API-KEY-ID"
+    api_secret_key: "APCA-API-SECRET-KEY"
+    paper_keys: "For paper trading environment"
+    live_keys: "For live trading environment"
+    note: "Pass keys to client constructors"
+
+alpaca_mcp_server:
+  overview:
+    description: "MCP server for natural language trading via AI chat apps"
+    github: "https://github.com/alpacahq/alpaca-mcp-server"
+    protocol: "Model Context Protocol (MCP) by Anthropic"
+    purpose: "Bridge AI interfaces to Alpaca Trading API"
+
+  capabilities:
+    market_data: "Historical and real-time data"
+    order_actions: "Entry, change, cancel orders"
+    portfolio: "Positions, buying power, P&L"
+    automation: "Alerts and risk checks"
+
+  available_functions:
+    count: 43
+    categories:
+      account: "get_account_info"
+      positions: "get_all_positions, get_open_position"
+      portfolio: "get_portfolio_history"
+      assets: "get_asset, get_all_assets"
+      watchlist: "create_watchlist, get_watchlists, update_watchlist_by_id, add_asset_to_watchlist_by_id"
+      corporate_actions: "get_corporate_actions"
+      calendar: "get_calendar, get_market_clock"
+      market_data_stock: "get_stock_bars, get_stock_quote, get_stock_latest_bar, get_stock_snapshot"
+      market_data_crypto: "get_crypto_bars, get_crypto_latest_quote, get_crypto_snapshot, get_crypto_latest_orderbook"
+      market_data_options: "get_option_contracts, get_option_latest_quote, get_option_snapshot"
+      trading_orders: "get_orders, place_stock_order, place_crypto_order, place_option_market_order, cancel_all_orders, cancel_order_by_id"
+      trading_positions: "close_position, close_all_positions, exercise_options_position"
+
+  supported_clients:
+    local_or_remote:
+      - "Claude Desktop"
+      - "VS Code"
+      - "Cursor"
+      - "PyCharm"
+      - "Claude Code (CLI)"
+      - "Gemini CLI"
+    remote_only:
+      - "Claude Web"
+      - "Claude Mobile App"
+      - "ChatGPT Web"
+      - "ChatGPT Desktop"
+      - "ChatGPT Mobile App"
+
+  prerequisites:
+    - "Python 3.10+"
+    - "uv (Astral package manager)"
+    - "Alpaca API keys (paper or live)"
+    - "MCP client (IDE or chat app)"
+    - "Terminal access"
+
+  security_considerations:
+    - "HTTPS/TLS for encrypted communication"
+    - "Token-based authentication for remote deployment"
+    - "Protect API keys from public exposure"
+    - "Verify correct account type (paper vs live)"
+
+fractional_trading:
+  overview:
+    description: "Trade fractions of shares starting at $1"
+    supported_symbols: "2000+ US equities"
+    order_type: "Market orders only"
+    time_in_force: "day only"
+
+  parameters:
+    qty: "Fractional quantity as string (e.g., '0.5')"
+    notional: "Dollar amount to invest (e.g., '10.00')"
+    note: "Cannot use both qty and notional in same order"
+
+crypto_trading:
+  overview:
+    description: "24/7 crypto trading via API and dashboard"
+    supported_pairs: "20+ cryptocurrencies"
+    commission: "Commission-free"
+
+  order_types:
+    - "market"
+    - "limit"
+    - "stop_limit"
+
+  time_in_force:
+    - "gtc (good-til-canceled)"
+    - "ioc (immediate-or-cancel)"
+
+  no_support:
+    - "Extended hours (already 24/7)"
+    - "Fractional crypto"
+
+account_types:
+  paper_trading:
+    description: "Free real-time simulation environment"
+    availability: "All Alpaca users globally"
+    features: "Test algorithms with real-time market data"
+    reset: "Unlimited resets for testing"
+    api_endpoint: "paper-api.alpaca.markets"
+
+  live_trading:
+    description: "Real money brokerage accounts"
+    availability: "Individuals and businesses (geo-restrictions apply)"
+    api_endpoint: "api.alpaca.markets"
+
+  crypto_accounts:
+    description: "Dedicated crypto trading accounts"
+    trading_hours: "24/7"
+
+buying_power:
+  multipliers:
+    "1": "Cash account - buying power = cash"
+    "2": "Reg T margin - 2x intraday and overnight (default for $2000+ equity)"
+    "4": "PDT account - 4x intraday, 2x overnight"
+
+  types:
+    buying_power: "Standard buying power based on multiplier"
+    daytrading_buying_power: "For day trades (if PDT)"
+    regt_buying_power: "Regulation T buying power"
+    options_buying_power: "For options trading"
+    non_marginable_buying_power: "Non-margin buying power"
+
+  pattern_day_trader:
+    flag: "pattern_day_trader (boolean)"
+    daytrade_count: "Number of day trades in last 5 trading days"
+    requirement: "$25,000 minimum equity for PDT accounts"
+
+error_handling:
+  http_codes:
+    200: "Success"
+    403: "Forbidden - insufficient buying power/shares"
+    404: "Not found - invalid symbol/order_id"
+    422: "Unprocessable - invalid parameters"
+    500: "Internal server error"
+
+  websocket_errors:
+    action: "error"
+    data:
+      error_message: "Error description"
+    behavior: "Server sends error then closes connection"
+
+  common_errors:
+    insufficient_funds: "403 - buying_power too low"
+    invalid_symbol: "404 - symbol not found or not tradable"
+    invalid_qty: "422 - qty format incorrect or not allowed"
+    invalid_time_in_force: "422 - TIF not supported for asset class"
+    market_closed: "403 - market closed and extended_hours=false"
+
+best_practices:
+  - "Always check account status before trading"
+  - "Validate symbol is tradable via GET /v2/assets/{symbol}"
+  - "Use client_order_id for idempotency"
+  - "Monitor WebSocket trade_updates for real-time order status"
+  - "Check buying_power before submitting orders"
+  - "Use paper trading to test strategies"
+  - "Handle 403/422 errors gracefully"
+  - "For options, verify options_approved_level and options_trading_level"
+  - "Use position_intent for clarity in options orders"
+  - "Subscribe to trade_updates stream for order tracking"
+  - "Implement error handling for WebSocket disconnections"
+  - "Store API keys securely (never commit to version control)"
+  - "Use appropriate endpoint (paper vs live)"
+
+key_file_locations:
+  documentation:
+    base: "alpaca_docs/"
+    trading_api: "alpaca_docs/trading-api-overview.md"
+    orders: "alpaca_docs/post-order.md"
+    account: "alpaca_docs/get-account.md"
+    websocket: "alpaca_docs/websocket-streaming.md"
+    options: "alpaca_docs/options-trading-overview.md"
+    mcp_server: "alpaca_docs/alpaca-mcp-server.md"
+    sdk: "alpaca_docs/alpaca-py-github-readme.md"
+
+architecture_summary: |
+  Alpaca Trading API provides a comprehensive REST and WebSocket interface for
+  commission-free trading of stocks, crypto, and options. The platform offers
+  paper trading for testing, fractional shares, real-time market data, and
+  extensive order types. Python SDK (alpaca-py) provides OOP interface with
+  Pydantic models. MCP Server enables natural language trading through AI chat
+  applications. Authentication via API key headers. WebSocket streaming provides
+  real-time trade updates and market data. Options trading supports levels 1-3
+  with multi-leg strategies. Buying power calculation varies by account type
+  (cash, margin, PDT). All endpoints return consistent JSON responses with
+  detailed error handling.
