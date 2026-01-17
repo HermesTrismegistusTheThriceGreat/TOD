@@ -16,6 +16,18 @@ OUTPUT_DIRECTORY: `specs/`
 MCP_CONFIG_PATH: .mcp.json.alpaca
 PROJECT_ROOT: /Users/muzz/Desktop/tac/TOD
 
+## Data Validation
+
+### Thresholds
+- `MIN_VALID_MAX_LOSS`: $0.10 - Max loss below this suggests data quality issues
+- `MAX_VALID_CREDIT_PCT`: 95% - Credit exceeding this percentage of width is suspicious
+- `MIN_VALID_WING_COST`: $0.50 - Wing cost below this suggests stale or indicative quotes
+
+### Warning Flags
+- `⚠️ VERIFY QUOTES` - Max loss near zero, verify bid/ask quotes are live
+- `⚠️ DATA ERROR` - Impossible values (negative max loss, credit > width)
+- `⚠️ CHECK SPREADS` - Wing costs suspiciously low, check bid-ask spreads
+
 ## Instructions
 
 - This agent spawns a Claude Code subprocess with Alpaca MCP tools enabled
@@ -118,6 +130,25 @@ When invoked, you must follow these steps:
    | Net Theta | Straddle Theta - \|wing_put.theta\| - \|wing_call.theta\| |
    | Theta/Risk | (Net Theta / Max Loss) × 100 |
    | Credit % | (Net Credit / Wing Width) × 100 |
+   | **θ/Credit (NEW)** | **(Net Theta / Net Credit) × 100** |
+   | **Data Quality Flag** | **See validation rules below** |
+
+   **Data Validation Rules (apply after calculations):**
+
+   1. **Check Max Loss validity:**
+      - If Max Loss ≤ $0.10: Set flag = "⚠️ VERIFY QUOTES"
+      - If Max Loss ≤ $0: Set flag = "⚠️ DATA ERROR" and θ/Risk = "N/A"
+
+   2. **Check Credit % validity:**
+      - If Credit % > 95%: Set flag = "⚠️ CHECK SPREADS"
+      - If Credit % > 100%: Set flag = "⚠️ DATA ERROR"
+
+   3. **Check Wing Cost validity:**
+      - If Wing Cost < $0.50: Set flag = "⚠️ VERIFY QUOTES"
+
+   4. **Ranking adjustments:**
+      - Entries with "⚠️ DATA ERROR" should be excluded from rankings
+      - Entries with "⚠️ VERIFY QUOTES" should be shown but de-prioritized with note
 
 5. **Build rankings** - Create two ranking tables:
    - **By Theta Efficiency (θ/Risk)** - Best for rapid decay, sorted descending
@@ -157,33 +188,70 @@ ATM Straddle:
 - {ATM_STRIKE} Put: Bid ${BID}, θ = {THETA}
 - Straddle Credit: ${CREDIT} | Net θ: {THETA}/day
 
-| Wing Width | Credit | Max Loss | θ/Risk | Credit % | Wings θ Cost |
-|------------|--------|----------|--------|----------|--------------|
-| 6 pts      | $X.XX  | $X.XX    | X.XX%  | XX.X%    | X.XXXX       |
-| 8 pts      | $X.XX  | $X.XX    | X.XX%  | XX.X%    | X.XXXX       |
-| 10 pts     | $X.XX  | $X.XX    | X.XX%  | XX.X%    | X.XXXX       |
+| Wing Width | Credit | Max Loss | θ/Risk | θ/Credit | Credit % | Flag |
+|------------|--------|----------|--------|----------|----------|------|
+| 6 pts      | $X.XX  | $X.XX    | X.XX%  | X.XX%    | XX.X%    | -    |
+| 8 pts      | $X.XX  | $X.XX    | X.XX%  | X.XX%    | XX.X%    | -    |
+| 10 pts     | $X.XX  | $X.XX    | X.XX%  | X.XX%    | XX.X%    | -    |
 
 [Repeat for each discovered expiry]
 
 ---
 Rankings
 
-By Theta Efficiency (θ/Risk):
-| Rank | Expiry | Wings | θ/Risk | Max Loss | Credit |
-|------|--------|-------|--------|----------|--------|
-| 1    | {DATE} | X pt  | X.XX%  | $X.XX    | $X.XX  |
+### By Theta Efficiency (θ/Risk)
 
-By Risk-Reward (Credit %):
-| Rank | Expiry | Wings | Credit % | Risk:Reward | Max Loss |
-|------|--------|-------|----------|-------------|----------|
-| 1    | {DATE} | X pt  | XX.X%    | X.X:1       | $X.XX    |
+**Note:** Entries marked with ⚠️ have data quality concerns. Verify quotes before trading.
+
+| Rank | Expiry | Wings | θ/Risk | θ/Credit | Max Loss | Credit | Flag |
+|------|--------|-------|--------|----------|----------|--------|------|
+| 1    | {DATE} | X pt  | X.XX%  | X.XX%    | $X.XX    | $X.XX  | -    |
+
+### By Theta Efficiency (θ/Credit) - Stable Metric
+
+This ranking uses θ/Credit which doesn't inflate with small max loss values.
+
+| Rank | Expiry | Wings | θ/Credit | θ/Risk | Net Credit | Flag |
+|------|--------|-------|----------|--------|------------|------|
+| 1    | {DATE} | X pt  | X.XX%    | X.XX%  | $X.XX      | -    |
+
+### By Risk-Reward (Credit %)
+
+| Rank | Expiry | Wings | Credit % | Risk:Reward | Max Loss | Flag |
+|------|--------|-------|----------|-------------|----------|------|
+| 1    | {DATE} | X pt  | XX.X%    | X.X:1       | $X.XX    | -    |
 
 ---
-Key Insights
+## Data Quality Notes
+
+{IF ANY FLAGS PRESENT}
+⚠️ **Data Quality Warnings Detected**
+
+The following entries have potential data quality issues:
+
+| Expiry | Wings | Issue | Recommendation |
+|--------|-------|-------|----------------|
+| {DATE} | X pt  | {FLAG} | {ACTION} |
+
+**Common Causes:**
+- Stale quotes from after-hours or low-volume options
+- Wide bid-ask spreads creating artificial pricing
+- Indicative (non-tradeable) quotes from data feed
+
+**Recommended Actions:**
+- Verify live quotes during market hours before placing orders
+- Check bid-ask spreads (>$0.10 spread may indicate illiquidity)
+- Consider using mid-price estimates rather than bid/ask extremes
+{END IF}
+
+---
+## Key Insights
 
 - Best for theta: {recommendation}
+  {IF FLAGGED: Note: Verify quotes - Max loss value is unusually low}
 - Best risk-reward: {recommendation}
 - Balanced pick: {recommendation}
+- **Data confidence:** {HIGH|MEDIUM|LOW based on flag count}
 
 Analysis saved to: specs/{UNDERLYING}-theta-analysis.md
 ```
