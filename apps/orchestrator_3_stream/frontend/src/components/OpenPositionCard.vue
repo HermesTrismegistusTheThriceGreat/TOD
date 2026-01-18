@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import { Timer, Loading, Warning } from '@element-plus/icons-vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
-import { useAlpacaPositions } from '../composables/useAlpacaPositions'
-import { useAlpacaPriceStream } from '../composables/useAlpacaPriceStream'
-import * as alpacaService from '../services/alpacaService'
-import type { OptionLeg, OpenPosition } from '../types/alpaca'
-import { calculateLegPnl } from '../types/alpaca'
+import { ref, computed, watch, onMounted } from "vue";
+import { Timer, Loading, Warning } from "@element-plus/icons-vue";
+import { ElMessageBox, ElMessage } from "element-plus";
+import { useAlpacaPositions } from "../composables/useAlpacaPositions";
+import { useAlpacaPriceStream } from "../composables/useAlpacaPriceStream";
+import * as alpacaService from "../services/alpacaService";
+import type { OptionLeg, OpenPosition } from "../types/alpaca";
+import { calculateLegPnl } from "../types/alpaca";
 
 // Props
 const props = defineProps<{
-  positionId?: string
-  initialData?: OpenPosition
+  positionId?: string;
+  initialData?: OpenPosition;
   /** Use mock data (for development/demo) */
-  useMockData?: boolean
-}>()
+  useMockData?: boolean;
+}>();
 
 // Composables
 const {
@@ -29,240 +29,258 @@ const {
   autoFetch: !props.useMockData && !props.initialData,
   autoSubscribe: !props.useMockData,
   positionId: props.positionId,
-})
+});
 
-const { getMidPrice, connectionStatus } = useAlpacaPriceStream()
+const { getMidPrice, connectionStatus } = useAlpacaPriceStream();
 
 // Local state
-const position = ref<OpenPosition | null>(null)
-const closingStrategy = ref(false)
-const closingLegId = ref<string | null>(null)
+const position = ref<OpenPosition | null>(null);
+const closingStrategy = ref(false);
+const closingLegId = ref<string | null>(null);
 
 // Mock data for development
 const mockPosition: OpenPosition = {
-  id: 'mock-1',
-  ticker: 'SPY',
-  strategy: 'Iron Condor',
-  expiryDate: '2026-01-17',
+  id: "mock-1",
+  ticker: "SPY",
+  strategy: "Iron Condor",
+  spotPrice: 421.37,
+  expiryDate: "2026-01-17",
   createdAt: new Date().toISOString(),
   legs: [
     {
-      id: '1',
-      symbol: 'SPY260117C00695000',
-      direction: 'Short',
+      id: "1",
+      symbol: "SPY260117C00695000",
+      direction: "Short",
       strike: 695,
-      optionType: 'Call',
+      optionType: "Call",
       quantity: 10,
       entryPrice: 4.04,
       currentPrice: 3.25,
-      expiryDate: '2026-01-17',
-      underlying: 'SPY'
+      expiryDate: "2026-01-17",
+      underlying: "SPY",
     },
     {
-      id: '2',
-      symbol: 'SPY260117C00700000',
-      direction: 'Long',
+      id: "2",
+      symbol: "SPY260117C00700000",
+      direction: "Long",
       strike: 700,
-      optionType: 'Call',
+      optionType: "Call",
       quantity: 10,
       entryPrice: 0.53,
       currentPrice: 0.09,
-      expiryDate: '2026-01-17',
-      underlying: 'SPY'
+      expiryDate: "2026-01-17",
+      underlying: "SPY",
     },
     {
-      id: '3',
-      symbol: 'SPY260117P00680000',
-      direction: 'Long',
+      id: "3",
+      symbol: "SPY260117P00680000",
+      direction: "Long",
       strike: 680,
-      optionType: 'Put',
+      optionType: "Put",
       quantity: 10,
       entryPrice: 1.47,
       currentPrice: 0.53,
-      expiryDate: '2026-01-17',
-      underlying: 'SPY'
+      expiryDate: "2026-01-17",
+      underlying: "SPY",
     },
     {
-      id: '4',
-      symbol: 'SPY260117P00685000',
-      direction: 'Short',
+      id: "4",
+      symbol: "SPY260117P00685000",
+      direction: "Short",
       strike: 685,
-      optionType: 'Put',
+      optionType: "Put",
       quantity: 10,
-      entryPrice: 2.90,
+      entryPrice: 2.9,
       currentPrice: 1.57,
-      expiryDate: '2026-01-17',
-      underlying: 'SPY'
+      expiryDate: "2026-01-17",
+      underlying: "SPY",
     },
-  ]
-}
+  ],
+};
 
 // Watch for position changes
-watch([currentPosition, positions], () => {
-  if (props.initialData) {
-    position.value = props.initialData
-  } else if (props.useMockData) {
-    position.value = mockPosition
-  } else if (currentPosition.value) {
-    position.value = currentPosition.value
-  } else if (positions.value.length > 0) {
-    position.value = positions.value[0]
-  }
-}, { immediate: true })
+watch(
+  [currentPosition, positions],
+  () => {
+    if (props.initialData) {
+      position.value = props.initialData;
+    } else if (props.useMockData) {
+      position.value = mockPosition;
+    } else if (currentPosition.value) {
+      position.value = currentPosition.value;
+    } else if (positions.value.length > 0) {
+      position.value = positions.value[0];
+    }
+  },
+  { immediate: true },
+);
 
 // Update prices from WebSocket cache
 watch(
   () => [position.value, getMidPrice],
   () => {
-    if (!position.value) return
+    if (!position.value) return;
 
     for (const leg of position.value.legs) {
-      const price = getMidPrice(leg.symbol)
+      const price = getMidPrice(leg.symbol);
       if (price !== undefined) {
-        leg.currentPrice = price
-        const pnl = calculateLegPnl(leg)
-        leg.pnlDollars = pnl.dollars
-        leg.pnlPercent = pnl.percent
+        leg.currentPrice = price;
+        const pnl = calculateLegPnl(leg);
+        leg.pnlDollars = pnl.dollars;
+        leg.pnlPercent = pnl.percent;
       }
     }
   },
-  { deep: true }
-)
+  { deep: true },
+);
 
 // Computed values
 const daysToExpiry = computed(() => {
-  if (!position.value) return 0
-  const expiry = new Date(position.value.expiryDate)
-  const today = new Date()
-  return Math.max(0, Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
-})
+  if (!position.value) return 0;
+  const expiry = new Date(position.value.expiryDate);
+  const today = new Date();
+  return Math.max(
+    0,
+    Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+});
 
 const totalPnL = computed(() => {
-  if (!position.value) return 0
+  if (!position.value) return 0;
   return position.value.legs.reduce((sum, leg) => {
-    const pnl = calculateLegPnl(leg)
-    return sum + pnl.dollars
-  }, 0)
-})
+    const pnl = calculateLegPnl(leg);
+    return sum + pnl.dollars;
+  }, 0);
+});
 
 const sortedLegs = computed(() => {
-  if (!position.value) return []
-  const legs = [...position.value.legs]
+  if (!position.value) return [];
+  const legs = [...position.value.legs];
 
-  const calls = legs.filter(l => l.optionType === 'Call')
-  const puts = legs.filter(l => l.optionType === 'Put')
+  const calls = legs.filter((l) => l.optionType === "Call");
+  const puts = legs.filter((l) => l.optionType === "Put");
 
   // Sort Calls: Short then Long (by strike descending)
   calls.sort((a, b) => {
-    if (a.direction === 'Short' && b.direction === 'Long') return -1
-    if (a.direction === 'Long' && b.direction === 'Short') return 1
-    return b.strike - a.strike
-  })
+    if (a.direction === "Short" && b.direction === "Long") return -1;
+    if (a.direction === "Long" && b.direction === "Short") return 1;
+    return b.strike - a.strike;
+  });
 
   // Sort Puts: Short then Long (by strike descending)
   puts.sort((a, b) => {
-    if (a.direction === 'Short' && b.direction === 'Long') return -1
-    if (a.direction === 'Long' && b.direction === 'Short') return 1
-    return b.strike - a.strike
-  })
+    if (a.direction === "Short" && b.direction === "Long") return -1;
+    if (a.direction === "Long" && b.direction === "Short") return 1;
+    return b.strike - a.strike;
+  });
 
-  return [...calls, ...puts]
-})
+  return [...calls, ...puts];
+});
 
 // Helpers
 const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-}
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
 const formatCurrency = (value: number) => {
-  return `${value >= 0 ? '+' : ''}$${Math.abs(value).toLocaleString('en-US', {
+  return `${value >= 0 ? "+" : ""}$${Math.abs(value).toLocaleString("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  })}`
-}
+    maximumFractionDigits: 0,
+  })}`;
+};
 
 const formatPercent = (value: number) => {
-  return `(${value >= 0 ? '+' : ''}${value.toFixed(2)}%)`
-}
+  return `(${value >= 0 ? "+" : ""}${value.toFixed(2)}%)`;
+};
 
 const formatPrice = (value: number) => {
-  return `$${value.toFixed(2)}`
-}
+  return `$${value.toFixed(2)}`;
+};
 
 // Close handlers
 async function handleCloseStrategy() {
-  if (!position.value) return
+  if (!position.value) return;
 
   try {
     await ElMessageBox.confirm(
       `Are you sure you want to close all ${position.value.legs.length} legs of this ${position.value.strategy}? This will submit market orders to close all positions.`,
-      'Close Strategy',
-      { confirmButtonText: 'Close All', cancelButtonText: 'Cancel', type: 'warning' }
-    )
+      "Close Strategy",
+      {
+        confirmButtonText: "Close All",
+        cancelButtonText: "Cancel",
+        type: "warning",
+      },
+    );
 
-    closingStrategy.value = true
-    const result = await alpacaService.closeStrategy(position.value.id)
+    closingStrategy.value = true;
+    const result = await alpacaService.closeStrategy(position.value.id);
 
-    if (result.status === 'success') {
-      ElMessage.success(`Successfully closed ${result.closedLegs} legs`)
-      await refresh()
-    } else if (result.status === 'partial') {
-      ElMessage.warning(`Partially closed: ${result.closedLegs}/${result.totalLegs} legs. ${result.message || ''}`)
-      await refresh()
+    if (result.status === "success") {
+      ElMessage.success(`Successfully closed ${result.closedLegs} legs`);
+      await refresh();
+    } else if (result.status === "partial") {
+      ElMessage.warning(
+        `Partially closed: ${result.closedLegs}/${result.totalLegs} legs. ${result.message || ""}`,
+      );
+      await refresh();
     } else {
-      ElMessage.error(result.message || 'Failed to close strategy')
+      ElMessage.error(result.message || "Failed to close strategy");
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('Failed to close strategy')
-      console.error('Close strategy error:', e)
+    if (e !== "cancel") {
+      ElMessage.error("Failed to close strategy");
+      console.error("Close strategy error:", e);
     }
   } finally {
-    closingStrategy.value = false
+    closingStrategy.value = false;
   }
 }
 
 async function handleCloseLeg(leg: OptionLeg) {
-  if (!position.value) return
+  if (!position.value) return;
 
   try {
     await ElMessageBox.confirm(
       `Close ${leg.direction} ${leg.optionType} $${leg.strike} (${leg.quantity} contracts)?`,
-      'Close Leg',
-      { confirmButtonText: 'Close', cancelButtonText: 'Cancel', type: 'warning' }
-    )
+      "Close Leg",
+      {
+        confirmButtonText: "Close",
+        cancelButtonText: "Cancel",
+        type: "warning",
+      },
+    );
 
-    closingLegId.value = leg.id
-    const result = await alpacaService.closeLeg(position.value.id, leg.id)
+    closingLegId.value = leg.id;
+    const result = await alpacaService.closeLeg(position.value.id, leg.id);
 
-    if (result.status === 'success') {
-      ElMessage.success(`Closed ${leg.symbol}`)
-      await refresh()
+    if (result.status === "success") {
+      ElMessage.success(`Closed ${leg.symbol}`);
+      await refresh();
     } else {
-      ElMessage.error(result.message || 'Failed to close leg')
+      ElMessage.error(result.message || "Failed to close leg");
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('Failed to close leg')
-      console.error('Close leg error:', e)
+    if (e !== "cancel") {
+      ElMessage.error("Failed to close leg");
+      console.error("Close leg error:", e);
     }
   } finally {
-    closingLegId.value = null
+    closingLegId.value = null;
   }
 }
 
 // Lifecycle
 onMounted(() => {
   if (props.initialData) {
-    position.value = props.initialData
+    position.value = props.initialData;
   } else if (props.useMockData) {
-    position.value = mockPosition
+    position.value = mockPosition;
   }
-})
+});
 </script>
 
 <template>
@@ -291,8 +309,12 @@ onMounted(() => {
       <div class="card-header">
         <div class="header-title">
           <span class="ticker">{{ position.ticker }}</span>
-          <el-tag type="info" effect="plain">{{ position.strategy }}</el-tag>
-          <span class="expiry-text">({{ formatDate(position.expiryDate) }})</span>
+          <div class="spot-price-tag">
+            <span class="spot-value">$421.37</span>
+          </div>
+          <span class="expiry-text"
+            >({{ formatDate(position.expiryDate) }})</span
+          >
         </div>
         <div class="header-actions">
           <!-- Connection Status Indicator -->
@@ -306,14 +328,13 @@ onMounted(() => {
             :loading="closingStrategy"
             @click="handleCloseStrategy"
           >
-            {{ closingStrategy ? 'Closing...' : 'Close Strategy' }}
+            {{ closingStrategy ? "Closing..." : "Close Strategy" }}
           </el-button>
         </div>
       </div>
 
       <!-- Main Content Flex Wrapper -->
       <div class="content-wrapper">
-
         <!-- Left Sidebar: Stats -->
         <div class="stats-sidebar">
           <!-- P/L Circle -->
@@ -325,25 +346,40 @@ onMounted(() => {
           <!-- DTE Box -->
           <div class="dte-box">
             <span class="dte-value">{{ daysToExpiry }}</span>
-            <span class="dte-label">{{ daysToExpiry === 1 ? 'day' : 'days' }}</span>
+            <span class="dte-label">{{
+              daysToExpiry === 1 ? "day" : "days"
+            }}</span>
           </div>
         </div>
 
         <!-- Right Content: Legs Table -->
         <div class="legs-content">
           <div class="legs-header">
-            <span class="summary-badge">{{ position.legs.length }} legs position</span>
+            <span class="summary-badge"
+              >{{ position.legs.length }} legs position</span
+            >
           </div>
 
           <el-table :data="sortedLegs" class="legs-table" style="width: 100%">
-            <el-table-column label="Position" min-width="240" align="center" header-align="center">
+            <el-table-column
+              label="Position"
+              min-width="240"
+              align="center"
+              header-align="center"
+            >
               <template #default="{ row }">
                 <div class="position-cell">
                   <div class="badges">
-                    <span class="custom-tag" :class="row.direction.toLowerCase()">
+                    <span
+                      class="custom-tag"
+                      :class="row.direction.toLowerCase()"
+                    >
                       {{ row.direction }}
                     </span>
-                    <span class="custom-tag" :class="row.optionType.toLowerCase()">
+                    <span
+                      class="custom-tag"
+                      :class="row.optionType.toLowerCase()"
+                    >
                       {{ row.optionType }}
                     </span>
                   </div>
@@ -362,36 +398,58 @@ onMounted(() => {
                   :loading="closingLegId === row.id"
                   @click="handleCloseLeg(row)"
                 >
-                  {{ closingLegId === row.id ? 'Closing...' : 'Close Leg' }}
+                  {{ closingLegId === row.id ? "Closing..." : "Close Leg" }}
                 </el-button>
               </template>
             </el-table-column>
 
             <el-table-column label="Qty" align="center" min-width="80">
               <template #default="{ row }">
-                {{ row.direction === 'Short' ? '-' : '' }}{{ row.quantity }}
+                {{ row.direction === "Short" ? "-" : "" }}{{ row.quantity }}
               </template>
             </el-table-column>
 
             <el-table-column label="Entry" align="center" min-width="90">
-              <template #default="{ row }">{{ formatPrice(row.entryPrice) }}</template>
+              <template #default="{ row }">{{
+                formatPrice(row.entryPrice)
+              }}</template>
             </el-table-column>
 
             <el-table-column label="Current" align="center" min-width="90">
-              <template #default="{ row }">{{ formatPrice(row.currentPrice) }}</template>
+              <template #default="{ row }">{{
+                formatPrice(row.currentPrice)
+              }}</template>
             </el-table-column>
 
-            <el-table-column label="P/L" align="center" min-width="140" header-align="center">
+            <el-table-column
+              label="P/L"
+              align="center"
+              min-width="140"
+              header-align="center"
+            >
               <template #default="{ row }">
-                <span :class="(row.pnlDollars || calculateLegPnl(row).dollars) >= 0 ? 'text-profit' : 'text-loss'">
-                  {{ formatCurrency(row.pnlDollars || calculateLegPnl(row).dollars) }}
-                  <span class="pnl-pct">{{ formatPercent(row.pnlPercent || calculateLegPnl(row).percent) }}</span>
+                <span
+                  :class="
+                    (row.pnlDollars || calculateLegPnl(row).dollars) >= 0
+                      ? 'text-profit'
+                      : 'text-loss'
+                  "
+                >
+                  {{
+                    formatCurrency(
+                      row.pnlDollars || calculateLegPnl(row).dollars,
+                    )
+                  }}
+                  <span class="pnl-pct">{{
+                    formatPercent(
+                      row.pnlPercent || calculateLegPnl(row).percent,
+                    )
+                  }}</span>
                 </span>
               </template>
             </el-table-column>
           </el-table>
         </div>
-
       </div>
     </template>
   </el-card>
@@ -408,10 +466,10 @@ onMounted(() => {
   --text-muted: #94a3b8;
 
   /* Custom Badge Colors */
-  --color-short: #f59e0b;  /* Amber */
-  --color-long: #10b981;   /* Emerald */
-  --color-call: #3b82f6;   /* Blue */
-  --color-put: #f43f5e;    /* Rose/Red */
+  --color-short: #f59e0b; /* Amber */
+  --color-long: #10b981; /* Emerald */
+  --color-call: #3b82f6; /* Blue */
+  --color-put: #f43f5e; /* Rose/Red */
 
   background: var(--bg-dark);
   border: 1px solid var(--border);
@@ -507,6 +565,31 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
+/* Spot Price Tag */
+.spot-price-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.spot-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.spot-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-primary, #06b6d4);
+  font-family: "Roboto Mono", monospace;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -542,8 +625,12 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.pnl-ring.profit { border-color: var(--profit); }
-.pnl-ring.loss { border-color: var(--loss); }
+.pnl-ring.profit {
+  border-color: var(--profit);
+}
+.pnl-ring.loss {
+  border-color: var(--loss);
+}
 
 .pnl-label {
   font-size: 0.65rem;
@@ -557,8 +644,12 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.pnl-ring.profit .pnl-value { color: var(--profit); }
-.pnl-ring.loss .pnl-value { color: var(--loss); }
+.pnl-ring.profit .pnl-value {
+  color: var(--profit);
+}
+.pnl-ring.loss .pnl-value {
+  color: var(--loss);
+}
 
 /* DTE Box */
 .dte-box {
@@ -611,7 +702,7 @@ onMounted(() => {
 .legs-table {
   --el-table-bg-color: transparent;
   --el-table-tr-bg-color: transparent; /* Cleaner look */
-  --el-table-header-bg-color: rgba(255,255,255,0.02);
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.02);
   --el-table-border-color: var(--border);
   --el-table-text-color: var(--text);
   --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.04);
@@ -679,12 +770,16 @@ onMounted(() => {
 
 .strike {
   font-weight: 600;
-  font-family: 'Roboto Mono', monospace;
+  font-family: "Roboto Mono", monospace;
   font-size: 1.1em;
 }
 
-.text-profit { color: var(--profit); }
-.text-loss { color: var(--loss); }
+.text-profit {
+  color: var(--profit);
+}
+.text-loss {
+  color: var(--loss);
+}
 
 .pnl-pct {
   font-size: 0.8em;
