@@ -1,0 +1,530 @@
+orchestrator:
+  overview:
+    description: |
+      The Orchestrator Agent is a meta-agent managing other Claude Code agents in a multi-agent system.
+      It coordinates agent lifecycle, dispatches tasks, monitors progress, and manages AI Developer Workflows (ADWs).
+    key_capabilities:
+      - Multi-agent coordination and lifecycle management
+      - AI Developer Workflow (ADW) execution
+      - Context window management and compacting
+      - Token-heavy work delegation via Gemini CLI
+      - WebSocket streaming for real-time updates
+    architecture:
+      backend: FastAPI + PostgreSQL (NeonDB)
+      frontend: React + WebSocket
+      agent_sdk: Claude Agent SDK
+      working_dir: Configurable via --cwd or ORCHESTRATOR_WORKING_DIR env var
+
+  mcp_management_tools:
+    agent_management:
+      create_agent:
+        signature: "create_agent(name: string, system_prompt?: string, model?: string, subagent_template?: string)"
+        description: Create new agent with specified configuration. Use subagent_template for pre-configured agents.
+        parameters:
+          name: Required unique identifier
+          system_prompt: Optional if using template
+          model: "opus (default), sonnet, haiku/fast, or full model name"
+          subagent_template: Optional template name from .claude/agents/
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+        notes:
+          - If no name provided, infer from request or generate tech-related two-word name
+          - Template applies pre-configured system prompt, tools, and model
+          - Model can override template default
+
+      list_agents:
+        signature: "list_agents()"
+        description: List all registered agents with status and metadata
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+
+      command_agent:
+        signature: "command_agent(agent_name: string, command: string)"
+        description: Send task/command to existing agent
+        parameters:
+          agent_name: Name of target agent
+          command: Task description or instruction
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+        special_commands:
+          compact: "/compact - Clear conversation history, preserve capabilities"
+          thinking: "ultrathink keyword - Trigger thinking mode (if user requests)"
+        notes:
+          - Agents remember previous interactions
+          - Custom slash commands can be included in command position
+
+      check_agent_status:
+        signature: "check_agent_status(agent_name: string, tail_count = 10, offset = 0, verbose_logs = false)"
+        description: Get detailed agent status with optional activity logs
+        parameters:
+          agent_name: Name of agent to check
+          tail_count: Number of recent events (default 10)
+          offset: Skip first N records for pagination (default 0)
+          verbose_logs: "false = AI summaries (default), true = raw events"
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+        usage_notes:
+          - Don't be overeager - tasks take time to complete
+          - Use offset with tail_count to paginate (offset=10, tail_count=10 shows records 11-20)
+          - Only monitor if requested, otherwise let agents run
+
+      delete_agent:
+        signature: "delete_agent(agent_name: string)"
+        description: Delete agent and cleanup resources
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+
+      interrupt_agent:
+        signature: "interrupt_agent(agent_name: string)"
+        description: Interrupt running agent execution
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+
+      read_system_logs:
+        signature: "read_system_logs(offset = 0, limit = 50, message_contains?: string, level?: string)"
+        description: Read application system logs with filtering. Returns newest logs first.
+        parameters:
+          offset: Skip first N records (default 0)
+          limit: Max records to return (default 50)
+          message_contains: Optional filter by message text
+          level: "Optional filter: DEBUG, INFO, WARNING, ERROR"
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+
+      report_cost:
+        signature: "report_cost()"
+        description: Report orchestrator's token usage, costs, context window usage, and session ID
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+        usage_notes:
+          - Use when user asks "what's your session ID?" or "what's the orchestrator session ID?"
+          - Shows current context window percentage
+
+    adw_workflow_tools:
+      start_adw:
+        signature: "start_adw(name_of_adw: string, workflow_type: string, prompt: string, description?: string)"
+        description: Start AI Developer Workflow asynchronously. Returns adw_id for tracking.
+        parameters:
+          name_of_adw: "Human-readable name (e.g., oauth-feature, fix-login-bug)"
+          workflow_type: "plan_build | plan_build_review | plan_build_review_fix"
+          prompt: Actual task/prompt for ADW to execute
+          description: Optional detailed description
+        returns: adw_id (UUID) for tracking
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+        notes:
+          - Maps to adws/adw_workflows/adw_<workflow_type>.py
+          - Workflow runs independently with own agents
+
+      check_adw:
+        signature: "check_adw(adw_id: string, tail_count = 10, event_type?: string, include_step_details = false)"
+        description: Check ADW status and recent activity. Returns consolidated status + logs.
+        parameters:
+          adw_id: UUID of ADW to check
+          tail_count: Number of recent events (default 10)
+          event_type: "Optional filter: StepStart, StepEnd, PreToolUse, PostToolUse"
+          include_step_details: Show full payload (default false)
+        implementation: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+
+  adw_workflows:
+    overview: Multi-step autonomous workflows combining agents and deterministic code
+    location: adws/adw_workflows/
+    available_types:
+      plan_build:
+        file: adws/adw_workflows/adw_plan_build.py
+        description: Plan and build implementation
+      plan_build_review:
+        file: adws/adw_workflows/adw_plan_build_review.py
+        description: Plan, build, and review implementation
+      plan_build_review_fix:
+        file: adws/adw_workflows/adw_plan_build_review_fix.py
+        description: Plan, build, review, and fix implementation
+
+    when_to_use_adw:
+      - Complex multi-step feature
+      - Predefined workflow pattern
+      - User wants hands-off execution
+
+    when_to_use_direct_agents:
+      - Quick one-off task
+      - Interactive debugging
+      - User wants step-by-step control
+
+    guidelines:
+      - DO NOT interfere with running ADWs unless user explicitly asks
+      - Monitor sparingly - ADWs run autonomously
+      - Use check_adw only when user asks for status, need to report progress, or error suspected
+      - Let ADWs complete - they handle step transitions and error recovery
+      - Report adw_id to user for future reference
+      - Once started, observe don't control - only intervene if explicitly requested
+
+  agent_templates:
+    overview: Pre-configured agent templates with specialized system prompts, tools, and models
+    location: .claude/agents/
+    discovery: Dynamically injected into orchestrator system prompt via SubagentRegistry
+    available_templates:
+      build-agent:
+        file: .claude/agents/build-agent.md
+        purpose: Specialized file implementation engineer for writing ONE specific file
+        model: sonnet
+        tools: Write, Read, Edit, Grep, Glob, Bash, TodoWrite
+        use_case: Parallel build workflows where single file needs implementation
+
+      docs-scraper:
+        file: .claude/agents/docs-scraper.md
+        purpose: Documentation scraping specialist for fetching and saving docs as markdown
+        use_case: Proactively fetch and save documentation from URLs
+
+      meta-agent:
+        file: .claude/agents/meta-agent.md
+        purpose: Generates new complete Claude Code sub-agent configuration files
+        use_case: Creating new agent templates from user descriptions
+
+      planner:
+        file: .claude/agents/planner.md
+        purpose: Creates structured plans, breaks down tasks into steps
+        model: opus
+        tools: SlashCommand, Read, Glob
+        use_case: Strategic planning for features or projects
+
+      playwright-validator:
+        file: .claude/agents/playwright-validator.md
+        purpose: Browser automation validator using Playwright MCP tools
+        use_case: Test web interactions, capture screenshots, verify UI behaviors
+
+      research-analyst:
+        file: .claude/agents/research-analyst.md
+        purpose: Research synthesis for triangulating facts and building citations
+        use_case: Prose-heavy analysis tasks
+
+      research-fetcher:
+        file: .claude/agents/research-fetcher.md
+        purpose: Deep content extraction with Firecrawl fallback for hard-to-access sites
+        use_case: Extract facts and prepare citations from web sources
+
+      research-scout:
+        file: .claude/agents/research-scout.md
+        purpose: Fast parallel web search for research discovery
+        use_case: Execute targeted searches and identify high-value sources
+
+      scout-report-suggest:
+        file: .claude/agents/scout-report-suggest.md
+        purpose: Thorough read-only codebase analysis and reporting without making changes
+        use_case: Scout codebase issues, identify problem locations, suggest resolutions
+
+      scout-report-suggest-fast:
+        file: .claude/agents/scout-report-suggest-fast.md
+        purpose: Fast read-only codebase analysis and reporting
+        use_case: Quick codebase analysis when speed matters
+
+      theta-collector:
+        file: .claude/agents/theta-collector.md
+        purpose: Options theta collection analysis specialist
+        use_case: Analyze iron butterfly strategies, theta decay metrics, premium collection
+
+  context_management:
+    threshold: 80%
+    variable: COMMAND_LEVEL_COMPACT_PERCENTAGE
+    workflow:
+      - When agent reaches 80% context usage, suggest compacting to user
+      - Explain compacting clears old conversation history while preserving capabilities
+      - Offer to compact by asking if user wants to proceed
+      - Execute via command_agent(agent_name, '/compact')
+      - After compacting agent retains system prompt, tools, capabilities
+      - Conversation history cleared, context resets to ~0%
+      - Agent ready for new tasks
+    monitoring:
+      - Check context usage via report_cost or after check_agent_status
+      - Proactively suggest compacting before hitting 90%+ usage
+
+  gemini_cli_delegation:
+    overview: Delegate token-heavy analysis to Gemini CLI (2M context) to preserve orchestrator context
+    syntax: 'gemini "@path/ Your prompt here"'
+    location: Via Bash tool
+
+    when_to_use:
+      - Analyzing entire directories (>20 files or >100KB total)
+      - Reviewing codebases for patterns across many files
+      - Comparing multiple large files simultaneously
+      - Verifying feature implementations across project
+      - Scraping and analyzing large documentation sets
+      - Processing large API responses or data dumps
+      - Any read-only analysis consuming >30% of context
+
+    when_not_to_use:
+      - Writing or editing code (Gemini CLI is read-only)
+      - Tasks requiring tool use (WebFetch, database, MCP servers)
+      - Interactive debugging requiring back-and-forth
+      - Small file analysis (<10 files, <50KB total)
+
+    syntax_examples:
+      single_file: 'gemini "@src/main.py Explain this file''s purpose and architecture"'
+      multiple_files: 'gemini "@package.json @src/index.js Analyze the dependencies used"'
+      entire_directory: 'gemini "@src/ Summarize the architecture of this codebase"'
+      multiple_directories: 'gemini "@src/ @tests/ Analyze test coverage for the source code"'
+      current_directory: 'gemini "@./ Give me an overview of this project structure"'
+      all_files_flag: 'gemini --all_files "Analyze the project structure and dependencies"'
+
+    workflow_pattern:
+      plan: "(Orchestrator) Determine analysis needed and formulate query"
+      delegate: "(Gemini) Execute gemini via Bash with appropriate @ includes"
+      synthesize: "(Orchestrator) Interpret Gemini's output and decide next steps"
+      act: "(Agents) Command agents to implement changes based on findings"
+
+    notes:
+      - Paths in @ syntax relative to current working directory
+      - Gemini CLI is read-only - cannot modify files or use tools
+      - For large outputs, ask Gemini to summarize or focus on specific aspects
+      - If gemini unavailable, fall back to scout agents with Read/Glob/Grep
+      - Always verify critical findings by having agent read specific files
+
+  orchestration_guidelines:
+    principles:
+      strategic: Think about which agent is best suited for each task
+      efficient: Don't create redundant agents - reuse existing ones
+      informative: Explain decisions and what's happening
+      proactive: Check agent status when tasks dispatched to provide updates
+      helpful: If task fails, investigate using logs and try alternatives
+
+    agent_specialization_examples:
+      builder: For implementing features, writing code
+      reviewer: For code review, quality checks
+      tester: For writing and running tests
+      documenter: For creating documentation
+      debugger: For troubleshooting issues
+
+    workflow_pattern:
+      - Analyze user's request
+      - Plan which agents are needed
+      - Create or select appropriate agents
+      - Dispatch tasks with clear instructions
+      - Monitor progress using check_agent_status
+      - Report results back to user
+
+    important_notes:
+      - Agents work in their configured working directories
+      - Each agent maintains own session and memory
+      - Can command agents multiple times - they remember previous interactions
+      - Always provide clear, specific instructions to agents
+      - Check agent status to provide progress updates to user
+      - Use system logs to debug issues
+      - Have Bash tool for gathering information or debugging
+      - Let command-level agents do heavy lifting (writing, editing, testing)
+      - Don't be overeager to check agent status - takes time to complete tasks
+
+  model_configuration:
+    aliases:
+      opus: claude-opus-4-5-20251101 (highest capability, default)
+      sonnet: claude-sonnet-4-5-20250929 (balanced performance, secondary, do not prefer)
+      haiku: claude-haiku-4-5-20251001 (faster, lower cost)
+      fast: claude-haiku-4-5-20251001 (alias for haiku)
+    notes:
+      - Can pass full model name directly instead of alias
+      - Templates may specify default model, which can be overridden
+    implementation: apps/orchestrator_3_stream/backend/modules/config.py
+
+  session_management:
+    cli_arguments:
+      session: Resume existing orchestrator session (session ID)
+      cwd: Set working directory for orchestrator and agents
+    behavior:
+      new_session: Run without --session to create fresh orchestrator
+      resume_session: Run with --session <session_id> to resume existing orchestrator
+      working_directory: Use --cwd to override, or ORCHESTRATOR_WORKING_DIR env var, or config default
+    notes:
+      - Session ID set after first interaction with new orchestrator
+      - Use report_cost to get current orchestrator session ID
+      - Session ID must exist in database to resume
+    implementation: apps/orchestrator_3_stream/backend/modules/orchestrator_service.py
+
+  database_backend:
+    type: PostgreSQL (NeonDB)
+    connection: Async operations via asyncpg with connection pool
+    tables:
+      orchestrator_agents: Main orchestrator state, costs, session
+      command_level_agents: Created agents, status, metadata
+      chat_messages: Conversation history
+      system_logs: Application logs
+      orchestrator_events: Activity tracking
+    implementation: apps/orchestrator_3_stream/backend/modules/database.py
+
+  websocket_streaming:
+    overview: Real-time streaming of orchestrator responses via WebSocket
+    endpoint: ws://localhost:8000/ws
+    event_types:
+      text_delta: Streaming text chunks
+      tool_use: Tool execution events
+      thinking: Extended thinking blocks
+      stop: Response completion
+    implementation: apps/orchestrator_3_stream/backend/modules/websocket_manager.py
+
+  system_prompt:
+    location: apps/orchestrator_3_stream/backend/prompts/orchestrator_agent_system_prompt.md
+    dynamic_placeholders:
+      SUBAGENT_MAP: Injected by SubagentRegistry from .claude/agents/
+      AVAILABLE_ADW_TYPES: Discovered from adws/adw_workflows/adw_*.py
+    loader: apps/orchestrator_3_stream/backend/modules/orchestrator_service.py::_load_system_prompt()
+
+  tool_signatures:
+    format: TypeScript function signatures showing required vs optional parameters
+    source: apps/orchestrator_3_stream/backend/modules/orchestrator_service.py::get_orchestrator_tools()
+    list:
+      - "create_agent(name: string, system_prompt?: string, model?: string, subagent_template?: string)"
+      - "list_agents()"
+      - "command_agent(agent_name: string, command: string)"
+      - "check_agent_status(agent_name: string, tail_count = 10, offset = 0, verbose_logs = false)"
+      - "delete_agent(agent_name: string)"
+      - "interrupt_agent(agent_name: string)"
+      - "read_system_logs(offset = 0, limit = 50, message_contains?: string, level?: string)"
+      - "report_cost()"
+      - "start_adw(name_of_adw: string, workflow_type: string, prompt: string, description?: string)"
+      - "check_adw(adw_id: string, tail_count = 10, event_type?: string, include_step_details = false)"
+
+  agent_lifecycle_and_completion_detection:
+    overview: How agents transition through states and how orchestrator detects completion
+
+    agent_states:
+      idle: Agent created or finished executing, waiting for commands
+      executing: Agent currently running a command (set before client.query, line 1124)
+      blocked: Agent encountered error during execution (line 1158)
+
+    completion_detection_mechanism:
+      current_implementation:
+        - Agent status updated to "idle" after command_agent completes (agent_manager.py:1147)
+        - Status change broadcast via WebSocket (agent_manager.py:1148-1150)
+        - Stop hook fires with completion data (command_agent_hooks.py:286-364)
+        - Database status field updated in command_level_agents table
+
+      critical_gap:
+        problem: "Orchestrator has NO automatic mechanism to detect when agents complete tasks"
+        manifestation: "User must manually prompt orchestrator to check agent status"
+        root_cause: "Orchestrator doesn't subscribe to WebSocket agent completion events"
+        workaround: "Manual check_agent_status calls when user asks"
+
+      why_completion_goes_unnoticed:
+        - Orchestrator only responds to user messages, doesn't poll or listen for events
+        - System prompt says 'Don't be overeager to check agent status' (line 88, 342)
+        - No background task monitoring agent state transitions
+        - WebSocket broadcasts exist but orchestrator agent doesn't consume them
+        - Stop hook fires but only logs to database, doesn't notify orchestrator
+
+      hook_system_details:
+        stop_hook_location: apps/orchestrator_3_stream/backend/modules/command_agent_hooks.py:286-364
+        stop_hook_data:
+          - reason: Why agent stopped (end_turn, max_turns, error, etc.)
+          - num_turns: Number of conversation turns completed
+          - duration_ms: How long agent ran
+        stop_hook_actions:
+          - Inserts hook event to agent_logs table
+          - "Broadcasts via WebSocket (event_type: Stop)"
+          - "Updates agent status to idle in database"
+          - Does NOT notify orchestrator agent directly
+
+      status_transition_flow:
+        dispatch:
+          - "orchestrator calls command_agent(agent_id, command)"
+          - "status updated to 'executing' (line 1124)"
+          - "WebSocket broadcast: idle → executing"
+          - "Returns immediately with 'Command dispatched' message"
+
+        execution:
+          - "Agent runs in background asyncio task (line 335)"
+          - "Hooks fire for PreToolUse, PostToolUse, UserPromptSubmit"
+          - "Messages processed in _process_agent_messages (lines 1280-1593)"
+          - "Orchestrator has NO visibility into this - already returned to user"
+
+        completion:
+          - "Agent finishes, Stop hook fires"
+          - "Status updated to 'idle' (line 1147) or 'blocked' (line 1158)"
+          - "WebSocket broadcast: executing → idle/blocked"
+          - "Orchestrator DOES NOT receive notification"
+          - "User must ask orchestrator to check status manually"
+
+    recommended_monitoring_workflow:
+      when_user_doesnt_ask:
+        guideline: "Do NOT proactively check agent status unless user requests it"
+        rationale: "Avoid context bloat, system prompt explicitly warns against eagerness"
+        actions:
+          - "Trust that agent is running in background"
+          - "Wait for user to ask about progress"
+
+      when_user_asks_about_progress:
+        actions:
+          - "Use check_agent_status with tail_count=10 for quick check"
+          - "Look for Stop event in recent logs (indicates completion)"
+          - "Check agent.status field - idle means done, executing means running"
+          - "If logs show recent activity but no Stop event, agent is still working"
+          - "If no recent activity AND status=idle, agent completed but you were not notified"
+
+      detecting_idle_agents:
+        method_1_check_agent_status:
+          tool: check_agent_status
+          look_for:
+            - "Status: idle (agent finished)"
+            - "Recent Activity section has Stop event"
+            - "Last event timestamp (if old, agent done long ago)"
+          limitations: "Only checks one agent at a time, requires agent name"
+
+        method_2_list_agents:
+          tool: list_agents
+          look_for:
+            - "Status: idle vs executing for each agent"
+            - "Token counts (if high, agent did significant work)"
+          limitations: "Doesn't show WHEN agent completed or what task it was doing"
+
+        method_3_read_system_logs:
+          tool: read_system_logs
+          filter_by: "message_contains: 'Agent stopped' or 'completed task'"
+          look_for: "Recent Stop hook logs indicating which agents finished"
+          limitations: "System-wide logs, may be noisy, doesn't link to specific tasks"
+
+      best_practice_for_multi_agent_workflows:
+        problem_scenario: "Dispatched 3 agents, user asks 'are they done yet?'"
+        solution:
+          - "Use list_agents to get overview of all agent states"
+          - "For each non-idle agent, use check_agent_status to see progress"
+          - "Report findings: 'Agent X idle (done), Agent Y executing (in progress), Agent Z blocked (error)'"
+          - "If all idle, retrieve results by checking recent logs with verbose_logs=true"
+
+    websocket_event_architecture:
+      agent_status_broadcasts:
+        source: apps/orchestrator_3_stream/backend/modules/websocket_manager.py
+        events:
+          agent_created: "When create_agent completes"
+          agent_deleted: "When delete_agent completes"
+          agent_status_change: "When status transitions (idle/executing/blocked)"
+          agent_log: "Hook events (PreToolUse, PostToolUse, Stop, etc.)"
+          agent_summary_update: "AI-generated summaries of agent activity"
+
+        current_limitation:
+          - "Frontend consumes these WebSocket events for real-time UI updates"
+          - "Orchestrator agent DOES NOT consume its own WebSocket events"
+          - "Orchestrator only learns about completions when user asks to check"
+
+        why_orchestrator_doesnt_listen:
+          - "Orchestrator is request-response driven, not event-driven"
+          - "No event loop watching for agent state changes"
+          - "Would require background polling or WebSocket subscription in orchestrator context"
+
+    implementation_details:
+      agent_status_update_locations:
+        set_executing: "agent_manager.py:1124 - await update_agent_status(agent_id, 'executing')"
+        set_idle: "agent_manager.py:1147 - await update_agent_status(agent_id, 'idle')"
+        set_blocked: "agent_manager.py:1158 - await update_agent_status(agent_id, 'blocked')"
+
+      websocket_broadcast_locations:
+        status_change_executing: "agent_manager.py:1125-1127"
+        status_change_idle: "agent_manager.py:1148-1150"
+        stop_hook_event: "command_agent_hooks.py:342-355"
+
+      database_queries_for_status:
+        get_agent: "Returns agent with current status field"
+        list_agents: "Returns all agents scoped to orchestrator with status"
+        get_latest_task_slug: "Gets most recent task for agent (useful for log queries)"
+        get_tail_summaries: "Gets recent activity summaries for an agent's task"
+
+  implementation_reference:
+    backend_dir: apps/orchestrator_3_stream/backend/
+    key_modules:
+      main: apps/orchestrator_3_stream/backend/main.py
+      orchestrator_service: apps/orchestrator_3_stream/backend/modules/orchestrator_service.py
+      agent_manager: apps/orchestrator_3_stream/backend/modules/agent_manager.py
+      command_agent_hooks: apps/orchestrator_3_stream/backend/modules/command_agent_hooks.py
+      database: apps/orchestrator_3_stream/backend/modules/database.py
+      websocket_manager: apps/orchestrator_3_stream/backend/modules/websocket_manager.py
+      config: apps/orchestrator_3_stream/backend/modules/config.py
+      subagent_loader: apps/orchestrator_3_stream/backend/modules/subagent_loader.py
+    system_prompt: apps/orchestrator_3_stream/backend/prompts/orchestrator_agent_system_prompt.md
+    adw_workflows: adws/adw_workflows/
+    agent_templates: .claude/agents/

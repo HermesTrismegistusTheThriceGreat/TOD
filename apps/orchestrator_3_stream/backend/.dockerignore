@@ -1,0 +1,46 @@
+# Virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+tests/
+pytest_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Logs (created at runtime)
+logs/
+
+# Local env files (Railway uses its own env vars)
+.env
+.env.local
+.env.*.local
+
+# Documentation
+*.md
+docs/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Misc
+*.log
+*.tmp
+tmp_scripts/

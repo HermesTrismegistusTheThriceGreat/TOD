@@ -1,0 +1,423 @@
+[
+  {
+    "source": {
+      "title": "Volatility Surface - ORATS University",
+      "url": "https://orats.com/university/volatility-surface/",
+      "author": "ORATS",
+      "date": "Not specified",
+      "credibility": 5
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "The volatility surface represents the volatility of all options across all strikes and all expirations for a single symbol",
+        "type": "definition",
+        "context": "Definition & Construction section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Contango is described as the normal state of affairs where short-term IVs remain lower than long-term IVs",
+        "type": "definition",
+        "context": "Term Structure of IV section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Backwardation occurs when short-term IVs exceed long-term IVs",
+        "type": "definition",
+        "context": "Term Structure of IV section",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Out-of-the-money calls display elevated implied volatility compared to in-the-money calls, resembling a flattened J pattern",
+        "type": "pattern",
+        "context": "Call Skew subsection",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Out-of-the-money puts show higher implied volatility than in-the-money puts, reflecting market dynamics where underlying equity prices tend to fall faster than they rise",
+        "type": "quote",
+        "context": "Put Skew subsection",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The SMV curve synthesizes call and put information while accounting for arbitrage relationships, enabling more precise skew analysis than selecting between call or put skews independently",
+        "type": "definition",
+        "context": "SMV Skew section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The volatility smile is a U-shaped pattern where at-the-money implied volatility remains lower than further delta strikes",
+        "type": "definition",
+        "context": "The Volatility Smile section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Slope quantifies skew steepness and lopsidedness by drawing a tangent line at the 50-delta point and measuring direction and magnitude",
+        "type": "definition",
+        "context": "Measuring Skew section",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "ORATS provides a comprehensive technical framework for understanding volatility surfaces, focusing on 2D visualization approaches that break down the 3D surface into mini-graphs. The content emphasizes term structure patterns (contango vs backwardation), detailed skew analysis for both calls and puts, and introduces the SMV curve as a unified measure accounting for arbitrage relationships."
+  },
+  {
+    "source": {
+      "title": "Volatility Skew and Smile - AnalystPrep CFA Level III Study Notes",
+      "url": "https://analystprep.com/study-notes/cfa-level-iii/volatility-skew-and-smile/",
+      "author": "AnalystPrep",
+      "date": "Not specified",
+      "credibility": 4
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Implied Volatility functions as a plug figure in the Black-Scholes-Merton model to align theoretical prices with market prices",
+        "type": "definition",
+        "context": "Core Definitions section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Volatility smiles appear frequently in near-term equity options and currency options",
+        "type": "pattern",
+        "context": "Volatility Smile definition",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Skews are non-symmetrical and can vary in shape and intensity",
+        "type": "quote",
+        "context": "Volatility Skew definition",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Options traders seek skews and smiles to exploit mispriced volatility by purchasing undervalued or selling overvalued volatility positions",
+        "type": "quote",
+        "context": "Market Patterns & Implications section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Higher implied volatility for ITM options reflects increased demand for downside protection during volatile periods",
+        "type": "explanation",
+        "context": "Key Question Resolution section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The BSM model assumes uniform volatility across all strike prices, but real markets contradict this assumption",
+        "type": "comparison",
+        "context": "Market Patterns section",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "AnalystPrep's CFA-focused content explains how volatility smiles and skews represent deviations from Black-Scholes-Merton assumptions. The material emphasizes that these patterns create trading opportunities through mispriced volatility, with particular focus on how ITM options command higher IV during volatile periods due to demand for downside protection."
+  },
+  {
+    "source": {
+      "title": "Option Greeks - Alpaca Markets Learn",
+      "url": "https://alpaca.markets/learn/option-greeks",
+      "author": "Alpaca Markets",
+      "date": "Not specified",
+      "credibility": 4
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Delta measures the rate of change of an option's price for every $1 change in the price of the underlying asset, with call options ranging from 0 to 1 and puts spanning -1 to 0",
+        "type": "definition",
+        "context": "Delta definition section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Gamma measures the rate of change of delta in correlation to a $1 change in the underlying asset's price, peaking at-the-money and diminishing for deep in-the-money or out-of-the-money positions",
+        "type": "definition",
+        "context": "Gamma definition section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "An option with a theta of -0.04 loses $0.04 in premium daily",
+        "type": "statistic",
+        "context": "Theta definition section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Algorithms can adjust positions almost instantaneously, aligning them with current market conditions, which is critical for strategies requiring rapid delta-neutral recalibration",
+        "type": "quote",
+        "context": "Real-Time Monitoring subsection",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Traders employ gamma scalping, systematically adjusting their delta to capitalize on gamma fluctuations in response to price movements of the underlying asset",
+        "type": "quote",
+        "context": "Gamma Management subsection",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Algorithms track theta exposure, enabling traders to establish exit positions at favorable times, preventing excessive holding periods",
+        "type": "quote",
+        "context": "Theta Optimization subsection",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "A positive total delta indicates a bullish stance while negative total delta suggests a bearish stance",
+        "type": "quote",
+        "context": "Position Risk Evaluation section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The Greeks exhibit interdependencies; optimizing for one Greek necessitates consideration of its impact on others",
+        "type": "quote",
+        "context": "Multi-Leg Position Aggregation section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Increasing gamma often correlates with accelerated theta decay, requiring holistic portfolio assessment",
+        "type": "relationship",
+        "context": "Position Risk Evaluation section",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "High-delta options are suitable for traders looking for gains from price movements, while low-delta options are preferred by hedgers and those aiming to minimize risk",
+        "type": "strategy",
+        "context": "Strategy Selection by Greek Profile section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "High-gamma positions are beneficial for short-term traders and scalpers capitalizing on quick price movements",
+        "type": "strategy",
+        "context": "Strategy Selection section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "High-vega options are selected when expecting increased volatility",
+        "type": "strategy",
+        "context": "Strategy Selection section",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "Alpaca Markets provides a comprehensive Greeks framework emphasizing algorithmic trading applications. The content highlights real-time monitoring capabilities, gamma scalping techniques, and the critical interdependencies between Greeks. Key insights include theta-based exit timing, position risk evaluation through total delta analysis, and strategy selection based on Greek profiles aligned with trader objectives."
+  },
+  {
+    "source": {
+      "title": "Complete Guide to Options Trading with Greeks - Insider Finance",
+      "url": "https://www.insiderfinance.io/resources/complete-guide-to-options-trading-with-greeks",
+      "author": "Insider Finance",
+      "date": "Not specified",
+      "credibility": 3
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Delta measures the rate of change of the option's price relative to a one-point move in the underlying asset's price, ranging 0-1 for calls and -1 to 0 for puts",
+        "type": "definition",
+        "context": "Delta definition section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Gamma measures the rate of change in Delta relative to a one-point move in the underlying asset's price, indicating Delta stability and hedging requirements",
+        "type": "definition",
+        "context": "Gamma definition section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "If a trader owns a stock with a Delta of 1.0, they can create a Delta-neutral position by buying a put option with a Delta of -0.5 and a call option with a Delta of -0.5",
+        "type": "quote",
+        "context": "Delta-Neutral Positioning section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "In covered calls, Theta is negative and the options sold will lose value over time, benefiting the seller",
+        "type": "quote",
+        "context": "Theta-Based Income Strategies section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Gamma scalping involves continuously adjusting the Delta to capture profits from small price movements, leveraging the high Gamma of the options position",
+        "type": "quote",
+        "context": "Gamma Scalping section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "When IV increases, options with high Vega gain in value, and when IV decreases, these options lose value",
+        "type": "quote",
+        "context": "Vega Considerations section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Vega negatively impacts iron condors - if implied volatility increases, the spread widens, leading to potential losses",
+        "type": "quote",
+        "context": "Iron Condors strategy section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "If IV is significantly higher than HV, it might indicate that options are overpriced, presenting opportunities for selling strategies",
+        "type": "quote",
+        "context": "Exit Signals and Adjustments section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Positions with Theta of -0.05 losing $0.05 daily versus -0.10 for near-expiration options require different exit timing",
+        "type": "statistic",
+        "context": "Theta Management section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Small price moves cause substantial Delta shifts in high Gamma positions, requiring constant adjustments and creating transaction costs that erode profits",
+        "type": "risk",
+        "context": "High Gamma Risks section",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "These metrics measure the sensitivity of an option's price to various influencing factors, such as changes in the underlying asset's price, time decay, volatility, and interest rates",
+        "type": "quote",
+        "context": "Multi-Leg Position Analysis section",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "Insider Finance offers a practical guide emphasizing position management techniques including delta-neutral positioning, theta-based income strategies, and gamma scalping. The content provides concrete examples of Greek interactions, risk mitigation approaches, and strategy-specific Greek considerations with numerical examples for theta decay rates and delta-neutral construction."
+  },
+  {
+    "source": {
+      "title": "Theta Decay DTE Guide - Days to Expiry",
+      "url": "https://www.daystoexpiry.com/blog/theta-decay-dte-guide",
+      "author": "Days to Expiry",
+      "date": "Not specified",
+      "credibility": 3
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Days 45-30 show approximately $0.08-0.12 per day decay",
+        "type": "statistic",
+        "context": "DTE-Based Decay Patterns section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Days 30-14 accelerate to $0.15-0.25 daily decay",
+        "type": "statistic",
+        "context": "DTE-Based Decay Patterns section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Days 14-7 show rapid acceleration of $0.25-0.40 per day",
+        "type": "statistic",
+        "context": "DTE-Based Decay Patterns section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Final 7 days show extreme rates exceeding $0.40 daily",
+        "type": "statistic",
+        "context": "DTE-Based Decay Patterns section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Day 30: Theta per day equals approximately Premium divided by 30",
+        "type": "quote",
+        "context": "Mathematical principle section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Day 1: Theta per day equals approximately Premium divided by 1, up to 10x the rate of day 30",
+        "type": "quote",
+        "context": "Mathematical principle section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The 30-45 DTE sweet spot emerges as optimal for entry with manageable theta payment, low to moderate gamma risk, and support for repeated cycle execution",
+        "type": "strategy",
+        "context": "Optimal DTE Windows section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "More than 40% of your profit comes in the final 14 days, and more than 70% comes in the final 3 weeks",
+        "type": "statistic",
+        "context": "Optimal DTE Windows section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Professional traders should close at 21 DTE to capture 80% of profit and avoid the binary week",
+        "type": "quote",
+        "context": "Critical Exit Strategy section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Closing at 21 DTE captures 60-80% of maximum profit while minimizing gamma explosion risk",
+        "type": "strategy",
+        "context": "Critical Exit Strategy section",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Maximum theta coincides with maximum gamma risk in the final week",
+        "type": "relationship",
+        "context": "Theta-versus-gamma tradeoff section",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "Days to Expiry provides detailed quantitative analysis of theta decay patterns across different DTE windows. The content establishes the 30-45 DTE entry window as optimal, with specific daily decay rates at each stage. Critical insights include the 21 DTE exit recommendation to capture 60-80% of profits while avoiding gamma explosion risk, and quantifies that over 70% of profits occur in the final 3 weeks."
+  },
+  {
+    "source": {
+      "title": "Get to Know Option Greeks - Charles Schwab",
+      "url": "https://www.schwab.com/learn/story/get-to-know-option-greeks",
+      "author": "Charles Schwab",
+      "date": "Not specified",
+      "credibility": 4
+    },
+    "fetch_method": "firecrawl_failed",
+    "facts": [
+      {
+        "claim": "WebFetch returned authorization error; Firecrawl fallback hit credit limits",
+        "type": "fetch_failure",
+        "context": "Technical limitation",
+        "exact_quote": false,
+        "verifiable": false
+      }
+    ],
+    "summary": "Source could not be fetched due to authorization restrictions on WebFetch and Firecrawl credit limitations. This high-credibility educational resource from Charles Schwab remains unavailable for extraction at this time."
+  }
+]

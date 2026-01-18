@@ -9,13 +9,10 @@ import os
 from datetime import datetime
 from typing import Dict, Any, List, Set, Optional
 from uuid import UUID
-import sys
-import os
 from pydantic import BaseModel
 
-# Add parent directory to path to import git_utils
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../')))
-from apps.orchestrator_db.git_utils import GitUtils
+# Import from local modules
+from .git_utils import GitUtils
 
 
 # Pydantic models for type safety
@@ -100,186 +97,116 @@ class FileTracker:
                 "tool_input": tool_input
             }
 
-    def track_read_file(self, file_path: str) -> None:
+    def track_read_file(self, tool_name: str, tool_input: Dict[str, Any]) -> None:
         """
-        Record a file read operation.
+        Record a file read from a tool.
 
         Args:
-            file_path: Path to the file that was read
+            tool_name: Name of the tool (Read, etc.)
+            tool_input: Tool input parameters
         """
-        if file_path:
-            self.read_files.add(file_path)
+        # Extract file_path from tool_input
+        file_path = tool_input.get("file_path")
 
-    def get_modified_files(self) -> List[str]:
-        """Return list of modified file paths."""
-        return list(self.modified_files)
+        if not file_path:
+            return
 
-    def get_read_files(self) -> List[str]:
-        """Return list of read file paths."""
-        return list(self.read_files)
+        # Add to read files set
+        self.read_files.add(file_path)
 
-    async def generate_file_changes_summary(self) -> List[Dict[str, Any]]:
+    def get_file_changes_metadata(self) -> Optional[List[FileChange]]:
         """
-        Generate comprehensive summary of file modifications with diffs and AI summaries.
+        Generate detailed metadata for all modified files.
 
         Returns:
-            List of file change dictionaries with diffs, stats, and AI summaries
+            List of FileChange objects with full details
         """
-        file_changes = []
+        if not self.modified_files:
+            return None
+
+        file_changes: List[FileChange] = []
 
         for file_path in self.modified_files:
             try:
-                # Get tool info
-                tool_info = self._file_details.get(file_path, {})
-                tool_name = tool_info.get("tool_name", "Unknown")
-
-                # Resolve absolute path
+                # Resolve to absolute path
                 abs_path = GitUtils.resolve_absolute_path(file_path, self.working_dir)
 
-                # Get relative path for display
-                try:
-                    rel_path = os.path.relpath(abs_path, self.working_dir)
-                except ValueError:
-                    # If paths are on different drives (Windows), use filename
-                    rel_path = os.path.basename(abs_path)
-
-                # Generate diff
+                # Get file diff
                 diff = GitUtils.get_file_diff(file_path, self.working_dir)
-
-                # Parse stats
                 lines_added, lines_removed = GitUtils.parse_diff_stats(diff) if diff else (0, 0)
 
-                # Determine status
+                # Get file status
                 status = GitUtils.get_file_status(file_path, self.working_dir)
 
-                # Generate AI summary
-                summary = await generate_file_change_summary(file_path, diff, tool_name)
-
-                file_change = {
-                    "path": rel_path,
-                    "absolute_path": abs_path,
-                    "status": status,
-                    "lines_added": lines_added,
-                    "lines_removed": lines_removed,
-                    "diff": diff,
-                    "summary": summary,
-                    "agent_id": self.agent_id,
-                    "agent_name": self.agent_name
-                }
-
+                file_change = FileChange(
+                    path=file_path,
+                    absolute_path=abs_path,
+                    status=status,
+                    lines_added=lines_added,
+                    lines_removed=lines_removed,
+                    diff=diff,
+                    agent_id=self.agent_id,
+                    agent_name=self.agent_name
+                )
                 file_changes.append(file_change)
 
             except Exception as e:
-                # Log error but continue processing other files
-                print(f"Error generating summary for {file_path}: {e}")
+                # Log error but continue with other files
+                print(f"Error processing file {file_path}: {e}")
                 continue
 
-        return file_changes
+        return file_changes if file_changes else None
 
-    def generate_read_files_summary(self) -> List[Dict[str, Any]]:
+    def get_read_files_metadata(self) -> Optional[List[FileRead]]:
         """
-        Generate summary of read files with line counts.
+        Generate metadata for all read files.
 
         Returns:
-            List of read file dictionaries with line counts
+            List of FileRead objects with file line counts
         """
-        read_files = []
+        if not self.read_files:
+            return None
+
+        read_files_list: List[FileRead] = []
 
         for file_path in self.read_files:
             try:
-                # Resolve absolute path
+                # Resolve to absolute path
                 abs_path = GitUtils.resolve_absolute_path(file_path, self.working_dir)
-
-                # Get relative path for display
-                try:
-                    rel_path = os.path.relpath(abs_path, self.working_dir)
-                except ValueError:
-                    rel_path = os.path.basename(abs_path)
 
                 # Count lines
                 line_count = GitUtils.count_file_lines(file_path, self.working_dir)
 
-                file_read = {
-                    "path": rel_path,
-                    "absolute_path": abs_path,
-                    "line_count": line_count,
-                    "agent_id": self.agent_id,
-                    "agent_name": self.agent_name
-                }
-
-                read_files.append(file_read)
+                file_read = FileRead(
+                    path=file_path,
+                    absolute_path=abs_path,
+                    line_count=line_count,
+                    agent_id=self.agent_id,
+                    agent_name=self.agent_name
+                )
+                read_files_list.append(file_read)
 
             except Exception as e:
-                print(f"Error generating read summary for {file_path}: {e}")
+                # Log error but continue with other files
+                print(f"Error processing read file {file_path}: {e}")
                 continue
 
-        return read_files
+        return read_files_list if read_files_list else None
 
+    def generate_metadata(self) -> AgentLogMetadata:
+        """
+        Generate complete metadata for this agent's file operations.
 
-async def generate_file_change_summary(
-    file_path: str,
-    diff: Optional[str],
-    tool_name: str
-) -> str:
-    """
-    Generate AI summary for a file change using LLM.
+        Returns:
+            AgentLogMetadata with all file changes and reads
+        """
+        file_changes = self.get_file_changes_metadata()
+        read_files = self.get_read_files_metadata()
 
-    Uses existing fast_claude_query from single_agent_prompt module.
-
-    Args:
-        file_path: Path to the modified file
-        diff: Git diff string
-        tool_name: Tool that made the change
-
-    Returns:
-        Concise 1-2 sentence summary or fallback message
-    """
-    try:
-        # Import here to avoid circular dependency
-        from .single_agent_prompt import (
-            fast_claude_query,
-            EVENT_SUMMARIZER_SYSTEM_PROMPT,
-            EVENT_SUMMARIZER_USER_PROMPT
+        return AgentLogMetadata(
+            file_changes=file_changes,
+            read_files=read_files,
+            total_files_modified=len(self.modified_files) if self.modified_files else None,
+            total_files_read=len(self.read_files) if self.read_files else None,
+            generated_at=datetime.now().isoformat()
         )
-
-        # If no diff, return simple summary
-        if not diff or not diff.strip():
-            return f"{tool_name} operation on {os.path.basename(file_path)}"
-
-        # Truncate diff if too large (max 2000 chars as per plan)
-        truncated_diff = diff[:2000] + "\n[...truncated]" if len(diff) > 2000 else diff
-
-        # Build details using existing event summarizer format
-        details = f"""File: {os.path.basename(file_path)}
-Tool: {tool_name}
-Diff (first 2000 chars):
-{truncated_diff}"""
-
-        # Use existing EVENT_SUMMARIZER_USER_PROMPT template
-        prompt = EVENT_SUMMARIZER_USER_PROMPT.format(
-            event_type="FileChange",
-            details=details
-        )
-
-        # Use existing EVENT_SUMMARIZER_SYSTEM_PROMPT
-        summary = await fast_claude_query(prompt, system_prompt=EVENT_SUMMARIZER_SYSTEM_PROMPT)
-
-        # Return summary or fallback
-        if summary and summary.strip():
-            return summary.strip()[:200]  # Limit to 200 chars
-        else:
-            # Fallback: simple heuristic-based summary
-            lines = diff.split('\n')
-            added_lines = sum(1 for line in lines if line.startswith('+') and not line.startswith('+++'))
-            removed_lines = sum(1 for line in lines if line.startswith('-') and not line.startswith('---'))
-
-            if added_lines > 0 and removed_lines == 0:
-                return f"Added {added_lines} new lines to {os.path.basename(file_path)}"
-            elif removed_lines > 0 and added_lines == 0:
-                return f"Removed {removed_lines} lines from {os.path.basename(file_path)}"
-            else:
-                return f"Modified {os.path.basename(file_path)} (+{added_lines} -{removed_lines} lines)"
-
-    except Exception as e:
-        # Fallback on error
-        return f"Modified {os.path.basename(file_path)}"

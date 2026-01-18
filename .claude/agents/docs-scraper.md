@@ -2,7 +2,7 @@
 name: docs-scraper
 description: Documentation scraping specialist. Use proactively to fetch and save documentation from URLs as properly formatted markdown files.
 tools: Bash, Read, Write, Edit
-model: sonnet
+model: haiku
 color: blue
 ---
 

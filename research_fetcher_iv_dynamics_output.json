@@ -1,0 +1,424 @@
+[
+  {
+    "source": {
+      "title": "Using Implied Volatility Percentiles",
+      "url": "https://www.schwab.com/learn/story/using-implied-volatility-percentiles",
+      "author": "Unknown",
+      "date": "Unknown",
+      "credibility": 5
+    },
+    "fetch_method": "failed",
+    "fetch_status": "Authorization error - Schwab website requires manual verification. Both WebFetch and Firecrawl unable to access content.",
+    "facts": [],
+    "summary": "Source inaccessible due to Schwab authorization requirements. No content could be extracted from this high-credibility source."
+  },
+  {
+    "source": {
+      "title": "Inside Volatility Trading: Is VIX Backwardation Necessarily a Sign of a Future Down Market?",
+      "url": "https://www.cboe.com/insights/posts/inside-volatility-trading-is-vix-backwardation-necessarily-a-sign-of-a-future-down-market/",
+      "author": "Scott Bauer",
+      "date": "July 26, 2022",
+      "credibility": 5
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Contango occurs more than 80% of the time since 2010, while backwardation happens less than 20% of the time",
+        "type": "statistic",
+        "context": "VIX futures curve frequency patterns - establishes contango as the dominant market structure",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Near term VIX futures are cheaper than longer term VIX futures",
+        "type": "definition",
+        "context": "Contango definition - upward sloping curve structure",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Near term futures are more expensive",
+        "type": "definition",
+        "context": "Backwardation definition - downward sloping curve when near-term market conditions have more uncertainty than the longer term",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Outside of some of the biggest and most memorable market selloffs the results don't pan out",
+        "type": "risk",
+        "context": "Critical insight - backwardation does NOT consistently predict market declines despite common belief",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Some of the very best periods of stock market performance are immediately following some of the biggest selloffs",
+        "type": "comparison",
+        "context": "Counter-intuitive market behavior post-volatility spike",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "VIX Index exhibits mean reversion, tending to revert to or near its long-term average, rather than increase or decrease over the long term",
+        "type": "definition",
+        "context": "Foundational volatility characteristic explaining term structure behavior",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Backwardation tends not to last as long as periods of contango",
+        "type": "comparison",
+        "context": "Duration differences between curve structures - backwardation is typically transient",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Contango curves are typically steepest when the spot VIX Index is extremely low",
+        "type": "comparison",
+        "context": "Curve shape characteristics at different VIX levels",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "VIX 200-day moving average increased from 18.59 in January 2022 to 24.03 in July 2022, representing a 29% increase",
+        "type": "statistic",
+        "context": "Real-world example from 2022 volatility environment",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "CBOE article by Scott Bauer challenges the assumption that VIX backwardation reliably predicts market downturns. Despite backwardation occurring less than 20% of the time and typically signaling near-term uncertainty, historical evidence shows inconsistent correlation with subsequent market declines. The article emphasizes VIX's mean-reverting nature and notes that strong rallies often follow major selloffs, making backwardation an unreliable bearish signal outside of major crisis events (2008, 2011, Q4 2018, 2020 pandemic)."
+  },
+  {
+    "source": {
+      "title": "IV Crush Explained: Key Concepts",
+      "url": "https://support.spotgamma.com/hc/en-us/articles/15249330755859-IV-Crush-Explained-Key-Concepts",
+      "author": "SpotGamma Support",
+      "date": "Unknown",
+      "credibility": 4
+    },
+    "fetch_method": "firecrawl_partial",
+    "fetch_status": "403 Forbidden error - partial content retrieved via alternative research methods and supplementary sources",
+    "facts": [
+      {
+        "claim": "IV Crush occurs when implied volatility decreases significantly after a major event, causing options premiums that were inflated by uncertainty to collapse",
+        "type": "definition",
+        "context": "Core IV crush mechanics - the fundamental process of volatility-driven premium collapse",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Before events like earnings, traders bid up volatility because stocks tend to make their most volatile moves around these dates, creating uncertainty-driven premium inflation",
+        "type": "definition",
+        "context": "Why IV rises before events - market participants pricing in expected volatility",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Once the event occurs, uncertainty disappears and the market adjusts quickly, causing IV to collapse regardless of directional outcome",
+        "type": "definition",
+        "context": "Post-event IV behavior - rapid repricing as uncertainty resolves",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "IV Rank and IV Percentile are used to assess whether current IV is high relative to historical levels",
+        "type": "definition",
+        "context": "Measurement tools for identifying elevated IV environments suitable for selling premium",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Front Week vs Back Month IV spread comparison helps identify elevated near-term volatility",
+        "type": "definition",
+        "context": "Term structure analysis to spot short-term IV spikes vs longer-term expectations",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Vega impact calculation: options' vega multiplied by expected IV change estimates crush magnitude",
+        "type": "definition",
+        "context": "Quantitative method for estimating potential IV crush losses",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Options sellers benefit from IV crush by writing options before events when IV is elevated, then closing after IV falls",
+        "type": "quote",
+        "context": "Primary beneficiary strategy - sell high IV, close at low IV",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Options buyers should avoid purchasing before known high-IV events unless they have strong directional conviction, as premium already reflects market expectations",
+        "type": "risk",
+        "context": "Warning for option buyers - embedded IV makes breakeven difficult",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Spread strategies with both long and short legs can offset IV crush losses from long options with gains from short legs",
+        "type": "quote",
+        "context": "Neutral approach using Iron Condors, Iron Butterflies, or vertical spreads",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "SpotGamma article explains IV crush mechanics, measurement techniques, and trading strategies. IV crush occurs when uncertainty-driven premium inflation collapses after events like earnings or economic releases. Sellers profit by capturing elevated IV before events, while buyers face significant risk of premium decay even with correct directional moves. Spread strategies can partially offset IV crush impact by combining long and short options legs."
+  },
+  {
+    "source": {
+      "title": "Is Volatility Mean Reverting?",
+      "url": "https://www.macroption.com/is-volatility-mean-reverting/",
+      "author": "Unknown",
+      "date": "Unknown",
+      "credibility": 4
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Volatility does revert to its mean",
+        "type": "quote",
+        "context": "General statement on mean reversion for both realized and implied volatility",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Volatility is not necessarily mean reverting on all time horizons",
+        "type": "risk",
+        "context": "Important caveat - mean reversion is time-horizon dependent",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Intraday volatility behavior shows trending (not mean reverting) patterns",
+        "type": "comparison",
+        "context": "Short-term behavior contradicts mean reversion assumption",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Day-to-day and week-to-week volatility exhibits mean reversion",
+        "type": "comparison",
+        "context": "Medium-term behavior supports mean reversion thesis",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Medium-term volatility shows mean reversion with waves lasting weeks",
+        "type": "comparison",
+        "context": "Cyclical patterns visible in weekly timeframes",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Long-term (5+ years) volatility stays in the same area within 10-30 range",
+        "type": "statistic",
+        "context": "Historical bounds for VIX over extended periods",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "Macroption article describes volatility mean reversion as time-horizon dependent. While volatility generally reverts to its mean over day-to-day, weekly, and long-term periods (staying within 10-30 range over 5+ years), intraday behavior contradicts the mean reversion pattern. However, the article has significant limitations: no statistical measures (correlation coefficients, half-life, Hurst exponents), no research citations, no quantitative evidence, and no explicit trading implications provided."
+  },
+  {
+    "source": {
+      "title": "IV Crush",
+      "url": "https://optionalpha.com/learn/iv-crush",
+      "author": "Option Alpha",
+      "date": "Unknown",
+      "credibility": 4
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "After the news is released, implied volatility (IV) tends to drop quickly and significantly as the unknown becomes known and the stock price reacts to the news",
+        "type": "quote",
+        "context": "IV crush mechanism - resolution of uncertainty causes rapid IV collapse",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Stocks tend to make their most volatile moves around earnings dates",
+        "type": "quote",
+        "context": "Why traders bid up volatility in anticipation of earnings",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "If a stock is trading at $100 the day before earnings and the combined price of an at-the-money (ATM) call and put is $5, the stock's expected move is $5 or 5%",
+        "type": "definition",
+        "context": "Straddle method for calculating implied move - practical formula for traders",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "You are right! The stock jumps 10% on strong earnings, yet your long call option is flat on the day",
+        "type": "risk",
+        "context": "Counterintuitive IV crush scenario - correct direction but option doesn't profit due to IV collapse",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "If the actual move is less than the implied move priced into the options, then the decrease in implied volatility can significantly compress an option's price following the earnings announcement",
+        "type": "risk",
+        "context": "Mechanism of loss even with correct directional trade",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "A drop in implied volatility and options pricing is profitable to options sellers",
+        "type": "quote",
+        "context": "Who benefits from IV crush - primary beneficiaries are premium sellers",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "If the underlying security does not move as much as expected (which is often the case), the rapid repricing of options generates a profit for options sellers",
+        "type": "quote",
+        "context": "Seller profit mechanism - IV collapse benefits short premium positions",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "If you sold the straddle for $5 and the earnings move was less $5, you could buy back the position for a lower price and profit from the decrease in implied volatility",
+        "type": "quote",
+        "context": "Concrete example using $100 stock and $5 straddle premium",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Implied volatility is mean-reverting. IV spikes are often followed by a return to more normal levels",
+        "type": "quote",
+        "context": "Foundational IV behavior pattern supporting premium selling strategies",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Volatility tends to cluster. What may seem like an advantageous options selling opportunity could be the beginning of prolonged volatility",
+        "type": "risk",
+        "context": "Volatility clustering warning - challenges simple mean reversion assumptions",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "High volatility can lead to higher volatility",
+        "type": "risk",
+        "context": "Persistence risk - volatility regimes can last longer than expected",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Sustained periods of high volatility could last longer than your position's duration",
+        "type": "risk",
+        "context": "Risk management consideration for premium sellers in high IV",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Even if the stock moves outside the expected range, implied volatility typically still decreases",
+        "type": "quote",
+        "context": "IV behavior post-event regardless of magnitude of move",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Higher implied volatility means higher option premiums",
+        "type": "definition",
+        "context": "Fundamental IV-premium relationship",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "You can use automation to avoid earnings announcements",
+        "type": "quote",
+        "context": "Risk avoidance strategy for option buyers",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Risk-defined strategies, proper position sizing, coupling high implied volatility opportunities with other indicators, and other risk management strategies must be implemented",
+        "type": "risk",
+        "context": "Comprehensive risk management requirements for IV-based strategies",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Not all high implied volatility conditions resolve lower as expected",
+        "type": "risk",
+        "context": "Important caveat about volatility clustering and regime persistence",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "Option Alpha provides comprehensive IV crush education with concrete examples and numerical guidance. Key insights include: 1) The straddle method for calculating implied moves (ATM call + put price = expected move in dollars), 2) The counterintuitive scenario where correct directional trades lose due to IV collapse when actual move < implied move, 3) The tension between IV mean reversion (supporting premium selling) and volatility clustering (creating persistence risk), 4) Clear identification of beneficiaries (sellers profit, buyers lose) and risk management requirements. Emphasizes that even large moves can result in IV crush if uncertainty resolves."
+  },
+  {
+    "source": {
+      "title": "VIX Futures Curve",
+      "url": "https://www.macroption.com/vix-futures-curve/",
+      "author": "Unknown",
+      "date": "Unknown",
+      "credibility": 4
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Near term VIX futures are cheaper than longer term VIX futures",
+        "type": "definition",
+        "context": "Contango structure definition - upward-sloping curve",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Contango is very common in VIX futures - in the long run, contango occurs vast majority of time",
+        "type": "statistic",
+        "context": "Frequency of contango as the dominant market structure",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Contango is attributed to volatility's skewed and mean reverting nature with long time at low levels, with occasional big but mostly short-lived spikes",
+        "type": "definition",
+        "context": "Fundamental explanation for why contango dominates - volatility characteristics",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Contango curves are typically sharpest when the spot VIX Index is very low",
+        "type": "comparison",
+        "context": "Curve steepness conditions - steepest upward slope at low VIX levels",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Near term futures are more expensive and futures curve is downward sloping",
+        "type": "definition",
+        "context": "Backwardation structure definition",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Backwardation is less frequent than contango in VIX futures, but not uncommon",
+        "type": "statistic",
+        "context": "Relative frequency of backwardation",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Backwardation typically occurs when the spot VIX index spikes and the market expects volatility to decrease again in the future",
+        "type": "quote",
+        "context": "Conditions that create backwardation - VIX spikes with reversion expectations",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Market expects VIX to increase from current levels",
+        "type": "definition",
+        "context": "What contango signals about forward volatility expectations",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "Macroption article on VIX futures curve explains structural patterns and their causes. Contango dominates the vast majority of the time due to volatility's mean-reverting, spike-prone nature characterized by long periods at low levels with occasional short-lived spikes. Contango curves are steepest at very low VIX levels. Backwardation emerges during VIX spikes when the market expects reversion to lower volatility. However, the article has significant limitations: lacks trading implications, no statistical data or quantitative measures, no historical examples or case studies, and no discussion of how curve changes during market stress."
+  }
+]

@@ -172,12 +172,9 @@ class AutocompleteAgent:
             f"System prompt template loaded (length: {len(placeholder_system_prompt)} chars)"
         )
 
-        # also save this to a file in the local temp directory up two directories
-        # .parent - apps/orchestrator_3_stream/backend/modules/
-        # .parent.parent - apps/orchestrator_3_stream/backend/
-        # .parent.parent.parent - apps/orchestrator_3_stream/
-        # .parent.parent.parent /temp - apps/orchestrator_3_stream/temp/
-        temp_dir = Path(__file__).parent.parent.parent / "temp"
+
+        # Save system prompt to a file in temp directory (writable in container)
+        temp_dir = Path("/tmp") / "orchestrator_autocomplete"
         temp_dir.mkdir(parents=True, exist_ok=True)
         with open(temp_dir / "autocomplete_expert_system_prompt.md", "w") as f:
             f.write(placeholder_system_prompt)

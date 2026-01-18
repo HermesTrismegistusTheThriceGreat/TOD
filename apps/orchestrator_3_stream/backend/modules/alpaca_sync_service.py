@@ -28,13 +28,8 @@ from .alpaca_service import AlpacaService
 from .config import DATABASE_URL
 from .logger import get_logger
 
-# Import models for type hints
-import sys
-from pathlib import Path
 
-# Add orchestrator_db to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "orchestrator_db"))
-from models import AlpacaOrder, AlpacaPosition
+from .alpaca_models_db import AlpacaOrder, AlpacaPosition
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
