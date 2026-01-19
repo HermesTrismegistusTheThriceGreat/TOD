@@ -95,6 +95,15 @@
           >
             TRADE STATS
           </button>
+          <!-- Logout button - only show when authenticated -->
+          <button
+            v-if="authStore.isAuthenticated"
+            class="btn-logout"
+            @click="handleLogout"
+            title="Sign out"
+          >
+            LOGOUT
+          </button>
         </div>
       </div>
     </div>
@@ -102,15 +111,68 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, watch } from "vue";
+import { useRouter } from "vue-router";
 import { useHeaderBar } from "../composables/useHeaderBar";
 import { useOrchestratorStore } from "../stores/orchestratorStore";
+import { useAuthStore } from "../stores/authStore";
 
 // Use header bar composable for state management
 const headerBar = useHeaderBar();
 
 // Use store for command input visibility
 const store = useOrchestratorStore();
+
+// Use auth store for authentication state
+const authStore = useAuthStore();
+const router = useRouter();
+
+// Debug: Log auth state changes
+watch(
+  () => authStore.isAuthenticated,
+  (newVal) => {
+    console.log("[AppHeader] isAuthenticated changed:", newVal, "user:", authStore.user);
+  },
+  { immediate: true }
+);
+
+// Handle logout
+async function handleLogout() {
+  try {
+    await authStore.signOut();
+
+    // If already logged out, navigate immediately
+    if (!authStore.isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
+    // Wait for auth state to update (race condition fix)
+    // The reactive session from Better Auth updates asynchronously
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(
+        () => authStore.isAuthenticated,
+        (isAuth) => {
+          if (!isAuth) {
+            unwatch();
+            resolve();
+          }
+        },
+        { immediate: true }
+      );
+
+      // Timeout after 2 seconds as safety measure
+      setTimeout(() => {
+        unwatch();
+        resolve();
+      }, 2000);
+    });
+
+    router.push("/login");
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+}
 
 // Toggle view mode with Cmd+J / Ctrl+J
 function handleKeydown(event: KeyboardEvent) {
@@ -375,5 +437,27 @@ onUnmounted(() => {
   .header-subtitle {
     font-size: 0.75rem;
   }
+}
+
+/* Logout Button */
+.btn-logout {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--status-error, #ef4444);
+  border: 1px solid var(--status-error, #ef4444);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: var(--spacing-md);
+}
+
+.btn-logout:hover {
+  background: var(--status-error, #ef4444);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
 }
 </style>

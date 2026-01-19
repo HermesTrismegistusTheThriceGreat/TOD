@@ -10,9 +10,17 @@
 
 import { createAuthClient } from "better-auth/vue";
 
-// Create auth client with base URL from environment
+// Create auth client
+// In development, use relative URL so requests go through Vite proxy (same-origin cookies)
+// In production, use the full auth URL
+const isDev = import.meta.env.DEV;
+const authBaseURL = isDev ? "" : (import.meta.env.VITE_AUTH_URL || "http://localhost:9404");
+
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_AUTH_URL || "http://localhost:9404",
+  baseURL: authBaseURL,
+  fetchOptions: {
+    credentials: "include", // Required for cookie handling
+  },
 });
 
 // Export typed methods for convenience

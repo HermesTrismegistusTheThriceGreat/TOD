@@ -16,7 +16,14 @@ export default defineConfig(({ mode }) => {
     server: {
       host: env.FRONTEND_HOST || '127.0.0.1',
       port: parseInt(env.FRONTEND_PORT || '5175'),
-      middlewareMode: false
+      middlewareMode: false,
+      proxy: {
+        // Proxy auth requests to auth service (same-origin for cookies)
+        '/api/auth': {
+          target: env.VITE_AUTH_URL || 'http://localhost:9404',
+          changeOrigin: true,
+        },
+      },
     },
     publicDir: 'public'
   }
