@@ -51,34 +51,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Loading, Warning, Refresh } from '@element-plus/icons-vue'
-import OpenPositionCard from './OpenPositionCard.vue'
-import { useAlpacaPositions } from '../composables/useAlpacaPositions'
+import { computed } from "vue";
+import { Loading, Warning, Refresh } from "@element-plus/icons-vue";
+import OpenPositionCard from "./OpenPositionCard.vue";
+import { useAlpacaPositions } from "../composables/useAlpacaPositions";
 
 // Use the Alpaca positions composable
-const {
-  positions,
-  loading,
-  error,
-  hasPositions,
-  positionCount,
-  refresh,
-} = useAlpacaPositions({
-  autoFetch: true,
-  autoSubscribe: true,
-})
+const { positions, loading, error, hasPositions, positionCount, refresh } =
+  useAlpacaPositions({
+    autoFetch: true,
+    autoSubscribe: true,
+  });
 
 // Computed for display
 const displayCount = computed(() => {
-  if (loading.value) return '...'
-  return `${positionCount.value} position${positionCount.value !== 1 ? 's' : ''}`
-})
+  if (loading.value) return "...";
+  return `${positionCount.value} position${positionCount.value !== 1 ? "s" : ""}`;
+});
 
 // Refresh handler with loading feedback
 const handleRefresh = async () => {
-  await refresh()
-}
+  await refresh();
+};
 </script>
 
 <style scoped>
@@ -148,23 +142,15 @@ const handleRefresh = async () => {
   color: var(--text-muted);
 }
 
-/* Positions Grid */
+/* Positions Stack */
 .positions-grid {
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-lg);
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(900px, 1fr));
-  grid-auto-rows: min-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 24px;
-  align-content: start;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1400px) {
-  .positions-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Scrollbar styling */

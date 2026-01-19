@@ -358,6 +358,18 @@ onMounted(() => {
             <span class="summary-badge"
               >{{ position.legs.length }} legs position</span
             >
+            <div class="mobile-stats">
+              <span
+                class="mobile-pnl"
+                :class="totalPnL >= 0 ? 'text-profit' : 'text-loss'"
+              >
+                Total P/L: {{ formatCurrency(totalPnL) }}
+              </span>
+              <span class="mobile-dte">
+                {{ daysToExpiry }}
+                {{ daysToExpiry === 1 ? "day" : "days" }} left
+              </span>
+            </div>
           </div>
 
           <el-table :data="sortedLegs" class="legs-table" style="width: 100%">
@@ -475,8 +487,8 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
-  /* Adjusted for side-by-side layout: wider min-width */
-  min-width: 800px;
+  width: 100%;
+  max-width: 1000px;
   overflow: hidden;
   height: fit-content;
 }
@@ -789,5 +801,83 @@ onMounted(() => {
 
 .close-leg-btn {
   transition: opacity 0.2s ease;
+}
+
+@media (max-width: 900px) {
+  .content-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .stats-sidebar {
+    display: none;
+  }
+
+  .legs-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .header-actions .el-button {
+    height: 44px; /* Slightly larger for touch */
+    padding: 0 20px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .close-leg-btn {
+    height: 40px;
+    padding: 0 16px;
+  }
+
+  .spot-value {
+    font-size: 1.1rem;
+  }
+
+  .ticker {
+    font-size: 1.2rem;
+  }
+
+  /* Handle table on small screens */
+  .legs-table :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  .mobile-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .mobile-pnl {
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .mobile-dte {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-stats {
+    display: none;
+  }
 }
 </style>

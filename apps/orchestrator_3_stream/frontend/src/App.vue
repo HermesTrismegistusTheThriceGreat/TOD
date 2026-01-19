@@ -2,13 +2,17 @@
   <div class="app-container">
     <AppHeader />
 
-    <main class="app-main"
-          :class="{
-            'sidebar-collapsed': isSidebarCollapsed,
-            'chat-md': store.chatWidth === 'md',
-            'chat-lg': store.chatWidth === 'lg'
-          }">
+    <main
+      class="app-main"
+      :class="{
+        'sidebar-collapsed': isSidebarCollapsed,
+        'chat-md': store.chatWidth === 'md',
+        'chat-lg': store.chatWidth === 'lg',
+        'no-sidebars': !shouldShowSidebars,
+      }"
+    >
       <AgentList
+        v-if="shouldShowSidebars"
         class="app-sidebar left"
         :agents="store.agents"
         :selected-agent-id="store.selectedAgentId"
@@ -45,6 +49,7 @@
       />
 
       <OrchestratorChat
+        v-if="shouldShowSidebars"
         class="app-sidebar right"
         :messages="store.chatMessages"
         :is-connected="store.isConnected"
@@ -63,68 +68,73 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import AppHeader from './components/AppHeader.vue'
-import AgentList from './components/AgentList.vue'
-import EventStream from './components/EventStream.vue'
-import AdwSwimlanes from './components/AdwSwimlanes.vue'
-import OpenPositions from './components/OpenPositions.vue'
-import CalendarPage from './components/CalendarPage.vue'
-import TradeStatsGrid from './components/TradeStatsGrid.vue'
-import OrchestratorChat from './components/OrchestratorChat.vue'
-import GlobalCommandInput from './components/GlobalCommandInput.vue'
-import { useOrchestratorStore } from './stores/orchestratorStore'
-import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
+import { onMounted, onUnmounted, ref, computed } from "vue";
+import AppHeader from "./components/AppHeader.vue";
+import AgentList from "./components/AgentList.vue";
+import EventStream from "./components/EventStream.vue";
+import AdwSwimlanes from "./components/AdwSwimlanes.vue";
+import OpenPositions from "./components/OpenPositions.vue";
+import CalendarPage from "./components/CalendarPage.vue";
+import TradeStatsGrid from "./components/TradeStatsGrid.vue";
+import OrchestratorChat from "./components/OrchestratorChat.vue";
+import GlobalCommandInput from "./components/GlobalCommandInput.vue";
+import { useOrchestratorStore } from "./stores/orchestratorStore";
+import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 
 // Use Pinia store
-const store = useOrchestratorStore()
+const store = useOrchestratorStore();
+
+// Computed
+const shouldShowSidebars = computed(() => {
+  return store.viewMode === "logs" || store.viewMode === "adws";
+});
 
 // Initialize keyboard shortcuts
-useKeyboardShortcuts()
+useKeyboardShortcuts();
 
 // Component refs
-const eventStreamRef = ref<InstanceType<typeof EventStream> | null>(null)
+const eventStreamRef = ref<InstanceType<typeof EventStream> | null>(null);
 
 // Sidebar collapse state
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(false);
 
 // Initialize store on mount
 onMounted(() => {
-  store.initialize()
-})
+  store.initialize();
+});
 
 // Clean up on unmount to prevent duplicate connections during HMR
 onUnmounted(() => {
-  store.disconnectWebSocket()
-})
+  store.disconnectWebSocket();
+});
 
 // Handlers
 const handleSelectAgent = (id: string) => {
-  store.selectAgent(id)
+  store.selectAgent(id);
 
   // Toggle agent filter in EventStream
-  const agent = store.agents.find(a => a.id === id)
+  const agent = store.agents.find((a) => a.id === id);
   if (agent && eventStreamRef.value) {
-    eventStreamRef.value.toggleAgentFilter(agent.name)
+    eventStreamRef.value.toggleAgentFilter(agent.name);
   }
-}
+};
 
 const handleAddAgent = () => {
-  console.log('Add agent clicked')
+  console.log("Add agent clicked");
   // TODO: Open modal to create new agent
-}
+};
 
 const handleSetFilter = (filter: string) => {
-  store.setEventStreamFilter(filter as any)
-}
+  store.setEventStreamFilter(filter as any);
+};
 
 const handleSendMessage = (message: string) => {
-  store.sendUserMessage(message)
-}
+  store.sendUserMessage(message);
+};
 
 const handleSidebarCollapse = (isCollapsed: boolean) => {
-  isSidebarCollapsed.value = isCollapsed
-}
+  isSidebarCollapsed.value = isCollapsed;
+};
 </script>
 
 <style scoped>
@@ -164,6 +174,10 @@ const handleSidebarCollapse = (isCollapsed: boolean) => {
 
 .app-main.sidebar-collapsed.chat-lg {
   grid-template-columns: 48px 1fr 618px;
+}
+
+.app-main.no-sidebars {
+  grid-template-columns: 1fr;
 }
 
 .app-sidebar,
