@@ -10,7 +10,7 @@ import os
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -28,7 +28,8 @@ from modules.websocket_manager import get_websocket_manager
 from modules import database
 from modules.orchestrator_service import OrchestratorService, get_orchestrator_tools
 from modules.agent_manager import AgentManager
-from modules.orch_database_models import OrchestratorAgent
+from modules.orch_database_models import OrchestratorAgent, AuthUser
+from modules.auth_middleware import get_current_user, get_optional_user
 from modules.autocomplete_service import AutocompleteService
 from modules.autocomplete_models import (
     AutocompleteGenerateRequest,
@@ -292,6 +293,37 @@ async def health_check():
         "service": "orchestrator-3-stream",
         "websocket_connections": ws_manager.get_connection_count(),
     }
+
+
+@app.get("/api/me")
+async def get_current_user_info(user: AuthUser = Depends(get_current_user)):
+    """
+    Get current authenticated user information.
+
+    Protected endpoint that requires valid Better Auth session.
+    Returns user profile data if authenticated, raises 401 if not.
+
+    Returns:
+        User profile data including id, name, email, etc.
+
+    Raises:
+        HTTPException: 401 if not authenticated or session invalid
+
+    Example:
+        >>> # With valid session cookie:
+        >>> GET /api/me
+        >>> {
+        ...     "user": {
+        ...         "id": "user_123",
+        ...         "name": "John Doe",
+        ...         "email": "john@example.com",
+        ...         "email_verified": true,
+        ...         "image": null
+        ...     }
+        ... }
+    """
+    logger.http_request("GET", "/api/me", 200)
+    return {"user": user.model_dump()}
 
 
 @app.get("/get_orchestrator")

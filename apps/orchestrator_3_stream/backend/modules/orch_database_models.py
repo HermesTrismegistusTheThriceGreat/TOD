@@ -649,6 +649,54 @@ class OptionGreeksSnapshot(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════
+# BETTER AUTH MODELS
+# ═══════════════════════════════════════════════════════════
+
+
+class AuthUser(BaseModel):
+    """
+    Better Auth user model.
+
+    Maps to: "user" table
+    """
+    id: str
+    name: str
+    email: str
+    email_verified: bool = False
+    image: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class AuthSession(BaseModel):
+    """
+    Better Auth session model.
+
+    Maps to: session table
+    """
+    id: str
+    user_id: str
+    token: str
+    expires_at: datetime
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+# ═══════════════════════════════════════════════════════════
 # EXPORT PUBLIC API
 # ═══════════════════════════════════════════════════════════
 
@@ -663,4 +711,6 @@ __all__ = [
     "AlpacaOrder",
     "AlpacaPosition",
     "OptionGreeksSnapshot",
+    "AuthUser",
+    "AuthSession",
 ]

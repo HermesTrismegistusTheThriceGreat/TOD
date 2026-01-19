@@ -14,12 +14,14 @@
     "@element-plus/icons-vue": "^2.3.2",
     "@vueuse/core": "^14.0.0",
     "axios": "^1.6.0",
+    "better-auth": "^1.4.6",
     "dompurify": "^3.3.0",
     "element-plus": "^2.13.1",
     "highlight.js": "^11.11.1",
     "marked": "^16.4.1",
     "pinia": "^2.1.7",
-    "vue": "^3.4.0"
+    "vue": "^3.4.0",
+    "vue-router": "^4.4.0"
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",
