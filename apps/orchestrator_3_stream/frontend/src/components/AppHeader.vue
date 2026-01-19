@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="header-content">
       <div class="header-title">
-        <h1>MULTI-AGENT ORCHESTRATION</h1>
+        <h1>CASH-DASH</h1>
         <div class="header-subtitle-group">
           <div class="connection-status">
             <span
@@ -16,7 +16,7 @@
         </div>
       </div>
       <div class="header-right">
-        <div class="header-stats">
+        <!-- <div class="header-stats">
           <div class="stat-item stat-pill">
             <span class="stat-label">Active:</span>
             <span class="stat-value">{{ headerBar.activeAgentCount }}</span>
@@ -37,7 +37,7 @@
             <span class="stat-label">Cost:</span>
             <span class="stat-value">${{ headerBar.formattedCost }}</span>
           </div>
-        </div>
+        </div> -->
 
         <div class="header-actions">
           <div
