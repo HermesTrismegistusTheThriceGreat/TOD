@@ -170,4 +170,17 @@ const handleRefresh = async () => {
 .positions-grid::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+@media (max-width: 768px) {
+  .open-positions {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .positions-grid {
+    height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+}
 </style>

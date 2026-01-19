@@ -253,44 +253,59 @@ const handleSidebarCollapse = (isCollapsed: boolean) => {
   }
 }
 
-/* Mobile Responsive Design (< 650px) */
-@media (max-width: 650px) {
-  /* Force 3-column layout with collapsed sidebars */
+/* Mobile Responsive Design (< 768px) */
+@media (max-width: 768px) {
+  .app-container {
+    height: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Switch from Grid to Flex Column */
   .app-main,
   .app-main.chat-md,
   .app-main.chat-lg,
   .app-main.sidebar-collapsed,
   .app-main.sidebar-collapsed.chat-md,
   .app-main.sidebar-collapsed.chat-lg {
-    grid-template-columns: 48px 1fr 280px;
+    display: flex !important;
+    flex-direction: column;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Force AgentList to always be collapsed on mobile */
+  /* Full width for all columns */
+  .app-sidebar,
+  .app-content {
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  /* Content First */
+  .app-content.center {
+    order: 1;
+    min-height: 50vh;
+  }
+
+  /* Chat Second */
+  .app-sidebar.right {
+    order: 2;
+    height: 600px !important; /* Fixed height for chat area on mobile */
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Agents Last (or hidden/collapsed) */
   .app-sidebar.left {
-    width: 48px !important;
-    min-width: 48px !important;
-  }
-
-  /* OrchestratorChat small mode on mobile */
-  .app-sidebar.right {
-    width: 280px !important;
-    min-width: 280px !important;
-  }
-}
-
-/* Very narrow mobile devices - hide chat for more event space */
-@media (max-width: 400px) {
-  .app-main,
-  .app-main.chat-md,
-  .app-main.chat-lg,
-  .app-main.sidebar-collapsed,
-  .app-main.sidebar-collapsed.chat-md,
-  .app-main.sidebar-collapsed.chat-lg {
-    grid-template-columns: 48px 1fr 0;
-  }
-
-  .app-sidebar.right {
-    display: none;
+    order: 3;
+    height: auto !important;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto !important;
+    padding: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
 </style>
