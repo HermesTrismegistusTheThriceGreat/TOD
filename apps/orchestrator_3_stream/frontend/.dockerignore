@@ -24,8 +24,7 @@ coverage/
 .env.local
 .env.*.local
 
-# Docker
-Dockerfile
+# Docker (don't ignore Dockerfile - needed for Railway builds)
 .dockerignore
 
 # Misc

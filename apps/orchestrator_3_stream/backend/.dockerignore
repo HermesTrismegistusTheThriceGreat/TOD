@@ -35,8 +35,7 @@ logs/
 *.md
 docs/
 
-# Docker
-Dockerfile
+# Docker (don't ignore Dockerfile - needed for Railway builds)
 .dockerignore
 docker-compose*.yml
 
