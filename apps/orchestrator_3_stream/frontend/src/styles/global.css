@@ -54,10 +54,10 @@
   --spacing-xl: 2rem;
 
   /* Typography */
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 }
 
 /* Reset & Base Styles */
@@ -103,7 +103,12 @@ body {
 }
 
 /* Typography */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.2;
   color: var(--text-primary);
@@ -285,7 +290,8 @@ textarea::placeholder {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -312,8 +318,12 @@ textarea::placeholder {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -401,7 +411,7 @@ textarea::placeholder {
 /* Inline code */
 .message-content code,
 .thinking-text code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
   font-size: 0.875em;
   background: rgba(6, 182, 212, 0.1);
   color: var(--accent-primary);
@@ -589,13 +599,29 @@ textarea::placeholder {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   TABLET/MOBILE RESPONSIVE (< 768px)
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* Enable scrolling when layout stacks vertically */
+  html,
+  body {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    MOBILE RESPONSIVE UTILITIES (< 650px)
    ═══════════════════════════════════════════════════════════ */
 
 /* Mobile-specific breakpoint */
 @media (max-width: 650px) {
   /* Force no horizontal scroll */
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
   }
 
