@@ -1,0 +1,4 @@
+{
+  "name": "orchestrator-frontend",
+  "builder": "dockerfile"
+}

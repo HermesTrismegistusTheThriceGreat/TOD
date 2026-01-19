@@ -2,7 +2,7 @@
 name: railway-mcp
 description: Railway infrastructure management specialist. Use to create projects, deploy services, manage environments, pull variables, and monitor Railway deployments through natural language.
 tools: Bash, Read, Write
-model: haiku
+model: opus
 color: green
 ---
 
@@ -49,7 +49,7 @@ When invoked, you must follow these steps:
 
 3. **Launch Railway-enabled subprocess** - Execute a Claude Code subprocess with the Railway MCP config:
    ```bash
-   claude --mcp-config .mcp.json.railway --model haiku --dangerously-skip-permissions -p "RAILWAY_PROMPT"
+   claude --mcp-config .mcp.json.railway --model opus --dangerously-skip-permissions -p "RAILWAY_PROMPT"
    ```
 
    The RAILWAY_PROMPT should instruct the subprocess to:
@@ -64,32 +64,33 @@ When invoked, you must follow these steps:
 
 **List projects:**
 ```bash
-claude --mcp-config .mcp.json.railway --model haiku --dangerously-skip-permissions -p "Use Railway MCP tools to list all my projects and their current status."
+claude --mcp-config .mcp.json.railway --model opus --dangerously-skip-permissions -p "Use Railway MCP tools to list all my projects and their current status."
 ```
 
 **Create a new project:**
 ```bash
-claude --mcp-config .mcp.json.railway --model haiku --dangerously-skip-permissions -p "Use Railway MCP tools to create a new project called 'my-app'."
+claude --mcp-config .mcp.json.railway --model opus --dangerously-skip-permissions -p "Use Railway MCP tools to create a new project called 'my-app'."
 ```
 
 **Deploy a service:**
 ```bash
-claude --mcp-config .mcp.json.railway --model haiku --dangerously-skip-permissions -p "Use Railway MCP tools to deploy the current directory as a new service."
+claude --mcp-config .mcp.json.railway --model opus --dangerously-skip-permissions -p "Use Railway MCP tools to deploy the current directory as a new service."
 ```
 
 **Get environment variables:**
 ```bash
-claude --mcp-config .mcp.json.railway --model haiku --dangerously-skip-permissions -p "Use Railway MCP tools to list all environment variables for the current project."
+claude --mcp-config .mcp.json.railway --model opus --dangerously-skip-permissions -p "Use Railway MCP tools to list all environment variables for the current project."
 ```
 
 **Check logs:**
 ```bash
-claude --mcp-config .mcp.json.railway --model haiku --dangerously-skip-permissions -p "Use Railway MCP tools to retrieve recent logs for the current service."
+claude --mcp-config .mcp.json.railway --model opus --dangerously-skip-permissions -p "Use Railway MCP tools to retrieve recent logs for the current service."
 ```
 
 ## Report / Response
 
 Provide your final response in this exact format:
+
 
 ### Railway Operation Result
 - **Status**: `<success>` or `<failure>`
