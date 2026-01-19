@@ -64,12 +64,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useAuthStore } from "@/stores/authStore";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const name = ref("");
 const email = ref("");
@@ -83,7 +84,37 @@ async function handleSubmit() {
 
   try {
     await authStore.signUp(name.value, email.value, password.value);
-    router.push("/");
+
+    // If already authenticated, navigate immediately
+    if (authStore.isAuthenticated) {
+      const redirectPath = (route.query.redirect as string) || "/";
+      router.push(redirectPath);
+      return;
+    }
+
+    // Wait for auth state to update (race condition fix)
+    // The reactive session from Better Auth updates asynchronously
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(
+        () => authStore.isAuthenticated,
+        (isAuth) => {
+          if (isAuth) {
+            unwatch();
+            resolve();
+          }
+        },
+        { immediate: true }
+      );
+
+      // Timeout after 2 seconds as safety measure
+      setTimeout(() => {
+        unwatch();
+        resolve();
+      }, 2000);
+    });
+
+    const redirectPath = (route.query.redirect as string) || "/";
+    router.push(redirectPath);
   } catch (e: unknown) {
     const errorMessage = e instanceof Error ? e.message : 'Sign up failed. Please try again.';
     error.value = errorMessage;

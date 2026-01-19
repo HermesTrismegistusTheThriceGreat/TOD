@@ -1,74 +1,83 @@
 <template>
   <div class="app-container">
-    <AppHeader />
+    <!-- Auth pages (login/signup) - no header, full page -->
+    <template v-if="isAuthRoute">
+      <router-view />
+    </template>
 
-    <main
-      class="app-main"
-      :class="{
-        'sidebar-collapsed': isSidebarCollapsed,
-        'chat-md': store.chatWidth === 'md',
-        'chat-lg': store.chatWidth === 'lg',
-        'no-sidebars': !shouldShowSidebars,
-      }"
-    >
-      <AgentList
-        v-if="shouldShowSidebars"
-        class="app-sidebar left"
-        :agents="store.agents"
-        :selected-agent-id="store.selectedAgentId"
-        @select-agent="handleSelectAgent"
-        @add-agent="handleAddAgent"
-        @collapse-change="handleSidebarCollapse"
-      />
+    <!-- Main dashboard layout -->
+    <template v-else>
+      <AppHeader />
 
-      <!-- Center Column: EventStream, AdwSwimlanes, or OpenPositions based on view mode -->
-      <EventStream
-        v-if="store.viewMode === 'logs'"
-        ref="eventStreamRef"
-        class="app-content center"
-        :events="store.filteredEventStream"
-        :current-filter="store.eventStreamFilter"
-        :auto-scroll="true"
-        @set-filter="handleSetFilter"
-      />
-      <AdwSwimlanes
-        v-else-if="store.viewMode === 'adws'"
-        class="app-content center"
-      />
-      <OpenPositions
-        v-else-if="store.viewMode === 'open-positions'"
-        class="app-content center"
-      />
-      <CalendarPage
-        v-else-if="store.viewMode === 'calendar'"
-        class="app-content center"
-      />
-      <TradeStatsGrid
-        v-else-if="store.viewMode === 'trade-stats'"
-        class="app-content center"
-      />
+      <main
+        class="app-main"
+        :class="{
+          'sidebar-collapsed': isSidebarCollapsed,
+          'chat-md': store.chatWidth === 'md',
+          'chat-lg': store.chatWidth === 'lg',
+          'no-sidebars': !shouldShowSidebars,
+        }"
+      >
+        <AgentList
+          v-if="shouldShowSidebars"
+          class="app-sidebar left"
+          :agents="store.agents"
+          :selected-agent-id="store.selectedAgentId"
+          @select-agent="handleSelectAgent"
+          @add-agent="handleAddAgent"
+          @collapse-change="handleSidebarCollapse"
+        />
 
-      <OrchestratorChat
-        v-if="shouldShowSidebars"
-        class="app-sidebar right"
-        :messages="store.chatMessages"
-        :is-connected="store.isConnected"
-        :is-typing="store.isTyping"
-        :auto-scroll="store.autoScroll"
+        <!-- Center Column: EventStream, AdwSwimlanes, or OpenPositions based on view mode -->
+        <EventStream
+          v-if="store.viewMode === 'logs'"
+          ref="eventStreamRef"
+          class="app-content center"
+          :events="store.filteredEventStream"
+          :current-filter="store.eventStreamFilter"
+          :auto-scroll="true"
+          @set-filter="handleSetFilter"
+        />
+        <AdwSwimlanes
+          v-else-if="store.viewMode === 'adws'"
+          class="app-content center"
+        />
+        <OpenPositions
+          v-else-if="store.viewMode === 'open-positions'"
+          class="app-content center"
+        />
+        <CalendarPage
+          v-else-if="store.viewMode === 'calendar'"
+          class="app-content center"
+        />
+        <TradeStatsGrid
+          v-else-if="store.viewMode === 'trade-stats'"
+          class="app-content center"
+        />
+
+        <OrchestratorChat
+          v-if="shouldShowSidebars"
+          class="app-sidebar right"
+          :messages="store.chatMessages"
+          :is-connected="store.isConnected"
+          :is-typing="store.isTyping"
+          :auto-scroll="store.autoScroll"
+          @send="handleSendMessage"
+        />
+      </main>
+
+      <!-- Global Command Input -->
+      <GlobalCommandInput
+        :visible="store.commandInputVisible"
         @send="handleSendMessage"
       />
-    </main>
-
-    <!-- Global Command Input -->
-    <GlobalCommandInput
-      :visible="store.commandInputVisible"
-      @send="handleSendMessage"
-    />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from "vue";
+import { useRoute } from "vue-router";
 import AppHeader from "./components/AppHeader.vue";
 import AgentList from "./components/AgentList.vue";
 import EventStream from "./components/EventStream.vue";
@@ -83,6 +92,14 @@ import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 
 // Use Pinia store
 const store = useOrchestratorStore();
+
+// Use Vue Router
+const route = useRoute();
+
+// Check if current route is an auth page (login/signup)
+const isAuthRoute = computed(() => {
+  return route.path === "/login" || route.path === "/signup";
+});
 
 // Computed
 const shouldShowSidebars = computed(() => {

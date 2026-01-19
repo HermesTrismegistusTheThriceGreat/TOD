@@ -27,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     path: "/",
     name: "Home",
     component: () => import("@/views/HomeView.vue"),
-    meta: { requiresAuth: false }, // Set to true to require authentication
+    meta: { requiresAuth: true }, // Set to true to require authentication
   },
 ];
 
@@ -44,7 +44,8 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  // Wait for session to load if still loading
+  // Always wait for session to finish loading before making auth decisions
+  // This prevents race conditions where we check auth before session is resolved
   if (authStore.isLoading) {
     await new Promise<void>((resolve) => {
       const unwatch = watch(
@@ -54,8 +55,15 @@ router.beforeEach(async (to, from, next) => {
             unwatch();
             resolve();
           }
-        }
+        },
+        { immediate: true } // Check current value immediately
       );
+
+      // Safety timeout to prevent infinite waiting
+      setTimeout(() => {
+        unwatch();
+        resolve();
+      }, 3000);
     });
   }
 
