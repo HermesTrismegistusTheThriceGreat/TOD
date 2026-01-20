@@ -15,6 +15,9 @@ RUN npm install --include=dev
 # Copy source code
 COPY . .
 
+# Debug: List files to verify tsconfig.json is present
+RUN ls -la && cat tsconfig.json || echo "tsconfig.json not found"
+
 # Build TypeScript
 RUN npm run build
 
