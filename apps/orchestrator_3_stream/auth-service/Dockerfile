@@ -16,11 +16,12 @@ RUN npm install --include=dev
 COPY . .
 
 # Create tsconfig.json (since it may be excluded by .gitignore)
+# Using Node16 module resolution for proper ESM support in Node.js
 RUN echo '{ \
   "compilerOptions": { \
     "target": "ES2022", \
-    "module": "ESNext", \
-    "moduleResolution": "bundler", \
+    "module": "Node16", \
+    "moduleResolution": "Node16", \
     "esModuleInterop": true, \
     "strict": true, \
     "skipLibCheck": true, \
