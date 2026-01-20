@@ -15,8 +15,20 @@ RUN npm install --include=dev
 # Copy source code
 COPY . .
 
-# Debug: List files to verify tsconfig.json is present
-RUN ls -la && cat tsconfig.json || echo "tsconfig.json not found"
+# Create tsconfig.json (since it may be excluded by .gitignore)
+RUN echo '{ \
+  "compilerOptions": { \
+    "target": "ES2022", \
+    "module": "ESNext", \
+    "moduleResolution": "bundler", \
+    "esModuleInterop": true, \
+    "strict": true, \
+    "skipLibCheck": true, \
+    "outDir": "./dist", \
+    "rootDir": "./src" \
+  }, \
+  "include": ["src/**/*"] \
+}' > tsconfig.json
 
 # Build TypeScript
 RUN npm run build
