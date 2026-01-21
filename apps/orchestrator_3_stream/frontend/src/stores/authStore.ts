@@ -60,16 +60,29 @@ export const useAuthStore = defineStore("auth", () => {
    * @returns User data on success
    */
   async function signIn(email: string, password: string) {
-    const { data, error } = await authClient.signIn.email({
-      email,
-      password,
-    });
+    console.log("[AuthStore] signIn called with email:", email);
 
-    if (error) {
-      throw new Error(error.message || "Sign in failed");
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+      });
+
+      console.log("[AuthStore] signIn result:", result);
+
+      const { data, error } = result;
+
+      if (error) {
+        console.error("[AuthStore] signIn error:", error);
+        throw new Error(error.message || "Sign in failed");
+      }
+
+      console.log("[AuthStore] signIn success:", data);
+      return data;
+    } catch (e) {
+      console.error("[AuthStore] signIn exception:", e);
+      throw e;
     }
-
-    return data;
   }
 
   /**

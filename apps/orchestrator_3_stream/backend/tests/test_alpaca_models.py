@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from modules.alpaca_models import (
     OCCSymbol,
     OptionLeg,
-    IronCondorPosition,
+    OptionsPosition,
     OptionPriceUpdate,
     GetPositionsResponse,
 )
@@ -178,12 +178,12 @@ class TestOptionLegPnL:
         assert leg.pnl_percent == 0.0
 
 
-class TestIronCondorPosition:
-    """Tests for IronCondorPosition validation"""
+class TestOptionsPosition:
+    """Tests for OptionsPosition validation"""
 
-    def create_valid_iron_condor(self) -> IronCondorPosition:
+    def create_valid_iron_condor(self) -> OptionsPosition:
         """Helper to create a valid iron condor"""
-        return IronCondorPosition(
+        return OptionsPosition(
             ticker="SPY",
             expiry_date=date(2026, 1, 17),
             legs=[
@@ -194,22 +194,12 @@ class TestIronCondorPosition:
             ]
         )
 
-    def test_valid_iron_condor(self):
-        """Valid iron condor passes validation"""
+    def test_valid_options_position(self):
+        """Valid options position can be created"""
         ic = self.create_valid_iron_condor()
-        assert ic.is_valid_iron_condor() is True
-
-    def test_invalid_fewer_than_4_legs(self):
-        """Iron condor with fewer than 4 legs fails validation"""
-        ic = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                OptionLeg(symbol="SPY260117P00680000", direction="Long", strike=680.0, option_type="Put", quantity=10, entry_price=1.00, expiry_date=date(2026, 1, 17), underlying="SPY"),
-                OptionLeg(symbol="SPY260117P00685000", direction="Short", strike=685.0, option_type="Put", quantity=10, entry_price=2.00, expiry_date=date(2026, 1, 17), underlying="SPY"),
-            ]
-        )
-        assert ic.is_valid_iron_condor() is False
+        assert ic.ticker == "SPY"
+        assert len(ic.legs) == 4
+        assert ic.strategy == "Options"
 
     def test_total_pnl_calculation(self):
         """Total P/L sums all leg P/Ls"""
@@ -224,15 +214,17 @@ class TestIronCondorPosition:
         # Total should be $0 (balanced)
         assert ic.total_pnl == 0.0
 
-    def test_get_leg_by_type(self):
-        """get_leg_by_type returns correct leg"""
+    def test_leg_properties(self):
+        """Legs have correct properties"""
         ic = self.create_valid_iron_condor()
 
-        short_put = ic.get_leg_by_type('Put', 'Short')
+        # Find short put leg
+        short_put = next((leg for leg in ic.legs if leg.option_type == 'Put' and leg.direction == 'Short'), None)
         assert short_put is not None
         assert short_put.strike == 685.0
 
-        long_call = ic.get_leg_by_type('Call', 'Long')
+        # Find long call leg
+        long_call = next((leg for leg in ic.legs if leg.option_type == 'Call' and leg.direction == 'Long'), None)
         assert long_call is not None
         assert long_call.strike == 700.0
 
@@ -242,7 +234,7 @@ class TestIronCondorPosition:
 
         # Create IC expiring in 10 days
         future_date = date.today() + timedelta(days=10)
-        ic = IronCondorPosition(
+        ic = OptionsPosition(
             ticker="SPY",
             expiry_date=future_date,
             legs=[]
@@ -252,140 +244,12 @@ class TestIronCondorPosition:
 
     def test_default_strategy_is_options(self):
         """Default strategy should be 'Options'"""
-        ic = IronCondorPosition(
+        ic = OptionsPosition(
             ticker="SPY",
             expiry_date=date(2026, 1, 17),
             legs=[]
         )
         assert ic.strategy == "Options"
-
-
-class TestDetectStrategy:
-    """Tests for IronCondorPosition.detect_strategy()"""
-
-    def create_option_leg(self, symbol: str, direction: str, strike: float,
-                          option_type: str) -> OptionLeg:
-        """Helper to create an option leg"""
-        return OptionLeg(
-            symbol=symbol,
-            direction=direction,
-            strike=strike,
-            option_type=option_type,
-            quantity=10,
-            entry_price=1.00,
-            expiry_date=date(2026, 1, 17),
-            underlying="SPY"
-        )
-
-    def test_detect_strategy_iron_condor(self):
-        """Detects iron condor strategy with valid 4-leg structure"""
-        ic = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117P00680000", "Long", 680.0, "Put"),
-                self.create_option_leg("SPY260117P00685000", "Short", 685.0, "Put"),
-                self.create_option_leg("SPY260117C00695000", "Short", 695.0, "Call"),
-                self.create_option_leg("SPY260117C00700000", "Long", 700.0, "Call"),
-            ]
-        )
-        assert ic.detect_strategy() == "Iron Condor"
-
-    def test_detect_strategy_vertical_spread_calls(self):
-        """Detects vertical spread with 2 calls"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117C00695000", "Short", 695.0, "Call"),
-                self.create_option_leg("SPY260117C00700000", "Long", 700.0, "Call"),
-            ]
-        )
-        assert pos.detect_strategy() == "Vertical Spread"
-
-    def test_detect_strategy_vertical_spread_puts(self):
-        """Detects vertical spread with 2 puts"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117P00680000", "Long", 680.0, "Put"),
-                self.create_option_leg("SPY260117P00685000", "Short", 685.0, "Put"),
-            ]
-        )
-        assert pos.detect_strategy() == "Vertical Spread"
-
-    def test_detect_strategy_straddle(self):
-        """Detects straddle with same strike, different types"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117C00690000", "Short", 690.0, "Call"),
-                self.create_option_leg("SPY260117P00690000", "Short", 690.0, "Put"),
-            ]
-        )
-        assert pos.detect_strategy() == "Straddle"
-
-    def test_detect_strategy_strangle(self):
-        """Detects strangle with different strikes, different types"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117C00700000", "Short", 700.0, "Call"),
-                self.create_option_leg("SPY260117P00680000", "Short", 680.0, "Put"),
-            ]
-        )
-        assert pos.detect_strategy() == "Strangle"
-
-    def test_detect_strategy_single_leg(self):
-        """Single leg returns 'Options'"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117C00695000", "Long", 695.0, "Call"),
-            ]
-        )
-        assert pos.detect_strategy() == "Options"
-
-    def test_detect_strategy_three_legs(self):
-        """Three legs returns 'Options'"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117P00680000", "Long", 680.0, "Put"),
-                self.create_option_leg("SPY260117P00685000", "Short", 685.0, "Put"),
-                self.create_option_leg("SPY260117C00695000", "Short", 695.0, "Call"),
-            ]
-        )
-        assert pos.detect_strategy() == "Options"
-
-    def test_detect_strategy_empty_legs(self):
-        """Empty legs returns 'Options'"""
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[]
-        )
-        assert pos.detect_strategy() == "Options"
-
-    def test_detect_strategy_invalid_4_leg_structure(self):
-        """Invalid 4-leg structure (not valid IC) returns 'Options'"""
-        # 4 legs but all calls (not valid iron condor)
-        pos = IronCondorPosition(
-            ticker="SPY",
-            expiry_date=date(2026, 1, 17),
-            legs=[
-                self.create_option_leg("SPY260117C00680000", "Long", 680.0, "Call"),
-                self.create_option_leg("SPY260117C00685000", "Short", 685.0, "Call"),
-                self.create_option_leg("SPY260117C00695000", "Short", 695.0, "Call"),
-                self.create_option_leg("SPY260117C00700000", "Long", 700.0, "Call"),
-            ]
-        )
-        assert pos.detect_strategy() == "Options"
 
 
 class TestModelSerialization:

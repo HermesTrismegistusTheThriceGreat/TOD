@@ -297,7 +297,7 @@ class AlpacaSyncService:
         """
         Detect strategy type from order leg patterns.
 
-        Uses same logic as IronCondorPosition.detect_strategy().
+        Uses same logic as OptionsPosition.detect_strategy().
 
         Args:
             orders: List of orders in a potential trade group
@@ -487,7 +487,7 @@ class AlpacaSyncService:
         Persist positions to database.
 
         Args:
-            positions: List of IronCondorPosition objects from AlpacaService
+            positions: List of OptionsPosition objects from AlpacaService
 
         Returns:
             List of persisted AlpacaPosition records

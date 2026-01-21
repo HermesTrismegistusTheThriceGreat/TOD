@@ -35,6 +35,7 @@ export interface RawOpenPosition {
   created_at: string
   total_pnl?: number
   days_to_expiry?: number
+  spot_price?: number
 }
 
 /** Raw price update from backend (snake_case) */
@@ -45,6 +46,16 @@ export interface RawOptionPriceUpdate {
   mid_price: number
   last_price?: number
   volume: number
+  timestamp: string
+}
+
+/** Raw spot price update from backend (snake_case) */
+export interface RawSpotPriceUpdate {
+  symbol: string
+  bid_price: number
+  ask_price: number
+  mid_price: number
+  last_price?: number
   timestamp: string
 }
 
@@ -120,6 +131,7 @@ export interface OpenPosition {
   createdAt: string
   totalPnl?: number
   daysToExpiry?: number
+  spotPrice?: number
 }
 
 /** Option price update (frontend camelCase) */
@@ -130,6 +142,16 @@ export interface OptionPriceUpdate {
   midPrice: number
   lastPrice?: number
   volume: number
+  timestamp: string
+}
+
+/** Spot price update (frontend camelCase) */
+export interface SpotPriceUpdate {
+  symbol: string
+  bidPrice: number
+  askPrice: number
+  midPrice: number
+  lastPrice?: number
   timestamp: string
 }
 
@@ -217,6 +239,7 @@ export function transformPosition(raw: RawOpenPosition): OpenPosition {
     createdAt: raw.created_at,
     totalPnl: raw.total_pnl,
     daysToExpiry: raw.days_to_expiry,
+    spotPrice: raw.spot_price,
   }
 }
 
@@ -231,6 +254,20 @@ export function transformPriceUpdate(raw: RawOptionPriceUpdate): OptionPriceUpda
     midPrice: raw.mid_price,
     lastPrice: raw.last_price,
     volume: raw.volume,
+    timestamp: raw.timestamp,
+  }
+}
+
+/**
+ * Transform raw spot price update from backend to frontend format.
+ */
+export function transformSpotPriceUpdate(raw: RawSpotPriceUpdate): SpotPriceUpdate {
+  return {
+    symbol: raw.symbol,
+    bidPrice: raw.bid_price,
+    askPrice: raw.ask_price,
+    midPrice: raw.mid_price,
+    lastPrice: raw.last_price,
     timestamp: raw.timestamp,
   }
 }
@@ -333,6 +370,21 @@ export function extractSymbolsFromPositions(positions: OpenPosition[]): string[]
   }
 
   return symbols
+}
+
+/**
+ * Extract unique underlying tickers from positions for spot price subscription.
+ */
+export function extractUnderlyingTickersFromPositions(positions: OpenPosition[]): string[] {
+  const tickers: string[] = []
+
+  for (const position of positions) {
+    if (position.ticker && tickers.indexOf(position.ticker) === -1) {
+      tickers.push(position.ticker)
+    }
+  }
+
+  return tickers
 }
 
 // ═══════════════════════════════════════════════════════════

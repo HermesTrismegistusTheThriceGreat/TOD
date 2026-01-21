@@ -5,9 +5,9 @@
  * Works with orchestrator store for centralized state.
  */
 
-import { computed, watch } from 'vue'
+import { computed, watch, toRef } from 'vue'
 import { useOrchestratorStore } from '../stores/orchestratorStore'
-import type { OptionPriceUpdate } from '../types/alpaca'
+import type { OptionPriceUpdate, SpotPriceUpdate } from '../types/alpaca'
 
 export interface PriceStreamCallbacks {
   onPriceUpdate?: (update: OptionPriceUpdate) => void
@@ -16,9 +16,11 @@ export interface PriceStreamCallbacks {
 export function useAlpacaPriceStream(callbacks: PriceStreamCallbacks = {}) {
   const store = useOrchestratorStore()
 
-  // Computed from store
-  const priceCache = computed(() => store.alpacaPriceCache)
-  const connectionStatus = computed(() => store.alpacaConnectionStatus)
+  // Use toRef to maintain reactivity chain from store's shallowRef
+  // CRITICAL: computed() breaks the reactivity for shallowRef + triggerRef pattern
+  const priceCache = toRef(store, 'alpacaPriceCache')
+  const spotPriceCache = toRef(store, 'spotPriceCache')
+  const connectionStatus = toRef(store, 'alpacaConnectionStatus')
 
   /**
    * Get the latest price for a symbol.
@@ -32,6 +34,14 @@ export function useAlpacaPriceStream(callbacks: PriceStreamCallbacks = {}) {
    */
   function getMidPrice(symbol: string): number | undefined {
     return store.getAlpacaPrice(symbol)?.midPrice
+  }
+
+  /**
+   * Get the spot price for a symbol (for underlying stock).
+   */
+  function getSpotPrice(symbol: string): number | undefined {
+    const spotData = store.getSpotPrice(symbol)
+    return spotData?.midPrice
   }
 
   /**
@@ -66,11 +76,13 @@ export function useAlpacaPriceStream(callbacks: PriceStreamCallbacks = {}) {
   return {
     // State
     priceCache,
+    spotPriceCache,
     connectionStatus,
 
     // Methods
     getPrice,
     getMidPrice,
+    getSpotPrice,
     getAllPrices,
     hasPrice,
   }

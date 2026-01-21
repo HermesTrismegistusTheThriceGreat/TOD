@@ -81,7 +81,8 @@ const handleRefresh = async () => {
   background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .open-positions-header {
@@ -145,6 +146,7 @@ const handleRefresh = async () => {
 /* Positions Stack */
 .positions-grid {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-lg);
   display: flex;

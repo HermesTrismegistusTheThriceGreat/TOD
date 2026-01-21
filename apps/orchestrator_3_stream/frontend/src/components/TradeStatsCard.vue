@@ -43,21 +43,13 @@
 import type { DetailedTrade } from '@/types/trades'
 import LegStatsTable from './LegStatsTable.vue'
 import TradeStatsSummary from './TradeStatsSummary.vue'
+import { formatDateString } from '@/utils/dateUtils'
 
 defineProps<{
   trade: DetailedTrade
 }>()
 
-const getStrategyTagType = (strategy: string) => {
-  const types: Record<string, string> = {
-    iron_butterfly: 'warning',
-    vertical_spread: 'primary',
-    strangle: 'success',
-    straddle: 'info',
-    single_leg: '',
-  }
-  return types[strategy] || ''
-}
+const getStrategyTagType = (_strategy: string) => ''
 
 const getStatusTagType = (status: string) => {
   const types: Record<string, string> = {
@@ -69,12 +61,11 @@ const getStatusTagType = (status: string) => {
 }
 
 const formatStrategy = (strategy: string) => {
-  return strategy.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  return strategy.charAt(0).toUpperCase() + strategy.slice(1).toLowerCase()
 }
 
 const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', {
+  return formatDateString(dateStr, {
     month: 'short',
     day: 'numeric'
   })

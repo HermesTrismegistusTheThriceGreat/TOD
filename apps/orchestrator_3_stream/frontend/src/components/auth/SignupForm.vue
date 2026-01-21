@@ -2,7 +2,7 @@
   <div class="signup-form">
     <div class="form-container">
       <h2 class="form-title">Create Account</h2>
-      <p class="form-subtitle">Get started with Orchestrator</p>
+      <p class="form-subtitle">Get started with CASH-DASH</p>
 
       <form @submit.prevent="handleSubmit">
         <div class="field">

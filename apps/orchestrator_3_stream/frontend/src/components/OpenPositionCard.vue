@@ -7,6 +7,7 @@ import { useAlpacaPriceStream } from "../composables/useAlpacaPriceStream";
 import * as alpacaService from "../services/alpacaService";
 import type { OptionLeg, OpenPosition } from "../types/alpaca";
 import { calculateLegPnl } from "../types/alpaca";
+import { formatDateString, daysUntil } from "../utils/dateUtils";
 
 // Props
 const props = defineProps<{
@@ -31,7 +32,7 @@ const {
   positionId: props.positionId,
 });
 
-const { getMidPrice, connectionStatus } = useAlpacaPriceStream();
+const { getMidPrice, getSpotPrice, connectionStatus } = useAlpacaPriceStream();
 
 // Local state
 const position = ref<OpenPosition | null>(null);
@@ -42,7 +43,7 @@ const closingLegId = ref<string | null>(null);
 const mockPosition: OpenPosition = {
   id: "mock-1",
   ticker: "SPY",
-  strategy: "Iron Condor",
+  strategy: "Options",
   spotPrice: 421.37,
   expiryDate: "2026-01-17",
   createdAt: new Date().toISOString(),
@@ -115,34 +116,21 @@ watch(
   { immediate: true },
 );
 
-// Update prices from WebSocket cache
-watch(
-  () => [position.value, getMidPrice],
-  () => {
-    if (!position.value) return;
-
-    for (const leg of position.value.legs) {
-      const price = getMidPrice(leg.symbol);
-      if (price !== undefined) {
-        leg.currentPrice = price;
-        const pnl = calculateLegPnl(leg);
-        leg.pnlDollars = pnl.dollars;
-        leg.pnlPercent = pnl.percent;
-      }
-    }
-  },
-  { deep: true },
-);
+// NOTE: Price updates are handled by the store's RAF batcher (orchestratorStore.ts)
+// The batcher updates leg.currentPrice, pnlDollars, pnlPercent directly on position.legs
+// No component-level watch needed - this prevents the double reactivity trigger that caused UI freezing
 
 // Computed values
 const daysToExpiry = computed(() => {
   if (!position.value) return 0;
-  const expiry = new Date(position.value.expiryDate);
-  const today = new Date();
-  return Math.max(
-    0,
-    Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
-  );
+  return Math.max(0, daysUntil(position.value.expiryDate));
+});
+
+const spotPrice = computed(() => {
+  if (!position.value) return null;
+  // Get from WebSocket stream, fallback to position data
+  const streamedPrice = getSpotPrice(position.value.ticker);
+  return streamedPrice ?? position.value.spotPrice ?? null;
 });
 
 const totalPnL = computed(() => {
@@ -179,7 +167,7 @@ const sortedLegs = computed(() => {
 
 // Helpers
 const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return formatDateString(dateStr, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -207,7 +195,7 @@ async function handleCloseStrategy() {
 
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to close all ${position.value.legs.length} legs of this ${position.value.strategy}? This will submit market orders to close all positions.`,
+      `Are you sure you want to close all ${position.value.legs.length} legs of this options position? This will submit market orders to close all positions.`,
       "Close Strategy",
       {
         confirmButtonText: "Close All",
@@ -310,7 +298,7 @@ onMounted(() => {
         <div class="header-title">
           <span class="ticker">{{ position.ticker }}</span>
           <div class="spot-price-tag">
-            <span class="spot-value">$421.37</span>
+            <span class="spot-value" :class="{ 'spot-loading': !spotPrice }">{{ spotPrice ? formatPrice(spotPrice) : '--' }}</span>
           </div>
           <span class="expiry-text"
             >({{ formatDate(position.expiryDate) }})</span
@@ -489,8 +477,11 @@ onMounted(() => {
   color: var(--text);
   width: 100%;
   max-width: 1000px;
-  overflow: hidden;
+  overflow: visible;
   height: fit-content;
+
+  /* Performance: CSS containment prevents layout recalculation from propagating */
+  contain: layout style;
 }
 
 /* Override Element Plus card body padding */
@@ -600,6 +591,13 @@ onMounted(() => {
   font-weight: 700;
   color: var(--accent-primary, #06b6d4);
   font-family: "Roboto Mono", monospace;
+  /* Performance: Stable number width prevents layout shift on price changes */
+  font-variant-numeric: tabular-nums;
+}
+
+.spot-value.spot-loading {
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .header-actions {
@@ -654,6 +652,8 @@ onMounted(() => {
 .pnl-value {
   font-size: 1.5rem;
   font-weight: 700;
+  /* Performance: Stable number width prevents layout shift on P/L changes */
+  font-variant-numeric: tabular-nums;
 }
 
 .pnl-ring.profit .pnl-value {
@@ -720,8 +720,11 @@ onMounted(() => {
   --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.04);
 
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--border);
+
+  /* Performance: CSS containment for table layout */
+  contain: layout;
 }
 
 /* Remove bottom border of the last row for cleaner look */
@@ -784,6 +787,8 @@ onMounted(() => {
   font-weight: 600;
   font-family: "Roboto Mono", monospace;
   font-size: 1.1em;
+  /* Performance: Stable number width prevents layout shift */
+  font-variant-numeric: tabular-nums;
 }
 
 .text-profit {

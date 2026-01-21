@@ -2,7 +2,7 @@
   <div class="login-form">
     <div class="form-container">
       <h2 class="form-title">Sign In</h2>
-      <p class="form-subtitle">Welcome back to Orchestrator</p>
+      <p class="form-subtitle">Welcome back to CASH-DASH</p>
 
       <form @submit.prevent="handleSubmit">
         <div class="field">
@@ -63,11 +63,16 @@ const error = ref("");
 const isLoading = ref(false);
 
 async function handleSubmit() {
+  console.log("[LoginForm] handleSubmit called");
+  console.log("[LoginForm] email:", email.value, "password length:", password.value.length);
+
   error.value = "";
   isLoading.value = true;
 
   try {
+    console.log("[LoginForm] Calling authStore.signIn...");
     await authStore.signIn(email.value, password.value);
+    console.log("[LoginForm] signIn completed");
 
     // If already authenticated, navigate immediately
     if (authStore.isAuthenticated) {

@@ -37,7 +37,7 @@ describe('useAlpacaPositions', () => {
         {
           id: 'test-1',
           ticker: 'SPY',
-          strategy: 'Iron Condor',
+          strategy: 'Options',
           expiryDate: '2026-01-17',
           legs: [],
           createdAt: new Date().toISOString(),
@@ -86,7 +86,7 @@ describe('useAlpacaPositions', () => {
       const mockPosition = {
         id: 'test-1',
         ticker: 'SPY',
-        strategy: 'Iron Condor',
+        strategy: 'Options',
         expiryDate: '2026-01-17',
         legs: [{
           id: 'leg-1',
@@ -122,7 +122,7 @@ describe('useAlpacaPositions', () => {
       const mockPositions = [{
         id: 'test-1',
         ticker: 'SPY',
-        strategy: 'Iron Condor',
+        strategy: 'Options',
         expiryDate: '2026-01-17',
         legs: [],
         createdAt: new Date().toISOString(),
@@ -149,7 +149,7 @@ describe('useAlpacaPositions', () => {
         {
           id: 'test-1',
           ticker: 'SPY',
-          strategy: 'Iron Condor',
+          strategy: 'Options',
           expiryDate: '2026-01-17',
           legs: [
             {

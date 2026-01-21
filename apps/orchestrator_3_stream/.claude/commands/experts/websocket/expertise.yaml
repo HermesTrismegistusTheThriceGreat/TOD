@@ -621,6 +621,13 @@ known_issues:
     solution: "Add time-series metrics tracking and export"
     note: "Session counter (websocketEventCount) implemented for real-time monitoring"
 
+  alpaca_option_stream_async_handler:
+    severity: "High (Fixed)"
+    description: "Alpaca SDK requires async coroutine handlers for subscribe_quotes(). Sync handlers with run_coroutine_threadsafe() bridging do not work."
+    symptom: "Option quotes appear briefly at startup then stop streaming"
+    solution: "Use async def quote_handler(quote) pattern, not sync handlers. See spot_price_service.py lines 126-130 for working pattern."
+    fixed_in: "alpaca_service.py - replaced sync_quote_handler with async quote_handler (2026-01-20)"
+
 potential_enhancements:
   - "Implement heartbeat scheduling (Recommended)"
   - "Add connection metrics tracking (Nice-to-have)"

@@ -51,7 +51,8 @@ export const auth = betterAuth({
 
   advanced: {
     crossSubDomainCookies: {
-      enabled: false, // Enable if frontend/backend on different subdomains
+      enabled: true, // Enable for auth.cash-dash.com + cash-dash.com
+      domain: process.env.COOKIE_DOMAIN || undefined, // .cash-dash.com in production
     },
     defaultCookieAttributes: {
       httpOnly: true,
@@ -64,6 +65,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:5175",      // Vue dev server
     "http://127.0.0.1:5175",
+    "https://cash-dash.com",      // Production frontend
     process.env.FRONTEND_URL,
   ].filter((origin): origin is string => !!origin && origin.length > 0),
 });

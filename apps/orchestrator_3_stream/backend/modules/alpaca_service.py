@@ -5,7 +5,7 @@ Alpaca Trading API Service
 Provides:
 - Position fetching via TradingClient (REST)
 - Real-time price streaming via OptionDataStream (WebSocket)
-- Iron condor position detection and grouping
+- Options position grouping
 - Circuit breaker for API resilience
 - TTL-based cache eviction
 
@@ -23,6 +23,7 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import AssetClass, OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
 from alpaca.data.live import OptionDataStream
+from alpaca.data.enums import OptionsFeed
 
 from .config import (
     ALPACA_API_KEY,
@@ -36,7 +37,7 @@ from .config import (
 from .alpaca_models import (
     OCCSymbol,
     OptionLeg,
-    IronCondorPosition,
+    OptionsPosition,
     OptionPriceUpdate,
     CloseOrderResult,
     CloseStrategyResponse,
@@ -118,7 +119,7 @@ class AlpacaService:
     Service class for Alpaca Trading API integration.
 
     Handles:
-    - REST: Position fetching and iron condor detection
+    - REST: Position fetching and options grouping
     - WebSocket: Real-time option price streaming
     - Circuit breaker: API resilience
     - Caching: TTL-based price cache
@@ -130,7 +131,7 @@ class AlpacaService:
         self._trading_client: Optional[TradingClient] = None
         self._option_stream: Optional[OptionDataStream] = None
         self._subscribed_symbols: set = set()
-        self._positions_cache: Dict[str, IronCondorPosition] = {}
+        self._positions_cache: Dict[str, OptionsPosition] = {}
         self._price_cache = TTLCache(ttl_seconds=ALPACA_PRICE_CACHE_TTL_SECONDS)
         self._stream_task: Optional[asyncio.Task] = None
         self._is_streaming = False
@@ -190,8 +191,9 @@ class AlpacaService:
             self._option_stream = OptionDataStream(
                 api_key=ALPACA_API_KEY,
                 secret_key=ALPACA_SECRET_KEY,
+                feed=OptionsFeed.OPRA,  # Use OPRA for real-time quotes (INDICATIVE doesn't stream)
             )
-            logger.info("Alpaca OptionDataStream initialized")
+            logger.info(f"Alpaca OptionDataStream initialized (feed={OptionsFeed.OPRA.value})")
 
         return self._option_stream
 
@@ -199,14 +201,14 @@ class AlpacaService:
     # POSITION FETCHING (REST)
     # ═══════════════════════════════════════════════════════════
 
-    async def get_all_positions(self) -> List[IronCondorPosition]:
+    async def get_all_positions(self) -> List[OptionsPosition]:
         """
-        Fetch all option positions and group them into iron condors.
+        Fetch all option positions and group them by ticker/expiry.
 
         Uses circuit breaker to handle API failures gracefully.
 
         Returns:
-            List of detected iron condor positions
+            List of detected options positions
 
         Raises:
             CircuitBreakerOpenError: If circuit is open
@@ -248,8 +250,8 @@ class AlpacaService:
             logger.error(f"Failed to fetch positions: {e}")
             raise
 
-    async def get_position_by_id(self, position_id: str) -> Optional[IronCondorPosition]:
-        """Get a specific iron condor position by ID"""
+    async def get_position_by_id(self, position_id: str) -> Optional[OptionsPosition]:
+        """Get a specific options position by ID"""
         # Check cache first
         if position_id in self._positions_cache:
             return self._positions_cache[position_id]
@@ -258,14 +260,13 @@ class AlpacaService:
         await self.get_all_positions()
         return self._positions_cache.get(position_id)
 
-    def _group_by_ticker(self, positions: list) -> List[IronCondorPosition]:
+    def _group_by_ticker(self, positions: list) -> List[OptionsPosition]:
         """
         Group option positions by ticker symbol.
 
         Logic:
         1. Group by underlying + expiry
         2. Create position for each group (no filtering)
-        3. Detect strategy type based on leg structure
         """
         # Group by underlying and expiry
         grouped: Dict[tuple, list] = defaultdict(list)
@@ -305,18 +306,15 @@ class AlpacaService:
                 )
                 option_legs.append(leg)
 
-            # Create position (using IronCondorPosition for backwards compatibility)
-            position = IronCondorPosition(
+            # Create position
+            position = OptionsPosition(
                 ticker=underlying,
                 expiry_date=expiry,
                 legs=option_legs
             )
 
-            # Detect and set strategy type
-            position.strategy = position.detect_strategy()
-
             ticker_positions.append(position)
-            logger.info(f"Created {position.strategy} position: {underlying} exp {expiry} ({len(option_legs)} legs)")
+            logger.info(f"Created Options position: {underlying} exp {expiry} ({len(option_legs)} legs)")
 
         return ticker_positions
 
@@ -345,13 +343,13 @@ class AlpacaService:
 
         stream = self._get_option_stream()
 
-        # Register quote handler
+        # Register async quote handler (Alpaca SDK requires coroutine handlers)
         async def quote_handler(quote: Any) -> None:
             await self._handle_quote_update(quote)
 
         # Subscribe to quotes for new symbols
         stream.subscribe_quotes(quote_handler, *new_symbols)
-        logger.info(f"Subscribed to quotes for {len(new_symbols)} symbols")
+        logger.info(f"Subscribed to quotes for {len(new_symbols)} symbols: {list(new_symbols)}")
 
         # Start stream if not already running
         if not self._is_streaming:
@@ -369,12 +367,14 @@ class AlpacaService:
         """Run the option data stream (blocking)"""
         try:
             stream = self._get_option_stream()
-            logger.info("Starting OptionDataStream...")
+            logger.info(f"Starting OptionDataStream... subscribed_symbols={list(self._subscribed_symbols)}")
             # Use get_running_loop() for executor
             loop = asyncio.get_running_loop()
+            logger.debug("OptionDataStream.run() starting in executor...")
             await loop.run_in_executor(None, stream.run)
+            logger.warning("OptionDataStream.run() returned (unexpected)")
         except Exception as e:
-            logger.error(f"OptionDataStream error: {e}")
+            logger.error(f"OptionDataStream error: {e}", exc_info=True)
             self._is_streaming = False
 
     async def _handle_quote_update(self, quote: Any) -> None:
@@ -384,6 +384,9 @@ class AlpacaService:
         Applies rate limiting and broadcasts update to connected clients.
         """
         try:
+            # DIAGNOSTIC LOG: Option quote received from Alpaca stream
+            logger.info(f"[OPTION QUOTE RECEIVED] {quote.symbol}: bid={quote.bid_price}, ask={quote.ask_price}")
+
             symbol = quote.symbol
 
             bid = float(quote.bid_price) if quote.bid_price else 0.0

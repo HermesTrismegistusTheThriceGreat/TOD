@@ -38,6 +38,7 @@ from modules.autocomplete_models import (
 )
 from modules.alpaca_service import init_alpaca_service, get_alpaca_service
 from modules.alpaca_sync_service import init_alpaca_sync_service, get_alpaca_sync_service
+from modules.spot_price_service import init_spot_price_service, get_spot_price_service
 from modules.greeks_snapshot_service import init_greeks_snapshot_service, get_greeks_snapshot_service
 from modules.greeks_scheduler import init_greeks_scheduler, shutdown_greeks_scheduler
 from modules.alpaca_models import (
@@ -45,6 +46,8 @@ from modules.alpaca_models import (
     GetPositionResponse,
     SubscribePricesRequest,
     SubscribePricesResponse,
+    SubscribeSpotPricesRequest,
+    SubscribeSpotPricesResponse,
     CloseStrategyRequest,
     CloseStrategyResponse,
     CloseLegRequest,
@@ -194,6 +197,16 @@ async def lifespan(app: FastAPI):
     alpaca_service.set_websocket_manager(ws_manager)
     logger.success("Alpaca service initialized")
 
+    # Initialize Spot Price service (graceful degradation on failure)
+    logger.info("Initializing Spot Price service...")
+    try:
+        spot_price_service = await init_spot_price_service(app)
+        spot_price_service.set_websocket_manager(ws_manager)
+        logger.success("Spot Price service initialized")
+    except Exception as e:
+        logger.warning(f"Spot Price service initialization failed (non-blocking): {e}")
+        app.state.spot_price_service = None
+
     # Initialize Alpaca Sync service
     logger.info("Initializing Alpaca Sync service...")
     alpaca_sync_service = await init_alpaca_sync_service(app, alpaca_service)
@@ -236,6 +249,11 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, 'alpaca_sync_service'):
         logger.info("Shutting down Alpaca Sync service...")
         await app.state.alpaca_sync_service.close()
+
+    # Shutdown Spot Price service
+    if hasattr(app.state, 'spot_price_service') and app.state.spot_price_service is not None:
+        logger.info("Shutting down Spot Price service...")
+        await app.state.spot_price_service.shutdown()
 
     # Shutdown Alpaca service
     if hasattr(app.state, 'alpaca_service'):
@@ -1324,6 +1342,57 @@ async def subscribe_prices(request: Request, subscribe_request: SubscribePricesR
     except Exception as e:
         logger.error(f"Failed to subscribe to prices: {e}")
         return SubscribePricesResponse(
+            status="error",
+            message=str(e)
+        )
+
+
+@app.post("/api/positions/subscribe-spot-prices", response_model=SubscribeSpotPricesResponse, tags=["Alpaca"])
+async def subscribe_spot_prices(request: Request, subscribe_request: SubscribeSpotPricesRequest):
+    """
+    Subscribe to real-time spot (underlying stock) price updates.
+
+    Call this after loading positions to start receiving
+    WebSocket spot price updates for the underlying symbols.
+
+    Args:
+        subscribe_request: Request with list of stock symbols (e.g., ["SPY", "QQQ"])
+
+    Returns:
+        SubscribeSpotPricesResponse with subscription status
+    """
+    try:
+        logger.http_request("POST", "/api/positions/subscribe-spot-prices")
+
+        # Handle case where service failed to initialize
+        if not hasattr(request.app.state, 'spot_price_service') or request.app.state.spot_price_service is None:
+            logger.http_request("POST", "/api/positions/subscribe-spot-prices", 200)
+            return SubscribeSpotPricesResponse(
+                status="error",
+                message="Spot Price service unavailable. Check server logs for initialization errors."
+            )
+
+        spot_price_service = get_spot_price_service(request.app)
+
+        if not spot_price_service.is_configured:
+            logger.http_request("POST", "/api/positions/subscribe-spot-prices", 200)
+            return SubscribeSpotPricesResponse(
+                status="error",
+                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file with your real API keys from https://alpaca.markets/"
+            )
+
+        await spot_price_service.start_spot_streaming(subscribe_request.symbols)
+
+        logger.http_request("POST", "/api/positions/subscribe-spot-prices", 200)
+        return SubscribeSpotPricesResponse(
+            status="success",
+            message=f"Subscribed to spot prices for {len(subscribe_request.symbols)} symbols",
+            symbols=subscribe_request.symbols
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to subscribe to spot prices: {e}")
+        return SubscribeSpotPricesResponse(
             status="error",
             message=str(e)
         )

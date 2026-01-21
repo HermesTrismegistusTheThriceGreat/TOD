@@ -33,15 +33,27 @@ import { getEvents } from '../services/eventService'
 import * as autocompleteService from '../services/autocompleteService'
 import * as adwService from '../services/adwService'
 import { DEFAULT_EVENT_HISTORY_LIMIT } from '../config/constants'
-import type { OpenPosition, OptionPriceUpdate } from '../types/alpaca'
-import { transformPosition, transformPriceUpdate } from '../types/alpaca'
+import type { OpenPosition, OptionPriceUpdate, SpotPriceUpdate } from '../types/alpaca'
+import { transformPosition, transformPriceUpdate, transformSpotPriceUpdate } from '../types/alpaca'
 import { useAgentPulse } from '../composables/useAgentPulse'
+import { RafBatcher } from '../utils/rafBatch'
 
 // Default orchestrator agent ID (will be loaded from backend on init)
 const DEFAULT_ORCHESTRATOR_ID = 'default-orchestrator'
 
 // Initialize pulse composable at module level
 const agentPulse = useAgentPulse()
+
+// Alpaca status mapping for translating backend status strings to frontend-expected values
+const ALPACA_STATUS_MAP: Record<string, 'connected' | 'disconnected' | 'error'> = {
+  'connected': 'connected',
+  'streaming_started': 'connected',
+  'spot_streaming_started': 'connected',
+  'disconnected': 'disconnected',
+  'streaming_stopped': 'disconnected',
+  'spot_streaming_stopped': 'disconnected',
+  'error': 'error',
+}
 
 export const useOrchestratorStore = defineStore('orchestrator', () => {
   // ═══════════════════════════════════════════════════════════
@@ -124,12 +136,80 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   // IMPORTANT: Use shallowRef + triggerRef for Map reactivity
   const alpacaPriceCache = shallowRef<Map<string, OptionPriceUpdate>>(new Map())
 
+  // Spot price cache (for underlying stock prices)
+  const spotPriceCache = shallowRef<Map<string, SpotPriceUpdate>>(new Map())
+
   // Loading and error states
   const alpacaPositionsLoading = ref<boolean>(false)
   const alpacaPositionsError = ref<string | null>(null)
 
   // Alpaca connection status
   const alpacaConnectionStatus = ref<'connected' | 'disconnected' | 'error'>('disconnected')
+
+  // ═══════════════════════════════════════════════════════════
+  // RAF BATCHERS FOR HIGH-FREQUENCY UPDATES
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * RAF Batcher for option price updates.
+   * Batches all price updates within a single animation frame.
+   * This prevents UI freezing from high-frequency WebSocket updates.
+   */
+  const optionPriceBatcher = new RafBatcher<OptionPriceUpdate>((batch) => {
+    let hasChanges = false
+
+    console.log(`[BATCH] Processing ${batch.size} option price updates in single frame`)
+
+    for (const [symbol, update] of batch) {
+      const existing = alpacaPriceCache.value.get(symbol)
+      if (!existing || existing.midPrice !== update.midPrice) {
+        alpacaPriceCache.value.set(symbol, update)
+        hasChanges = true
+
+        // Update matching legs
+        for (const position of alpacaPositions.value) {
+          for (const leg of position.legs) {
+            if (leg.symbol === symbol) {
+              leg.currentPrice = update.midPrice
+              const multiplier = leg.direction === 'Short' ? 1 : -1
+              const priceDiff = (leg.entryPrice - leg.currentPrice) * multiplier
+              leg.pnlDollars = priceDiff * leg.quantity * 100
+              if (leg.entryPrice !== 0) {
+                const dirMult = leg.direction === 'Short' ? -1 : 1
+                leg.pnlPercent = ((leg.currentPrice - leg.entryPrice) / leg.entryPrice) * 100 * dirMult
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Single trigger for entire batch
+    if (hasChanges) {
+      triggerRef(alpacaPriceCache)
+    }
+  })
+
+  /**
+   * RAF Batcher for spot price updates.
+   * Batches all spot price updates within a single animation frame.
+   */
+  const spotPriceBatcher = new RafBatcher<SpotPriceUpdate>((batch) => {
+    let hasChanges = false
+
+    for (const [symbol, update] of batch) {
+      const existing = spotPriceCache.value.get(symbol)
+      if (!existing || existing.midPrice !== update.midPrice) {
+        spotPriceCache.value.set(symbol, update)
+        hasChanges = true
+      }
+    }
+
+    // Single trigger for entire batch
+    if (hasChanges) {
+      triggerRef(spotPriceCache)
+    }
+  })
 
   // ═══════════════════════════════════════════════════════════
   // GETTERS
@@ -233,6 +313,11 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   // Get cached price for a symbol
   const getAlpacaPrice = computed(() => {
     return (symbol: string) => alpacaPriceCache.value.get(symbol)
+  })
+
+  // Get cached spot price for a symbol
+  const getSpotPrice = computed(() => {
+    return (symbol: string) => spotPriceCache.value.get(symbol)
   })
 
   // ═══════════════════════════════════════════════════════════
@@ -437,10 +522,29 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
   }
 
   /**
-   * Update a single option price in the cache.
-   * Uses triggerRef for proper Map reactivity.
+   * Queue a price update for batched processing.
+   * Updates are batched per animation frame for optimal performance.
+   * This is the preferred method for WebSocket price updates.
+   */
+  function queueAlpacaPrice(symbol: string, update: OptionPriceUpdate) {
+    optionPriceBatcher.add(symbol, update)
+  }
+
+  /**
+   * Update a single option price in the cache (direct, non-batched).
+   * Optimized: Only triggers reactivity if value changed.
+   * Note: Prefer queueAlpacaPrice for WebSocket updates.
    */
   function updateAlpacaPrice(symbol: string, update: OptionPriceUpdate) {
+    // CHECK IF VALUE ACTUALLY CHANGED - skip if same price
+    const existing = alpacaPriceCache.value.get(symbol)
+    if (existing && existing.midPrice === update.midPrice) {
+      // Same price - skip reactivity entirely
+      return
+    }
+
+    console.log(`[DEBUG] Price update received: ${symbol} = $${update.midPrice}`)
+
     // Set in map
     alpacaPriceCache.value.set(symbol, update)
 
@@ -516,6 +620,35 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
    */
   function setAlpacaConnectionStatus(status: 'connected' | 'disconnected' | 'error') {
     alpacaConnectionStatus.value = status
+  }
+
+  /**
+   * Queue a spot price update for batched processing.
+   * Updates are batched per animation frame for optimal performance.
+   * This is the preferred method for WebSocket spot price updates.
+   */
+  function queueSpotPrice(symbol: string, update: SpotPriceUpdate) {
+    spotPriceBatcher.add(symbol, update)
+  }
+
+  /**
+   * Update a single spot price in the cache (direct, non-batched).
+   * Optimized: Only triggers reactivity if value changed.
+   * Note: Prefer queueSpotPrice for WebSocket updates.
+   */
+  function updateSpotPrice(symbol: string, update: SpotPriceUpdate) {
+    // CHECK IF VALUE ACTUALLY CHANGED - skip if same price
+    const existing = spotPriceCache.value.get(symbol)
+    if (existing && existing.midPrice === update.midPrice) {
+      // Same price - skip reactivity entirely
+      return
+    }
+
+    // Set in map
+    spotPriceCache.value.set(symbol, update)
+
+    // CRITICAL: Trigger reactivity for shallowRef Map
+    triggerRef(spotPriceCache)
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -928,17 +1061,25 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
         onAdwEvent: handleAdwEvent,
         onAdwStepChange: handleAdwStepChange,
         onAdwEventSummaryUpdate: handleAdwEventSummaryUpdate,
-        // Alpaca handlers
+        // Alpaca handlers - Using RAF batching to prevent UI freeze
         onOptionPriceUpdate: (message: any) => {
           if (message.update) {
             const update = transformPriceUpdate(message.update)
-            updateAlpacaPrice(update.symbol, update)
+            // USE BATCHED VERSION - batches all updates within a single animation frame
+            queueAlpacaPrice(update.symbol, update)
+            // Infer connected status from receiving price data
+            if (alpacaConnectionStatus.value !== 'connected') {
+              setAlpacaConnectionStatus('connected')
+            }
           }
         },
         onOptionPriceBatch: (message: any) => {
           if (message.updates) {
-            const updates = message.updates.map(transformPriceUpdate)
-            updateAlpacaPriceBatch(updates)
+            // Queue each update for batched processing
+            for (const rawUpdate of message.updates) {
+              const update = transformPriceUpdate(rawUpdate)
+              queueAlpacaPrice(update.symbol, update)
+            }
           }
         },
         onPositionUpdate: (message: any) => {
@@ -954,7 +1095,20 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
         },
         onAlpacaStatus: (message: any) => {
           if (message.status) {
-            setAlpacaConnectionStatus(message.status)
+            const mappedStatus = ALPACA_STATUS_MAP[message.status] || 'disconnected'
+            console.log(`Alpaca status: ${message.status} -> ${mappedStatus}`)
+            setAlpacaConnectionStatus(mappedStatus)
+          }
+        },
+        onSpotPriceUpdate: (message: any) => {
+          if (message.update) {
+            const update = transformSpotPriceUpdate(message.update)
+            // USE BATCHED VERSION - batches all updates within a single animation frame
+            queueSpotPrice(update.symbol, update)
+            // Infer connected status from receiving price data
+            if (alpacaConnectionStatus.value !== 'connected') {
+              setAlpacaConnectionStatus('connected')
+            }
           }
         },
         onError: handleWebSocketError,
@@ -965,8 +1119,14 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
         },
         onDisconnected: () => {
           isConnected.value = false
+          setAlpacaConnectionStatus('disconnected')
           console.log('WebSocket disconnected')
         }
+      }, () => {
+        // Reconnection callback - triggered after successful reconnect
+        console.log('WebSocket reconnected, dispatching alpaca-reconnect event')
+        // Emit custom event for composables to re-subscribe
+        window.dispatchEvent(new CustomEvent('alpaca-reconnect'))
       })
     } catch (error) {
       console.error('Failed to connect WebSocket:', error)
@@ -1665,6 +1825,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     // Alpaca State
     alpacaPositions,
     alpacaPriceCache,
+    spotPriceCache,
     alpacaPositionsLoading,
     alpacaPositionsError,
     alpacaConnectionStatus,
@@ -1689,6 +1850,7 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     alpacaPositionCount,
     getAlpacaPositionById,
     getAlpacaPrice,
+    getSpotPrice,
 
     // Actions
     selectAgent,
@@ -1746,5 +1908,6 @@ export const useOrchestratorStore = defineStore('orchestrator', () => {
     setAlpacaError,
     clearAlpacaPriceCache,
     setAlpacaConnectionStatus,
+    updateSpotPrice,
   }
 })

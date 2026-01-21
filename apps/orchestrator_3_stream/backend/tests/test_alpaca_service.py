@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from modules.alpaca_service import AlpacaService, TTLCache, CachedPrice
-from modules.alpaca_models import OptionPriceUpdate, IronCondorPosition, OptionLeg
+from modules.alpaca_models import OptionPriceUpdate, OptionsPosition, OptionLeg
 from modules.circuit_breaker import CircuitBreaker, CircuitBreakerOpenError, CircuitState
 
 
@@ -510,7 +510,7 @@ class TestGroupByTicker:
         assert result[0].strategy == "Options"
 
     def test_group_by_ticker_two_legs_vertical_spread(self):
-        """Two-leg spread creates ticker position with Vertical Spread strategy"""
+        """Two-leg spread creates ticker position with Options strategy"""
         service = AlpacaService()
 
         positions = [
@@ -523,10 +523,10 @@ class TestGroupByTicker:
         assert len(result) == 1
         assert result[0].ticker == "SPY"
         assert len(result[0].legs) == 2
-        assert result[0].strategy == "Vertical Spread"
+        assert result[0].strategy == "Options"
 
-    def test_group_by_ticker_four_legs_iron_condor(self):
-        """Four-leg iron condor creates ticker position with Iron Condor strategy"""
+    def test_group_by_ticker_four_legs(self):
+        """Four-leg position creates ticker position with Options strategy"""
         service = AlpacaService()
 
         positions = [
@@ -541,7 +541,7 @@ class TestGroupByTicker:
         assert len(result) == 1
         assert result[0].ticker == "SPY"
         assert len(result[0].legs) == 4
-        assert result[0].strategy == "Iron Condor"
+        assert result[0].strategy == "Options"
 
     def test_group_by_ticker_three_legs_options(self):
         """Three-leg position creates ticker position with Options strategy"""
@@ -613,7 +613,7 @@ class TestGroupByTicker:
         result = service._group_by_ticker(positions)
 
         assert len(result) == 1
-        assert result[0].strategy == "Strangle"
+        assert result[0].strategy == "Options"
 
     def test_group_by_ticker_straddle(self):
         """Straddle (2 legs, different types, same strike) detected"""
@@ -627,7 +627,7 @@ class TestGroupByTicker:
         result = service._group_by_ticker(positions)
 
         assert len(result) == 1
-        assert result[0].strategy == "Straddle"
+        assert result[0].strategy == "Options"
 
     def test_group_by_ticker_different_expiries(self):
         """Different expiry dates create separate positions"""
