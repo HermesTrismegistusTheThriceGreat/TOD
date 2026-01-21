@@ -98,13 +98,13 @@
         
         <el-table-column prop="entry_date" label="ENTRY DATE" width="120" sortable>
           <template #default="{ row }">
-            {{ row.entry_date ? new Date(row.entry_date).toLocaleDateString() : '—' }}
+            {{ row.entry_date ? formatDateString(row.entry_date) : '—' }}
           </template>
         </el-table-column>
 
         <el-table-column prop="exit_date" label="EXIT DATE" width="120">
           <template #default="{ row }">
-            {{ row.exit_date ? new Date(row.exit_date).toLocaleDateString() : '—' }}
+            {{ row.exit_date ? formatDateString(row.exit_date) : '—' }}
           </template>
         </el-table-column>
         
@@ -141,6 +141,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Loading, Refresh, Search, WarningFilled, Download } from '@element-plus/icons-vue'
 import { tradeApi } from '@/services/api'
 import type { Trade } from '@/types/trades'
+import { formatDateString } from '@/utils/dateUtils'
 
 const loading = ref(false)
 const syncing = ref(false)
@@ -265,23 +266,10 @@ const formatMoney = (val: number) => {
 }
 
 const formatStrategy = (strategy: string): string => {
-  const strategyMap: Record<string, string> = {
-    'iron_condor': 'Iron Condor',
-    'vertical_spread': 'Vertical Spread',
-    'strangle': 'Strangle',
-    'straddle': 'Straddle',
-    'single_leg': 'Single Leg',
-    'options': 'Options'
-  }
-  return strategyMap[strategy] || strategy
+  return strategy.charAt(0).toUpperCase() + strategy.slice(1).toLowerCase()
 }
 
-const getStrategyTagType = (strategy: string) => {
-  if (strategy.includes('condor') || strategy.includes('Condor')) return ''
-  if (strategy.includes('spread') || strategy.includes('Spread')) return 'success'
-  if (strategy.includes('strangle') || strategy.includes('Strangle')) return 'warning'
-  return 'info'
-}
+const getStrategyTagType = (_strategy: string) => 'info'
 
 const getStatusTagType = (status: string) => {
   switch (status) {

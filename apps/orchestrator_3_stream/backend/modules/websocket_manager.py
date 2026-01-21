@@ -287,8 +287,27 @@ class WebSocketManager:
         Args:
             update_data: Dict with symbol, bid_price, ask_price, mid_price, timestamp
         """
+        # DIAGNOSTIC LOG: WebSocket broadcast for option price
+        logger.info(f"[WS BROADCAST OPTION] symbol={update_data.get('symbol')}, mid={update_data.get('mid_price')}")
+
         await self.broadcast({
             "type": "option_price_update",
+            "update": update_data,
+            "timestamp": datetime.now().isoformat()
+        })
+
+    async def broadcast_spot_price_update(self, update_data: dict):
+        """
+        Broadcast real-time spot (underlying stock) price update.
+
+        Used by SpotPriceStreamService to push spot price changes to frontend.
+        Rate limiting is handled by SpotPriceStreamService before calling this.
+
+        Args:
+            update_data: Dict with symbol, bid_price, ask_price, mid_price, timestamp
+        """
+        await self.broadcast({
+            "type": "spot_price_update",
             "update": update_data,
             "timestamp": datetime.now().isoformat()
         })

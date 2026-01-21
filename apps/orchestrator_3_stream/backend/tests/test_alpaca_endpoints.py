@@ -24,10 +24,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # ═══════════════════════════════════════════════════════════
 
 def create_sample_position():
-    """Create a sample IronCondorPosition for testing"""
-    from modules.alpaca_models import IronCondorPosition, OptionLeg
+    """Create a sample OptionsPosition for testing"""
+    from modules.alpaca_models import OptionsPosition, OptionLeg
 
-    return IronCondorPosition(
+    return OptionsPosition(
         id="test-position-123",
         ticker="SPY",
         expiry_date=date(2026, 1, 17),

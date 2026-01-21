@@ -197,10 +197,14 @@ const handleSidebarCollapse = (isCollapsed: boolean) => {
   grid-template-columns: 1fr;
 }
 
-.app-sidebar,
-.app-content {
+.app-sidebar {
   height: 100%;
   overflow: hidden;
+}
+
+.app-content {
+  height: 100%;
+  overflow: auto;
 }
 
 /* Responsive */

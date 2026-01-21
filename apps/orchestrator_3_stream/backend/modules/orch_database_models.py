@@ -406,7 +406,7 @@ class AlpacaOrder(BaseModel):
 
     # Trade grouping
     trade_id: UUID
-    strategy_type: Optional[Literal['iron_condor', 'iron_butterfly', 'vertical_spread', 'strangle', 'straddle', 'single_leg', 'options']] = None
+    strategy_type: Optional[Literal['options']] = 'options'
     leg_number: Optional[int] = None
 
     # Order details

@@ -115,7 +115,7 @@ describe('OpenPositions Integration', () => {
       const initialPosition: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
-        strategy: 'Iron Condor',
+        strategy: 'Options',
         expiryDate: '2026-01-17',
         legs: [
           {
@@ -160,7 +160,7 @@ describe('OpenPositions Integration', () => {
       const position: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
-        strategy: 'Iron Condor',
+        strategy: 'Options',
         expiryDate: '2026-01-17',
         legs: [
           {
@@ -243,7 +243,7 @@ describe('OpenPositions Integration', () => {
       const position: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
-        strategy: 'Iron Condor',
+        strategy: 'Options',
         expiryDate: '2026-01-17',
         legs: [
           {
@@ -320,7 +320,7 @@ describe('OpenPositions Integration', () => {
       const position: OpenPosition = {
         id: 'test-pos-1',
         ticker: 'SPY',
-        strategy: 'Iron Condor',
+        strategy: 'Options',
         expiryDate: '2026-01-17',
         legs: [
           {

@@ -16,6 +16,11 @@ import { createAuthClient } from "better-auth/vue";
 const isDev = import.meta.env.DEV;
 const authBaseURL = isDev ? "" : (import.meta.env.VITE_AUTH_URL || "http://localhost:9404");
 
+// Debug logging for auth configuration
+console.log("[AuthClient] Environment:", isDev ? "development" : "production");
+console.log("[AuthClient] VITE_AUTH_URL:", import.meta.env.VITE_AUTH_URL);
+console.log("[AuthClient] Using baseURL:", authBaseURL || "(empty - using relative URLs)");
+
 export const authClient = createAuthClient({
   baseURL: authBaseURL,
   fetchOptions: {

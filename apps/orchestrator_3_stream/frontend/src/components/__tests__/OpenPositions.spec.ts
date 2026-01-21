@@ -84,7 +84,7 @@ describe('OpenPositions.vue', () => {
         {
           id: 'test-1',
           ticker: 'SPY',
-          strategy: 'Iron Condor',
+          strategy: 'Options',
           expiryDate: '2026-01-17',
           legs: [],
           createdAt: new Date().toISOString(),
@@ -151,7 +151,7 @@ describe('OpenPositions.vue', () => {
         {
           id: 'pos-1',
           ticker: 'SPY',
-          strategy: 'Iron Condor',
+          strategy: 'Options',
           expiryDate: '2026-01-17',
           legs: [],
           createdAt: new Date().toISOString(),
@@ -159,7 +159,7 @@ describe('OpenPositions.vue', () => {
         {
           id: 'pos-2',
           ticker: 'QQQ',
-          strategy: 'Iron Butterfly',
+          strategy: 'Options',
           expiryDate: '2026-01-24',
           legs: [],
           createdAt: new Date().toISOString(),

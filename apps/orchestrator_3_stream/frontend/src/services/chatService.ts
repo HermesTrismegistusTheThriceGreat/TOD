@@ -9,6 +9,24 @@ import type { LoadChatRequest, LoadChatResponse, SendChatRequest, SendChatRespon
 import { DEFAULT_CHAT_HISTORY_LIMIT } from '../config/constants'
 
 // ============================================================================
+// WebSocket Reconnection Configuration
+// ============================================================================
+
+const RECONNECT_CONFIG = {
+  maxAttempts: 5,
+  baseDelayMs: 1000,
+  maxDelayMs: 30000,
+}
+
+let reconnectAttempts = 0
+let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
+let isManualDisconnect = false
+let isInitialConnection = true
+let currentUrl: string = ''
+let currentCallbacks: WebSocketCallbacks | null = null
+let currentOnReconnect: (() => void) | null = null
+
+// ============================================================================
 // Alpaca Price Streaming Types
 // ============================================================================
 
@@ -54,6 +72,19 @@ export interface AlpacaStatusMessage {
   type: 'alpaca_status'
   status: 'connected' | 'disconnected' | 'error' | 'streaming_started' | 'streaming_stopped'
   details: Record<string, any>
+  timestamp: string
+}
+
+export interface SpotPriceUpdateMessage {
+  type: 'spot_price_update'
+  update: {
+    symbol: string
+    bid_price: number
+    ask_price: number
+    mid_price: number
+    last_price?: number
+    timestamp: string
+  }
   timestamp: string
 }
 
@@ -137,6 +168,7 @@ export interface WebSocketCallbacks {
   onOptionPriceBatch?: (data: OptionPriceBatchMessage) => void
   onPositionUpdate?: (data: PositionUpdateMessage) => void
   onAlpacaStatus?: (data: AlpacaStatusMessage) => void
+  onSpotPriceUpdate?: (data: SpotPriceUpdateMessage) => void
   onError: (error: any) => void
   onConnected?: () => void
   onDisconnected?: () => void
@@ -147,13 +179,30 @@ export interface WebSocketCallbacks {
  */
 export function connectWebSocket(
   url: string,
-  callbacks: WebSocketCallbacks
+  callbacks: WebSocketCallbacks,
+  onReconnect?: () => void
 ): WebSocket {
+  // Store for reconnection
+  currentUrl = url
+  currentCallbacks = callbacks
+  currentOnReconnect = onReconnect || null
+
   const ws = new WebSocket(url)
 
   ws.onopen = () => {
+    // Reset reconnect attempts on successful connection
+    reconnectAttempts = 0
+    isManualDisconnect = false
     console.log('WebSocket connected')
     callbacks.onConnected?.()
+
+    // Only call reconnection hook if this is NOT the initial connection
+    if (onReconnect && !isInitialConnection) {
+      console.log('WebSocket reconnected, triggering re-subscription')
+      onReconnect()
+    }
+
+    isInitialConnection = false
   }
 
   ws.onmessage = (event) => {
@@ -262,6 +311,10 @@ export function connectWebSocket(
           callbacks.onAlpacaStatus?.(message as AlpacaStatusMessage)
           break
 
+        case 'spot_price_update':
+          callbacks.onSpotPriceUpdate?.(message as SpotPriceUpdateMessage)
+          break
+
         case 'error':
           callbacks.onError(message)
           break
@@ -286,6 +339,24 @@ export function connectWebSocket(
   ws.onclose = () => {
     console.log('WebSocket disconnected')
     callbacks.onDisconnected?.()
+
+    // Only attempt reconnection if not manually disconnected
+    if (!isManualDisconnect && reconnectAttempts < RECONNECT_CONFIG.maxAttempts) {
+      const delay = Math.min(
+        RECONNECT_CONFIG.baseDelayMs * Math.pow(2, reconnectAttempts),
+        RECONNECT_CONFIG.maxDelayMs
+      )
+      reconnectAttempts++
+      console.log(`Attempting reconnection ${reconnectAttempts}/${RECONNECT_CONFIG.maxAttempts} in ${delay}ms`)
+
+      reconnectTimeout = setTimeout(() => {
+        if (currentUrl && currentCallbacks) {
+          connectWebSocket(currentUrl, currentCallbacks, currentOnReconnect || undefined)
+        }
+      }, delay)
+    } else if (reconnectAttempts >= RECONNECT_CONFIG.maxAttempts) {
+      console.error('Max reconnection attempts reached')
+    }
   }
 
   return ws
@@ -295,6 +366,12 @@ export function connectWebSocket(
  * Disconnect WebSocket
  */
 export function disconnect(ws: WebSocket): void {
+  isManualDisconnect = true
+  isInitialConnection = true  // Reset so next manual connect is treated as initial
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout)
+    reconnectTimeout = null
+  }
   if (ws.readyState === WebSocket.OPEN) {
     ws.close()
   }

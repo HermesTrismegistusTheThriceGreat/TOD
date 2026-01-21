@@ -71,6 +71,15 @@ export async function subscribePrices(symbols: string[]): Promise<void> {
 }
 
 /**
+ * Subscribe to real-time spot price updates for underlying symbols.
+ */
+export async function subscribeSpotPrices(symbols: string[]): Promise<void> {
+  await apiClient.post('/api/positions/subscribe-spot-prices', {
+    symbols
+  })
+}
+
+/**
  * Get circuit breaker status.
  */
 export async function getCircuitStatus(): Promise<CircuitStatus> {

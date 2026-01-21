@@ -5,10 +5,10 @@
  * Integrates with orchestrator store for WebSocket updates.
  */
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useOrchestratorStore } from '../stores/orchestratorStore'
 import type { OpenPosition } from '../types/alpaca'
-import { extractSymbolsFromPositions } from '../types/alpaca'
+import { extractSymbolsFromPositions, extractUnderlyingTickersFromPositions } from '../types/alpaca'
 import * as alpacaService from '../services/alpacaService'
 
 export interface UseAlpacaPositionsOptions {
@@ -105,6 +105,12 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
         if (autoSubscribe) {
           const symbols = extractSymbolsFromPositions([response.position])
           await alpacaService.subscribePrices(symbols)
+
+          const underlyingTickers = extractUnderlyingTickersFromPositions([response.position])
+          if (underlyingTickers.length > 0) {
+            await alpacaService.subscribeSpotPrices(underlyingTickers)
+          }
+
           isSubscribed.value = true
         }
       }
@@ -124,13 +130,23 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
     if (isSubscribed.value) return
 
     try {
+      // Subscribe to option prices
       const symbols = extractSymbolsFromPositions(positions.value)
 
       if (symbols.length > 0) {
         await alpacaService.subscribePrices(symbols)
-        isSubscribed.value = true
         console.log(`Subscribed to ${symbols.length} option symbols`)
       }
+
+      // Subscribe to spot prices for underlying tickers
+      const underlyingTickers = extractUnderlyingTickersFromPositions(positions.value)
+
+      if (underlyingTickers.length > 0) {
+        await alpacaService.subscribeSpotPrices(underlyingTickers)
+        console.log(`Subscribed to ${underlyingTickers.length} spot price symbols: ${underlyingTickers.join(', ')}`)
+      }
+
+      isSubscribed.value = true
     } catch (e) {
       console.error('Failed to subscribe to price updates:', e)
       // Non-critical error, don't set error state
@@ -155,15 +171,36 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
     return store.getAlpacaPrice(symbol)
   }
 
+  /**
+   * Handle WebSocket reconnection event.
+   * Reset subscription state and re-subscribe to price updates.
+   */
+  function handleReconnect() {
+    console.log('WebSocket reconnected, re-subscribing to price updates')
+    isSubscribed.value = false
+    subscribeToUpdates()
+  }
+
   // Lifecycle
   onMounted(() => {
     if (autoFetch) {
       if (positionId) {
-        fetchPosition(positionId)
+        fetchPosition(positionId).catch(e => {
+          console.error('Error fetching position on mount:', e)
+        })
       } else {
-        fetchPositions()
+        fetchPositions().catch(e => {
+          console.error('Error fetching positions on mount:', e)
+        })
       }
     }
+
+    // Listen for reconnection events to re-subscribe
+    window.addEventListener('alpaca-reconnect', handleReconnect)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('alpaca-reconnect', handleReconnect)
   })
 
   return {

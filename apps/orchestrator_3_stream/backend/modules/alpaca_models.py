@@ -11,7 +11,7 @@ These models follow the same patterns as apps/orchestrator_db/models.py:
 Models:
 - OCCSymbol: Parsed OCC option symbol
 - OptionLeg: Single option leg in a position
-- IronCondorPosition: 4-leg iron condor grouping
+- OptionsPosition: Options position grouped by underlying and expiry
 - OptionPriceUpdate: Real-time price update
 - API request/response models
 """
@@ -94,9 +94,9 @@ class OCCSymbol(BaseModel):
 
 class OptionLeg(BaseModel):
     """
-    Single option leg within an iron condor position.
+    Single option leg within an options position.
 
-    Maps to IronCondorCard's OptionLeg interface.
+    Maps to OpenPositionCard's OptionLeg interface.
     """
     model_config = ConfigDict(
         from_attributes=True,
@@ -149,18 +149,15 @@ class OptionLeg(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════
-# IRON CONDOR POSITION MODEL
+# OPTIONS POSITION MODEL
 # ═══════════════════════════════════════════════════════════
 
-class IronCondorPosition(BaseModel):
+class OptionsPosition(BaseModel):
     """
-    Complete iron condor position with 4 legs.
+    Options position grouped by underlying and expiry.
 
-    Iron Condor Structure:
-    - Long Call (highest strike) - Buy for protection
-    - Short Call (high strike) - Sell to open
-    - Short Put (low strike) - Sell to open
-    - Long Put (lowest strike) - Buy for protection
+    Groups all option legs for a given ticker and expiration date.
+    Can represent any multi-leg options strategy (spreads, condors, butterflies, etc.)
 
     Note: Also available as TickerPosition alias for backwards compatibility.
     """
@@ -175,7 +172,7 @@ class IronCondorPosition(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     ticker: str  # Underlying symbol (e.g., "SPY")
-    strategy: str = "Options"  # Default to generic "Options", detect_strategy() sets specific type
+    strategy: str = "Options"  # Default to generic "Options"
     expiry_date: date
     legs: List[OptionLeg]
     created_at: datetime = Field(default_factory=datetime.now)
@@ -193,115 +190,6 @@ class IronCondorPosition(BaseModel):
         today = date.today()
         delta = self.expiry_date - today
         return max(0, delta.days)
-
-    def get_leg_by_type(self, option_type: str, direction: str) -> Optional[OptionLeg]:
-        """Find a specific leg by type and direction"""
-        for leg in self.legs:
-            if leg.option_type == option_type and leg.direction == direction:
-                return leg
-        return None
-
-    @property
-    def short_put(self) -> Optional[OptionLeg]:
-        return self.get_leg_by_type('Put', 'Short')
-
-    @property
-    def long_put(self) -> Optional[OptionLeg]:
-        return self.get_leg_by_type('Put', 'Long')
-
-    @property
-    def short_call(self) -> Optional[OptionLeg]:
-        return self.get_leg_by_type('Call', 'Short')
-
-    @property
-    def long_call(self) -> Optional[OptionLeg]:
-        return self.get_leg_by_type('Call', 'Long')
-
-    def is_valid_iron_condor(self) -> bool:
-        """Verify this is a valid iron condor structure (informational only)"""
-        if len(self.legs) != 4:
-            return False
-
-        sp = self.short_put
-        lp = self.long_put
-        sc = self.short_call
-        lc = self.long_call
-
-        if not all([sp, lp, sc, lc]):
-            return False
-
-        # Validate strike ordering:
-        # Long Put < Short Put < Short Call < Long Call
-        return (
-            lp.strike < sp.strike and
-            sp.strike < sc.strike and
-            sc.strike < lc.strike
-        )
-
-    def is_valid_iron_butterfly(self) -> bool:
-        """Verify this is a valid iron butterfly structure.
-
-        Iron Butterfly: 4 legs with short put strike == short call strike (ATM)
-        """
-        if len(self.legs) != 4:
-            return False
-
-        sp = self.short_put
-        lp = self.long_put
-        sc = self.short_call
-        lc = self.long_call
-
-        if not all([sp, lp, sc, lc]):
-            return False
-
-        # Iron Butterfly: short put and short call at SAME strike (ATM)
-        # Long put below, long call above
-        return (
-            lp.strike < sp.strike and
-            sp.strike == sc.strike and  # KEY DIFFERENCE: same strike
-            sc.strike < lc.strike
-        )
-
-    def detect_strategy(self) -> str:
-        """
-        Detect the strategy type based on leg structure.
-
-        Returns strategy type based on leg configuration:
-        - "Iron Butterfly": 4 legs with short strikes equal (ATM)
-        - "Iron Condor": 4 legs with 2C+2P and valid strike ordering
-        - "Vertical Spread": 2 legs of same type, different strikes
-        - "Straddle": 2 legs, same strike, different types
-        - "Strangle": 2 legs, different strikes, different types
-        - "Options": Default for unrecognized patterns
-        """
-        if len(self.legs) == 0:
-            return "Options"
-
-        # Check for 4-leg strategies (check Iron Butterfly FIRST - more specific)
-        if len(self.legs) == 4:
-            if self.is_valid_iron_butterfly():
-                return "Iron Butterfly"
-            if self.is_valid_iron_condor():
-                return "Iron Condor"
-
-        # Check for 2-leg strategies
-        if len(self.legs) == 2:
-            leg1, leg2 = self.legs[0], self.legs[1]
-
-            # Same option type = Vertical Spread
-            if leg1.option_type == leg2.option_type:
-                return "Vertical Spread"
-
-            # Different option types
-            # Same strike = Straddle
-            if leg1.strike == leg2.strike:
-                return "Straddle"
-
-            # Different strikes = Strangle
-            return "Strangle"
-
-        # Default for unrecognized patterns (1, 3, 5+ legs, or invalid 4-leg)
-        return "Options"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -326,6 +214,33 @@ class OptionPriceUpdate(BaseModel):
     mid_price: float  # (bid + ask) / 2
     last_price: Optional[float] = None
     volume: int = 0
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+    @field_validator('bid_price', 'ask_price', 'mid_price', 'last_price', mode='before')
+    @classmethod
+    def convert_to_float(cls, v):
+        if v is None:
+            return None
+        return float(v)
+
+
+class SpotPriceUpdate(BaseModel):
+    """
+    Real-time spot (underlying stock) price update.
+    Broadcast via WebSocket to update spot price in frontend.
+    """
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            datetime: lambda v: v.isoformat()
+        }
+    )
+
+    symbol: str  # Underlying symbol (e.g., "SPY")
+    bid_price: float
+    ask_price: float
+    mid_price: float  # (bid + ask) / 2
+    last_price: Optional[float] = None
     timestamp: datetime = Field(default_factory=datetime.now)
 
     @field_validator('bid_price', 'ask_price', 'mid_price', 'last_price', mode='before')
@@ -362,7 +277,7 @@ class GetPositionsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     status: Literal['success', 'error']
-    positions: List[IronCondorPosition] = []
+    positions: List[OptionsPosition] = []
     total_count: int = 0
     message: Optional[str] = None
 
@@ -427,7 +342,7 @@ class GetPositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     status: Literal['success', 'error']
-    position: Optional[IronCondorPosition] = None
+    position: Optional[OptionsPosition] = None
     message: Optional[str] = None
 
 
@@ -440,6 +355,22 @@ class SubscribePricesRequest(BaseModel):
 
 class SubscribePricesResponse(BaseModel):
     """Response for POST /api/positions/subscribe-prices"""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'error']
+    message: Optional[str] = None
+    symbols: List[str] = []
+
+
+class SubscribeSpotPricesRequest(BaseModel):
+    """Request to subscribe to spot price updates for stock symbols"""
+    model_config = ConfigDict(from_attributes=True)
+
+    symbols: List[str]  # List of stock symbols (e.g., ["SPY", "QQQ"])
+
+
+class SubscribeSpotPricesResponse(BaseModel):
+    """Response for POST /api/positions/subscribe-spot-prices"""
     model_config = ConfigDict(from_attributes=True)
 
     status: Literal['success', 'error']
@@ -567,20 +498,25 @@ class TradeStatsResponse(BaseModel):
 # EXPORTS
 # ═══════════════════════════════════════════════════════════
 
-# Alias for new code using the generic name
-TickerPosition = IronCondorPosition
+# Aliases for backwards compatibility
+IronCondorPosition = OptionsPosition
+TickerPosition = OptionsPosition
 
 __all__ = [
     "OCCSymbol",
     "OptionLeg",
+    "OptionsPosition",
     "IronCondorPosition",
     "TickerPosition",
     "OptionPriceUpdate",
+    "SpotPriceUpdate",
     "PositionPriceUpdates",
     "GetPositionsResponse",
     "GetPositionResponse",
     "SubscribePricesRequest",
     "SubscribePricesResponse",
+    "SubscribeSpotPricesRequest",
+    "SubscribeSpotPricesResponse",
     "CloseOrderResult",
     "CloseStrategyRequest",
     "CloseStrategyResponse",
