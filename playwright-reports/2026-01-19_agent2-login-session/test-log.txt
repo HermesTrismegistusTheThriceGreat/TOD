@@ -1,6 +1,0 @@
-Build Agent 2 - Login and Session Persistence Test
-Started at: 2026-01-19
-Test User Email: test-1768857731@example.com
-Test User Password: TestPassword123!
-
-Waiting 10 seconds for Build Agent 1 to complete signup...

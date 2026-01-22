@@ -23,6 +23,11 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_AUTH_URL || 'http://localhost:9404',
           changeOrigin: true,
         },
+        // Proxy all other API requests to orchestrator backend
+        '/api': {
+          target: env.VITE_BACKEND_URL || 'http://127.0.0.1:9403',
+          changeOrigin: true,
+        },
       },
     },
     publicDir: 'public'

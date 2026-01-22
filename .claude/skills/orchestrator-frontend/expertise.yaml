@@ -1,0 +1,534 @@
+frontend_expertise:
+  meta:
+    last_validated: "2026-01-21"
+    codebase_path: "apps/orchestrator_3_stream/frontend"
+    skill_file: ".claude/skills/orchestrator-frontend/SKILL.md"
+    max_lines: 600
+
+  architecture:
+    entry_point: "src/main.ts"
+    root_component: "src/App.vue"
+    build_tool: "Vite 5.x"
+    framework: "Vue 3.4.x"
+    package_manager: "npm"
+    dev_port: 5175
+
+  technology_stack:
+    - name: "Vue"
+      version: "3.4.x"
+      purpose: "Core framework"
+    - name: "TypeScript"
+      version: "5.x"
+      purpose: "Type safety"
+    - name: "Vite"
+      version: "5.x"
+      purpose: "Build tool"
+    - name: "Pinia"
+      version: "2.1.x"
+      purpose: "State management"
+    - name: "Vue Router"
+      version: "4.4.x"
+      purpose: "Client-side routing"
+    - name: "Axios"
+      version: "1.6.x"
+      purpose: "HTTP client"
+    - name: "Element Plus"
+      version: "2.13.x"
+      purpose: "Current UI components"
+    - name: "Better Auth"
+      version: "1.4.x"
+      purpose: "Authentication"
+
+  components:
+    views:
+      - name: "HomeView"
+        path: "src/views/HomeView.vue"
+        route: "/"
+        meta: "requiresAuth: true"
+        description: "Main dashboard with 3-column layout"
+      - name: "LoginView"
+        path: "src/views/LoginView.vue"
+        route: "/login"
+        meta: "requiresGuest: true"
+        description: "Login page"
+      - name: "SignupView"
+        path: "src/views/SignupView.vue"
+        route: "/signup"
+        meta: "requiresGuest: true"
+        description: "Signup page"
+      - name: "AlpacaAgentView"
+        path: "src/views/AlpacaAgentView.vue"
+        route: "/alpaca-agent"
+        meta: "requiresAuth: true"
+        description: "Alpaca trading agent chat interface"
+
+    core:
+      - name: "AppHeader"
+        path: "src/components/AppHeader.vue"
+        purpose: "Header with navigation, mobile menu, logout. Stats/LOGS-ADWS/PROMPT buttons commented out"
+        features:
+          - "Desktop nav buttons: ALPACA, POSITIONS, CALENDAR, TRADE STATS"
+          - "Mobile hamburger menu at 768px breakpoint"
+          - "Logout button (auth-gated, desktop + mobile)"
+          - "Connection status indicator"
+        commented_features: ["header-stats", "view-mode-switcher", "PROMPT button"]
+      - name: "AgentList"
+        path: "src/components/AgentList.vue"
+        purpose: "Left sidebar with agent cards"
+        props: ["agents", "selectedAgentId"]
+        events: ["select-agent"]
+      - name: "EventStream"
+        path: "src/components/EventStream.vue"
+        purpose: "Event log stream with filtering"
+        props: ["filter", "autoScroll"]
+      - name: "OrchestratorChat"
+        path: "src/components/OrchestratorChat.vue"
+        purpose: "Right sidebar chat interface"
+      - name: "GlobalCommandInput"
+        path: "src/components/GlobalCommandInput.vue"
+        purpose: "Cmd+K command overlay"
+      - name: "AdwSwimlanes"
+        path: "src/components/AdwSwimlanes.vue"
+        purpose: "ADW workflow visualization"
+      - name: "OpenPositions"
+        path: "src/components/OpenPositions.vue"
+        purpose: "Trading positions display"
+      - name: "TradeStatsGrid"
+        path: "src/components/TradeStatsGrid.vue"
+        purpose: "Trade statistics dashboard"
+      - name: "CalendarPage"
+        path: "src/components/CalendarPage.vue"
+        purpose: "Calendar view"
+      - name: "AlpacaAgentChat"
+        path: "src/components/AlpacaAgentChat.vue"
+        purpose: "Alpaca trading agent chat with SSE streaming, quick commands, tool use display"
+        api_endpoint: "/api/alpaca-agent/chat"
+        features:
+          - "Quick commands: Account Status, View Positions, SPY Price, Recent Orders"
+          - "SSE streaming with thinking/tool_use indicators"
+          - "Markdown rendering for responses"
+          - "Mobile responsive at 768px"
+      - name: "FilterControls"
+        path: "src/components/FilterControls.vue"
+        purpose: "Reusable filter UI with tabs, search, quick filters"
+
+    auth:
+      - name: "LoginForm"
+        path: "src/components/auth/LoginForm.vue"
+      - name: "SignupForm"
+        path: "src/components/auth/SignupForm.vue"
+
+    chat:
+      - name: "ThinkingBubble"
+        path: "src/components/chat/ThinkingBubble.vue"
+        purpose: "Display Claude SDK thinking blocks"
+      - name: "ToolUseBubble"
+        path: "src/components/chat/ToolUseBubble.vue"
+        purpose: "Display Claude SDK tool use blocks"
+
+    event_rows:
+      - name: "AgentLogRow"
+        path: "src/components/event-rows/AgentLogRow.vue"
+      - name: "SystemLogRow"
+        path: "src/components/event-rows/SystemLogRow.vue"
+      - name: "AgentToolUseBlockRow"
+        path: "src/components/event-rows/AgentToolUseBlockRow.vue"
+      - name: "FileChangesDisplay"
+        path: "src/components/event-rows/FileChangesDisplay.vue"
+      - name: "OrchestratorChatRow"
+        path: "src/components/event-rows/OrchestratorChatRow.vue"
+      - name: "ToolUseBlockRow"
+        path: "src/components/event-rows/ToolUseBlockRow.vue"
+
+    trade_stats:
+      - name: "LegStatsTable"
+        path: "src/components/LegStatsTable.vue"
+        purpose: "Options leg statistics table"
+      - name: "TradeStatsSummary"
+        path: "src/components/TradeStatsSummary.vue"
+        purpose: "Trade statistics summary view"
+      - name: "TradeStatsCard"
+        path: "src/components/TradeStatsCard.vue"
+        purpose: "Individual trade statistics card"
+      - name: "OpenPositionCard"
+        path: "src/components/OpenPositionCard.vue"
+        purpose: "Open position display card"
+
+  websocket:
+    connection:
+      service_file: "src/services/chatService.ts"
+      url_env: "VITE_WEBSOCKET_URL"
+      default_url: "ws://127.0.0.1:9403/ws"
+      reconnect_config:
+        max_attempts: 5
+        base_delay_ms: 1000
+        max_delay_ms: 30000
+        strategy: "exponential_backoff"
+
+    events:
+      chat:
+        - type: "chat_stream"
+          handler: "orchestratorStore.ts:handleChatStream"
+          description: "Streaming chat message chunks"
+        - type: "chat_typing"
+          handler: "orchestratorStore.ts:setChatTyping"
+          description: "Typing indicator"
+        - type: "orchestrator_chat"
+          handler: "orchestratorStore.ts:addOrchestratorChatEvent"
+          description: "Complete chat message from orchestrator"
+
+      agent:
+        - type: "agent_created"
+          handler: "orchestratorStore.ts:addAgent"
+          description: "New agent registered"
+        - type: "agent_updated"
+          handler: "orchestratorStore.ts:updateAgent"
+          description: "Agent metadata changed"
+        - type: "agent_deleted"
+          handler: "orchestratorStore.ts:removeAgent"
+          description: "Agent removed"
+        - type: "agent_status_changed"
+          handler: "orchestratorStore.ts:updateAgentStatus"
+          description: "Agent status update"
+        - type: "agent_log"
+          handler: "orchestratorStore.ts:addAgentLogEvent"
+          description: "Agent log entry"
+        - type: "agent_summary_update"
+          handler: "chatService.ts:onAgentSummaryUpdate"
+          description: "Agent summary metadata update"
+        - type: "orchestrator_updated"
+          handler: "chatService.ts:onOrchestratorUpdated"
+          description: "Orchestrator metadata update"
+
+      claude_sdk:
+        - type: "thinking_block"
+          handler: "orchestratorStore.ts:addThinkingBlockEvent"
+          description: "Claude thinking process display"
+        - type: "tool_use_block"
+          handler: "orchestratorStore.ts:addToolUseBlockEvent"
+          description: "Tool usage information"
+
+      adw:
+        - type: "adw_created"
+          handler: "orchestratorStore.ts:addAdw"
+          description: "New ADW workflow created"
+        - type: "adw_updated"
+          handler: "orchestratorStore.ts:updateAdw"
+          description: "ADW metadata updated"
+        - type: "adw_event"
+          handler: "orchestratorStore.ts:addAdwEvent"
+          description: "ADW workflow event"
+        - type: "adw_step_change"
+          handler: "orchestratorStore.ts:handleAdwStepChange"
+          description: "ADW workflow step transition"
+        - type: "adw_event_summary_update"
+          handler: "chatService.ts:onAdwEventSummaryUpdate"
+          description: "ADW event summary update"
+
+      alpaca:
+        - type: "option_price_update"
+          handler: "orchestratorStore.ts:queueAlpacaPrice"
+          description: "Real-time option price update (RAF batched)"
+        - type: "option_price_batch"
+          handler: "chatService.ts:onOptionPriceBatch"
+          description: "Batch option price updates"
+        - type: "spot_price_update"
+          handler: "orchestratorStore.ts:queueSpotPrice"
+          description: "Real-time spot price update (RAF batched)"
+        - type: "position_update"
+          handler: "orchestratorStore.ts:updateAlpacaPosition"
+          description: "Trading position update"
+        - type: "alpaca_status"
+          handler: "orchestratorStore.ts:updateAlpacaStatus"
+          description: "Alpaca service status"
+
+      autocomplete:
+        - type: "autocomplete_started"
+          handler: "orchestratorStore.ts:setAutocompleteStatus"
+          description: "Command autocomplete started"
+        - type: "autocomplete_completed"
+          handler: "orchestratorStore.ts:setAutocompleteResult"
+          description: "Command autocomplete finished"
+
+      system:
+        - type: "connection_established"
+          handler: "orchestratorStore.ts:handleConnectionEstablished"
+          description: "WebSocket connection confirmed"
+        - type: "error"
+          handler: "orchestratorStore.ts:handleError"
+          description: "Error message from backend"
+        - type: "heartbeat"
+          handler: "orchestratorStore.ts:handleHeartbeat"
+          description: "Connection keepalive"
+
+  store:
+    file: "src/stores/orchestratorStore.ts"
+    pattern: "Composition API with defineStore"
+
+    state:
+      agents:
+        - name: "agents"
+          type: "Agent[]"
+          description: "All registered agents"
+        - name: "selectedAgentId"
+          type: "string | null"
+          description: "Currently selected agent ID"
+        - name: "orchestratorAgentId"
+          type: "string"
+          description: "Main orchestrator agent ID"
+        - name: "orchestratorAgent"
+          type: "OrchestratorAgent | null"
+          description: "Main orchestrator agent object"
+
+      events:
+        - name: "eventStreamEntries"
+          type: "EventStreamEntry[]"
+          description: "Event log entries"
+        - name: "eventStreamFilter"
+          type: "EventStreamFilter"
+          description: "Current filter ('all', agent name, etc.)"
+        - name: "autoScroll"
+          type: "boolean"
+          description: "Auto-scroll to latest events"
+
+      chat:
+        - name: "chatMessages"
+          type: "ChatMessage[]"
+          description: "Chat message history"
+        - name: "isTyping"
+          type: "boolean"
+          description: "Typing indicator state"
+        - name: "chatWidth"
+          type: "'sm' | 'md' | 'lg'"
+          description: "Chat panel width"
+
+      websocket:
+        - name: "isConnected"
+          type: "boolean"
+          description: "WebSocket connection status"
+        - name: "websocketEventCount"
+          type: "number"
+          description: "Total events received"
+
+      adw:
+        - name: "viewMode"
+          type: "ViewMode"
+          description: "Current view ('logs' | 'adws' | 'open-positions' | 'calendar' | 'trade-stats')"
+        - name: "adws"
+          type: "ADW[]"
+          description: "All ADW workflows"
+        - name: "selectedAdwId"
+          type: "string | null"
+          description: "Currently selected ADW ID"
+
+      alpaca:
+        - name: "alpacaPositions"
+          type: "AlpacaPosition[]"
+          description: "Current trading positions"
+        - name: "alpacaPriceCache"
+          type: "Map<string, OptionPriceUpdate>"
+          description: "Option prices by symbol (shallowRef)"
+        - name: "spotPriceCache"
+          type: "Map<string, SpotPriceUpdate>"
+          description: "Spot prices by symbol (shallowRef)"
+
+    getters:
+      - name: "selectedAgent"
+        returns: "Agent | undefined"
+        description: "Currently selected agent object"
+      - name: "filteredEventStream"
+        returns: "EventStreamEntry[]"
+        description: "Filtered event stream based on current filter"
+
+    actions:
+      - name: "initialize"
+        params: []
+        description: "Load initial data and connect WebSocket"
+      - name: "selectAgent"
+        params: ["id: string"]
+        description: "Select an agent by ID"
+      - name: "sendUserMessage"
+        params: ["content: string"]
+        description: "Send chat message to orchestrator"
+      - name: "setViewMode"
+        params: ["mode: ViewMode"]
+        description: "Switch dashboard view mode"
+      - name: "connectWebSocket"
+        params: []
+        description: "Establish WebSocket connection"
+      - name: "disconnectWebSocket"
+        params: []
+        description: "Close WebSocket connection"
+
+  composables:
+    - name: "useEventStreamFilter"
+      path: "src/composables/useEventStreamFilter.ts"
+      purpose: "Event filtering logic"
+      exports: ["filterEvents", "setFilter"]
+    - name: "useAgentPulse"
+      path: "src/composables/useAgentPulse.ts"
+      purpose: "Agent animation state management"
+      exports: ["pulseAgent", "clearPulse"]
+    - name: "useKeyboardShortcuts"
+      path: "src/composables/useKeyboardShortcuts.ts"
+      purpose: "Global keyboard shortcut handlers"
+      shortcuts: ["Cmd+K", "Cmd+J"]
+    - name: "useAlpacaPriceStream"
+      path: "src/composables/useAlpacaPriceStream.ts"
+      purpose: "Real-time price streaming"
+    - name: "useAlpacaPositions"
+      path: "src/composables/useAlpacaPositions.ts"
+      purpose: "Position management logic"
+    - name: "useAutocomplete"
+      path: "src/composables/useAutocomplete.ts"
+      purpose: "Command autocomplete logic"
+    - name: "useHeaderBar"
+      path: "src/composables/useHeaderBar.ts"
+      purpose: "Header bar state and export functionality"
+    - name: "useAgentColors"
+      path: "src/composables/useAgentColors.ts"
+      purpose: "Agent color assignment utilities"
+
+  services:
+    - name: "api"
+      path: "src/services/api.ts"
+      purpose: "Axios HTTP client configuration"
+    - name: "chatService"
+      path: "src/services/chatService.ts"
+      purpose: "Chat HTTP endpoints and WebSocket connection"
+      exports: ["sendMessage", "connectWebSocket", "disconnectWebSocket"]
+    - name: "agentService"
+      path: "src/services/agentService.ts"
+      purpose: "Agent CRUD operations"
+      exports: ["getAgents", "createAgent", "updateAgent", "deleteAgent"]
+    - name: "eventService"
+      path: "src/services/eventService.ts"
+      purpose: "Event history retrieval"
+      exports: ["getEvents", "getEventsByAgent"]
+    - name: "alpacaService"
+      path: "src/services/alpacaService.ts"
+      purpose: "Alpaca trading API integration"
+    - name: "authClient"
+      path: "src/services/authClient.ts"
+      purpose: "Better Auth client configuration"
+    - name: "autocompleteService"
+      path: "src/services/autocompleteService.ts"
+      purpose: "Command autocomplete API"
+    - name: "adwService"
+      path: "src/services/adwService.ts"
+      purpose: "ADW workflow API operations"
+    - name: "fileService"
+      path: "src/services/fileService.ts"
+      purpose: "File operations API"
+
+  config:
+    - name: "constants"
+      path: "src/config/constants.ts"
+      purpose: "Application constants and configuration"
+
+  utilities:
+    - name: "markdown"
+      path: "src/utils/markdown.ts"
+      purpose: "Markdown rendering with syntax highlighting"
+    - name: "agentColors"
+      path: "src/utils/agentColors.ts"
+      purpose: "Agent color assignment utilities"
+    - name: "dateUtils"
+      path: "src/utils/dateUtils.ts"
+      purpose: "Date formatting helpers"
+    - name: "rafBatch"
+      path: "src/utils/rafBatch.ts"
+      purpose: "RequestAnimationFrame batching for performance"
+      class: "RafBatcher<T>"
+
+  routing:
+    file: "src/router/index.ts"
+    mode: "history"
+    routes:
+      - path: "/"
+        name: "Home"
+        component: "HomeView"
+        meta: { requiresAuth: true }
+      - path: "/login"
+        name: "Login"
+        component: "LoginView"
+        meta: { requiresGuest: true }
+      - path: "/signup"
+        name: "Signup"
+        component: "SignupView"
+        meta: { requiresGuest: true }
+      - path: "/alpaca-agent"
+        name: "AlpacaAgent"
+        component: "AlpacaAgentView"
+        meta: { requiresAuth: true }
+    guards:
+      - type: "beforeEach"
+        checks: ["requiresAuth", "requiresGuest"]
+        redirect_logic: "Redirects to /login if auth required, / if guest-only"
+        session_wait: "Waits for authStore.isLoading to resolve before checking auth"
+
+  types:
+    file: "src/types.d.ts"
+    additional: "src/types/*.ts"
+    key_interfaces:
+      - name: "Agent"
+        description: "Agent metadata"
+      - name: "ChatMessage"
+        description: "Chat message structure"
+      - name: "EventStreamEntry"
+        description: "Event log entry"
+      - name: "ADW"
+        description: "ADW workflow"
+      - name: "AlpacaPosition"
+        description: "Trading position"
+      - name: "OptionPriceUpdate"
+        description: "Real-time option price"
+      - name: "SpotPriceUpdate"
+        description: "Real-time spot price"
+      - name: "ViewMode"
+        values: ["logs", "adws", "open-positions", "calendar", "trade-stats"]
+
+  environment:
+    file: ".env"
+    variables:
+      - name: "VITE_API_BASE_URL"
+        default: "http://127.0.0.1:9403"
+        description: "Backend API URL"
+      - name: "VITE_WEBSOCKET_URL"
+        default: "ws://127.0.0.1:9403/ws"
+        description: "WebSocket endpoint"
+      - name: "VITE_AUTH_URL"
+        default: "http://localhost:9404"
+        description: "Auth service URL"
+
+  styling:
+    global: "src/styles/global.css"
+    theme: "Dark theme with cyan/teal accents"
+    css_framework: "Custom CSS with CSS Grid"
+
+  layout:
+    grid_system:
+      default: "grid-template-columns: 280px 1fr 418px"
+      chat_md: "grid-template-columns: 280px 1fr 518px"
+      chat_lg: "grid-template-columns: 280px 1fr 618px"
+      sidebar_collapsed: "grid-template-columns: 48px 1fr 418px"
+      mobile_breakpoint: "768px"
+    mobile_responsive:
+      header: "Hamburger menu replaces desktop nav at 768px"
+      alpaca_chat: "Single-column, reduced padding at 768px"
+
+  performance:
+    raf_batching:
+      enabled: true
+      use_cases: ["option_price_update", "spot_price_update"]
+      implementation: "src/utils/rafBatch.ts"
+      description: "Prevents UI freeze from 1000+ updates/second"
+    shallow_refs:
+      - "alpacaPriceCache"
+      - "spotPriceCache"
+
+  build:
+    config: "vite.config.ts"
+    tsconfig: "tsconfig.json"
+    port: 5175
+    type_checking: "npm run type-check"

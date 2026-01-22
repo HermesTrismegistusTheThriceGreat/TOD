@@ -39,6 +39,54 @@ marked.setOptions({
 })
 
 /**
+ * Preprocess text to improve markdown rendering of Claude Code output.
+ *
+ * Claude Code often outputs text in a continuous format optimized for terminals,
+ * where list items and sections run together. This function normalizes the text
+ * to help the markdown parser recognize these elements.
+ *
+ * @param text - Raw text from Claude Code
+ * @returns Preprocessed text with proper newlines for markdown
+ */
+function preprocessClaudeOutput(text: string): string {
+  let result = text
+
+  // Insert newline before markdown headers (### Header) that aren't at line start
+  // Matches: "text### Header" -> "text\n\n### Header"
+  result = result.replace(/([^\n])(#{1,6}\s)/g, '$1\n\n$2')
+
+  // Insert newline before unordered list items that appear after non-whitespace
+  // Matches: "text- item" -> "text\n- item" (but not "text - item" which is likely a dash in text)
+  // Only match when "-" is followed by a space and word character (real list items)
+  result = result.replace(/([^\n\s])(-\s+\w)/g, '$1\n$2')
+
+  // Handle ":-" pattern (colon followed by dash) which often indicates a list start
+  // Matches: "is:- Bid" -> "is:\n- Bid"
+  result = result.replace(/:(-\s+)/g, ':\n$1')
+
+  // Insert newline before numbered list items (1. 2. 3. etc.)
+  // Matches: "text1. item" -> "text\n1. item"
+  result = result.replace(/([^\n\d])(\d+\.\s+\w)/g, '$1\n$2')
+
+  // Insert newline before bold section headers like "**Header:**" or "**Header**:"
+  // These often start new sections in Claude output
+  result = result.replace(/([^\n])(\*\*[A-Z][^*]+\*\*:?)/g, '$1\n\n$2')
+
+  // Insert newline before sentences that start with "Your" after a value (common Claude pattern)
+  // Matches: "$100.00Your account" -> "$100.00\n\nYour account"
+  result = result.replace(/([\d.]+)(Your\s)/g, '$1\n\n$2')
+
+  // Insert newline before sentences that follow a period and start with capital letter
+  // But avoid breaking normal sentence flow - only when there's a number or symbol before
+  result = result.replace(/(\d)(\.)((?:Your|The|This|It|All|No)\s)/g, '$1$2\n\n$3')
+
+  // Normalize multiple newlines to maximum of 2 (paragraph break)
+  result = result.replace(/\n{3,}/g, '\n\n')
+
+  return result
+}
+
+/**
  * Render markdown to sanitized HTML
  *
  * @param markdown - Raw markdown string
@@ -54,8 +102,11 @@ export function renderMarkdown(markdown: string): string {
   if (!markdown) return ''
 
   try {
+    // Preprocess to fix Claude Code's continuous output format
+    const preprocessed = preprocessClaudeOutput(markdown)
+
     // Parse markdown to HTML
-    const rawHtml = marked.parse(markdown, { async: false }) as string
+    const rawHtml = marked.parse(preprocessed, { async: false }) as string
 
     // Sanitize HTML to prevent XSS attacks
     const sanitizedHtml = DOMPurify.sanitize(rawHtml, {

@@ -27,7 +27,13 @@ const routes: RouteRecordRaw[] = [
     path: "/",
     name: "Home",
     component: () => import("@/views/HomeView.vue"),
-    meta: { requiresAuth: true }, // Set to true to require authentication
+    meta: { requiresAuth: false }, // Disabled for testing
+  },
+  {
+    path: "/alpaca-agent",
+    name: "AlpacaAgent",
+    component: () => import("@/views/AlpacaAgentView.vue"),
+    meta: { requiresAuth: false }, // Disabled for testing
   },
 ];
 

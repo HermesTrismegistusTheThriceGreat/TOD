@@ -5,6 +5,11 @@
       <router-view />
     </template>
 
+    <!-- Full-page routes (Alpaca Agent, etc.) - render via router-view -->
+    <template v-else-if="isFullPageRoute">
+      <router-view />
+    </template>
+
     <!-- Main dashboard layout -->
     <template v-else>
       <AppHeader />
@@ -99,6 +104,13 @@ const route = useRoute();
 // Check if current route is an auth page (login/signup)
 const isAuthRoute = computed(() => {
   return route.path === "/login" || route.path === "/signup";
+});
+
+// Check if current route is a full-page route (not dashboard)
+// These routes render their own layout via router-view
+const fullPageRoutes = ["/alpaca-agent"];
+const isFullPageRoute = computed(() => {
+  return fullPageRoutes.includes(route.path);
 });
 
 // Computed

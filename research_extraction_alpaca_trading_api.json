@@ -1,0 +1,439 @@
+[
+  {
+    "source": {
+      "title": "Streaming Market Data - WebSocket Documentation",
+      "url": "https://docs.alpaca.markets/docs/streaming-market-data",
+      "author": "Alpaca Markets Documentation",
+      "date": "2024",
+      "credibility": 5
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Production WebSocket endpoint is wss://stream.data.alpaca.markets/{version}/{feed}",
+        "type": "definition",
+        "context": "Connection Setup - URLs",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Test stream endpoint wss://stream.data.alpaca.markets/v2/test is available 24/7 with symbol FAKEPACA",
+        "type": "definition",
+        "context": "Connection Setup - URLs",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Upon successful connection, users receive: [{'T':'success','msg':'connected'}]",
+        "type": "definition",
+        "context": "Connection Setup - Welcome Message",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Authentication must occur within 10 seconds of connection",
+        "type": "risk",
+        "context": "Authentication Methods - Post-Connection Message",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Three authentication methods supported: HTTP Headers (APCA-API-KEY-ID, APCA-API-SECRET-KEY), Basic Authentication with base64encode({KEY}:{SECRET}), and Post-Connection Message",
+        "type": "definition",
+        "context": "Authentication Methods",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "OAuth authentication uses {'action': 'auth', 'key': 'oauth', 'secret': '{TOKEN}'}",
+        "type": "definition",
+        "context": "Authentication Methods - OAuth Applications",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "All server messages follow structure [{'T': '{message_type}', {contents}}...]",
+        "type": "definition",
+        "context": "Message Format",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Control messages arrive in single-element arrays; data points may arrive in larger arrays to optimize bandwidth",
+        "type": "definition",
+        "context": "Message Format",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Subscription supports wildcard * for all symbols",
+        "type": "definition",
+        "context": "Subscription Pattern",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Subscribe message format: {'action': 'subscribe', '<channel1>': ['<SYMBOL1>'], '<channel2>': ['<SYMBOL2>','<SYMBOL3>'], '<channel3>': ['*']}",
+        "type": "definition",
+        "context": "Subscription Pattern - Subscribe",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Error code 407 'slow client' indicates processing speed insufficient",
+        "type": "risk",
+        "context": "Error Codes",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Error code 406 'connection limit exceeded' occurs when maximum concurrent connections reached",
+        "type": "risk",
+        "context": "Error Codes",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The number of connections to a single endpoint from a user is limited based on the user's subscription, but in most subscriptions (including Algo Trader Plus) this limit is 1",
+        "type": "risk",
+        "context": "Connection Limitations",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Platform implements RFC-7692 compression to reduce bandwidth",
+        "type": "definition",
+        "context": "Compression",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Supported data types include Stocks, Crypto, Options, News",
+        "type": "definition",
+        "context": "Supported Data Types",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Content-Type options: application/json or application/msgpack",
+        "type": "definition",
+        "context": "Content Type Options",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "Alpaca's WebSocket streaming market data API provides real-time access to stocks, crypto, options, and news through standardized endpoints with three authentication methods. The service requires authentication within 10 seconds, supports flexible subscriptions with wildcards, and includes comprehensive error handling with specific codes for connection limits and slow clients."
+  },
+  {
+    "source": {
+      "title": "WebSocket Streaming Technical Reference",
+      "url": "https://docs.alpaca.markets/docs/websocket-streaming",
+      "author": "Alpaca Markets Documentation",
+      "date": "2024",
+      "credibility": 5
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Paper Trading endpoint: wss://paper-api.alpaca.markets/stream; Live Trading endpoint: wss://api.alpaca.markets/stream",
+        "type": "definition",
+        "context": "Connection Protocols",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Service implements RFC6455 WebSocket protocol standard",
+        "type": "definition",
+        "context": "Connection Protocols",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Paper trading stream uses binary frames, while market data stream uses text frames",
+        "type": "risk",
+        "context": "Connection Protocols",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Supported data formats: JSON (default) and MessagePack (requires header: Content-Type: application/msgpack)",
+        "type": "definition",
+        "context": "Supported Data Formats",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Authentication message: {'action': 'auth', 'key': '{YOUR_API_KEY_ID}', 'secret': '{YOUR_API_SECRET_KEY}'}",
+        "type": "definition",
+        "context": "Authentication Flow",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Successful auth response: {'stream': 'authorization', 'data': {'status': 'authorized', 'action': 'authenticate'}}",
+        "type": "definition",
+        "context": "Authentication Flow",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Listen for trade updates: {'action': 'listen', 'data': {'streams': ['trade_updates']}}",
+        "type": "definition",
+        "context": "Subscription Mechanism",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "To add streams, resend complete list including existing subscriptions (not incremental)",
+        "type": "risk",
+        "context": "Subscription Mechanism - Subscription management rules",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "All trade_updates messages include 'event' field (type indicator) and 'order' field (standard REST API order object)",
+        "type": "definition",
+        "context": "Trade Updates Message Structure",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Common event types: new, fill, partial_fill, canceled, expired, done_for_day, replaced",
+        "type": "definition",
+        "context": "Trade Updates Message Structure - Common Event Types",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Fill events include: timestamp, price, qty, position_qty as additional fields",
+        "type": "definition",
+        "context": "Trade Updates Message Structure - Common Event Types",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Error message format: {'action': 'error', 'data': {'error_message': 'internal server error'}}. Connection automatically terminates following error messages",
+        "type": "risk",
+        "context": "Error Handling",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Must authenticate before listening to streams",
+        "type": "risk",
+        "context": "Key Technical Requirements",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Handle binary frame format for paper trading specifically",
+        "type": "risk",
+        "context": "Key Technical Requirements",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Implement reconnection logic for dropped connections",
+        "type": "risk",
+        "context": "Key Technical Requirements",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "Alpaca's WebSocket streaming for trading provides real-time trade updates through separate endpoints for paper and live trading. The service uses RFC6455 protocol with critical distinctions between binary frames (paper) and text frames (market data), requiring authentication before subscriptions and automatic connection termination on errors."
+  },
+  {
+    "source": {
+      "title": "Real-Time Stock Data - Alpaca-py SDK API Reference",
+      "url": "https://alpaca.markets/sdks/python/api_reference/data/stock/live.html",
+      "author": "Alpaca Markets SDK Documentation",
+      "date": "2024",
+      "credibility": 5
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "StockDataStream class signature: alpaca.data.live.stock.StockDataStream(api_key: str, secret_key: str, raw_data: bool = False, feed: DataFeed = DataFeed.IEX, websocket_params: Optional[Dict] = None, url_override: Optional[str] = None)",
+        "type": "definition",
+        "context": "Class Definition",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Connection methods: run() initiates WebSocket event loop, close() terminates connection, stop() halts connection, stop_ws() is async method signaling closure by queuing stop message",
+        "type": "definition",
+        "context": "Connection Management",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "subscribe_bars(handler, *symbols) subscribes to minute-interval bars",
+        "type": "definition",
+        "context": "Subscription Methods - Bar Data",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "subscribe_daily_bars(handler, *symbols) subscribes to daily bars",
+        "type": "definition",
+        "context": "Subscription Methods - Bar Data",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "subscribe_updated_bars(handler, *symbols) subscribes to updated minute bars",
+        "type": "definition",
+        "context": "Subscription Methods - Bar Data",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "subscribe_trades(handler, *symbols) subscribes to live trade executions",
+        "type": "definition",
+        "context": "Subscription Methods - Market Data",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "subscribe_quotes(handler, *symbols) subscribes to real-time quotes",
+        "type": "definition",
+        "context": "Subscription Methods - Market Data",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "subscribe_trading_statuses(handler, *symbols) subscribes to market halts and resumptions",
+        "type": "definition",
+        "context": "Subscription Methods - Trading Status",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "register_trade_cancels(handler) registers handler for trade cancellation events",
+        "type": "definition",
+        "context": "Subscription Methods - Event Handlers",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "register_trade_corrections(handler) registers handler for trade correction events",
+        "type": "definition",
+        "context": "Subscription Methods - Event Handlers",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "All unsubscribe methods accept * as wildcard for all symbols",
+        "type": "definition",
+        "context": "Unsubscription Methods",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Handler signature: Callable[[Union[DataType, Dict]], Awaitable[None]]",
+        "type": "definition",
+        "context": "Handler Signature",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Supported data types: Bar, Trade, Quote, TradeCancel, TradeCorrection, TradingStatus",
+        "type": "definition",
+        "context": "Handler Signature",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "The Alpaca Python SDK's StockDataStream class provides a comprehensive WebSocket client for real-time market data with dedicated subscription methods for bars, trades, quotes, and trading statuses. Handlers are async callables supporting multiple data types (Bar, Trade, Quote, etc.) with wildcard support for symbol subscriptions."
+  },
+  {
+    "source": {
+      "title": "Working with Orders - Order Execution Documentation",
+      "url": "https://docs.alpaca.markets/docs/working-with-orders",
+      "author": "Alpaca Markets Documentation",
+      "date": "2024",
+      "credibility": 5
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Order placement endpoint: POST /v2/orders",
+        "type": "definition",
+        "context": "Order Types & Placement",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Supported order types: Market Orders (execute immediately at current market price), Limit Orders (execute at specified price or better), Trailing Stop Orders, Bracket Orders, Shorter Orders (sell orders for securities without existing long positions)",
+        "type": "definition",
+        "context": "Order Types & Placement",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Trailing Stop Orders automatically changes the stop price allowing you to maximize your profits",
+        "type": "quote",
+        "context": "Order Types & Placement",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Required order fields: symbol (asset to trade), qty or notional (order quantity/dollar amount), side (BUY or SELL), type (Market, Limit, TrailingStop, etc.), time_in_force (DAY, GTC, FOK, OPG)",
+        "type": "definition",
+        "context": "Core Parameters",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "client_order_id is used to organize and track specific orders in your client program",
+        "type": "quote",
+        "context": "Core Parameters - Optional parameters",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Optional parameters include: client_order_id, limit_price (for limit orders), stop_price (for stop orders), trail_price/trail_percent (for trailing stops), order_class (BRACKET, OTO, OCO, or SIMPLE)",
+        "type": "definition",
+        "context": "Core Parameters",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Order classes: BRACKET (parent order with built-in stop-loss and take-profit), OTO/One-Triggers-Other (entry triggers secondary orders), OCO/One-Cancels-Other (paired orders cancel when one executes), SIMPLE (standard single orders)",
+        "type": "definition",
+        "context": "Order Classes",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Retrieve orders via GET /v2/orders with filters: status (OPEN, CLOSED, CANCELLED, etc.), limit (maximum results returned), nested (include multi-leg order hierarchies)",
+        "type": "definition",
+        "context": "Data Retrieval",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "WebSocket connections provide real-time updates about the status of your orders through trade_updates subscriptions with event notifications (fill, partial_fill, canceled, etc.)",
+        "type": "quote",
+        "context": "Real-Time Updates",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Timeout error handling: The order may have been sent to the market for execution. You should not attempt to resend the order or mark the timed-out order as canceled until confirmed by Alpaca Support",
+        "type": "risk",
+        "context": "Error Handling - Timeout Response",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "SDK support provided for Python, JavaScript, C#, and Go with consistent API patterns",
+        "type": "definition",
+        "context": "SDK Support",
+        "exact_quote": false,
+        "verifiable": true
+      }
+    ],
+    "summary": "Alpaca's order execution API supports multiple order types (market, limit, trailing stop, bracket, shorter) through POST /v2/orders with required fields (symbol, qty/notional, side, type, time_in_force) and optional parameters for advanced order classes. Real-time order status updates are available via WebSocket trade_updates subscriptions, with critical timeout handling requiring support confirmation before retry attempts."
+  }
+]

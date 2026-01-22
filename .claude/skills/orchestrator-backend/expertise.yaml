@@ -1,0 +1,484 @@
+backend_expertise:
+  meta:
+    last_validated: "2026-01-21"
+    codebase_path: "apps/orchestrator_3_stream/backend"
+    skill_file: ".claude/skills/orchestrator-backend/SKILL.md"
+    max_lines: 600
+
+  architecture:
+    entry_point: "main.py"
+    framework: "FastAPI"
+    database_driver: "asyncpg"
+    package_manager: "uv"
+    dev_port: 9403
+
+  technology_stack:
+    - name: "FastAPI"
+      version: "0.109.x"
+      purpose: "Web framework"
+    - name: "asyncpg"
+      version: "0.29.x"
+      purpose: "PostgreSQL async driver"
+    - name: "Pydantic"
+      version: "2.x"
+      purpose: "Data validation"
+    - name: "Claude Agent SDK"
+      version: "latest"
+      purpose: "Agent orchestration"
+    - name: "Alpaca-py"
+      version: "0.21.x"
+      purpose: "Trading API"
+    - name: "Rich"
+      version: "13.x"
+      purpose: "Console logging"
+    - name: "python-dotenv"
+      version: "1.x"
+      purpose: "Environment loading"
+
+  api_endpoints:
+    health:
+      - method: "GET"
+        path: "/health"
+        purpose: "Health check with WS connection count"
+
+    orchestrator:
+      - method: "GET"
+        path: "/get_orchestrator"
+        purpose: "Orchestrator info + metadata + slash commands"
+      - method: "GET"
+        path: "/get_headers"
+        purpose: "Header bar data (CWD)"
+      - method: "POST"
+        path: "/load_chat"
+        purpose: "Load orchestrator chat history"
+      - method: "POST"
+        path: "/send_chat"
+        purpose: "Send message (async, streaming via WS)"
+      - method: "POST"
+        path: "/reset_context"
+        purpose: "Clear session_id for fresh conversation"
+      - method: "GET"
+        path: "/api/me"
+        purpose: "Current authenticated user (Better Auth)"
+
+    events:
+      - method: "GET"
+        path: "/get_events"
+        purpose: "Unified event stream (agent_logs, system_logs, orchestrator_chat)"
+
+    agents:
+      - method: "GET"
+        path: "/list_agents"
+        purpose: "Active agents for sidebar"
+
+    autocomplete:
+      - method: "POST"
+        path: "/autocomplete-generate"
+        purpose: "Generate autocomplete suggestions"
+      - method: "POST"
+        path: "/autocomplete-update"
+        purpose: "Track completion history"
+
+    adw:
+      - method: "POST"
+        path: "/adws"
+        purpose: "List AI Developer Workflows"
+      - method: "GET"
+        path: "/adws/{id}"
+        purpose: "Get single ADW"
+      - method: "POST"
+        path: "/adws/{id}/events"
+        purpose: "ADW swimlane events"
+      - method: "GET"
+        path: "/adws/{id}/summary"
+        purpose: "ADW step breakdown"
+
+    positions:
+      - method: "GET"
+        path: "/api/positions"
+        purpose: "All iron condor positions (cached)"
+      - method: "GET"
+        path: "/api/positions/{id}"
+        purpose: "Single position details"
+      - method: "POST"
+        path: "/api/positions/subscribe-prices"
+        purpose: "Real-time option prices via WS"
+      - method: "POST"
+        path: "/api/positions/subscribe-spot-prices"
+        purpose: "Real-time stock prices via WS"
+      - method: "GET"
+        path: "/api/positions/circuit-status"
+        purpose: "Circuit breaker health"
+      - method: "POST"
+        path: "/api/positions/{id}/close-strategy"
+        purpose: "Close all legs of position"
+      - method: "POST"
+        path: "/api/positions/{id}/close-leg"
+        purpose: "Close single leg"
+
+    greeks:
+      - method: "POST"
+        path: "/api/greeks/snapshot"
+        purpose: "Manually trigger Greeks data capture"
+      - method: "GET"
+        path: "/api/greeks/latest"
+        purpose: "Latest Greeks snapshots per underlying"
+      - method: "GET"
+        path: "/api/greeks/history/{symbol}"
+        purpose: "Greeks history for option symbol"
+
+    trades:
+      - method: "GET"
+        path: "/api/trades"
+        purpose: "Trade history (aggregated by trade_id)"
+      - method: "GET"
+        path: "/api/trades/detailed"
+        purpose: "Trade history with leg-level details"
+      - method: "GET"
+        path: "/api/trade-stats"
+        purpose: "Summary statistics (P&L, win rate, counts)"
+      - method: "POST"
+        path: "/api/sync-orders"
+        purpose: "Manual Alpaca order sync"
+
+    websocket:
+      - method: "WebSocket"
+        path: "/ws"
+        purpose: "Real-time event streaming"
+
+  database:
+    connection:
+      file: "modules/database.py"
+      pool_min: 5
+      pool_max: 20
+      pattern: "asyncpg connection pool"
+
+    tables:
+      - name: "orchestrator_agents"
+        purpose: "Main orchestrator instances"
+        key_columns: ["id", "session_id", "status", "metadata"]
+      - name: "agents"
+        purpose: "Managed agents"
+        key_columns: ["id", "orchestrator_agent_id", "name", "status"]
+      - name: "agent_logs"
+        purpose: "Agent hook/response events"
+        key_columns: ["id", "agent_id", "event_type", "content", "payload"]
+      - name: "system_logs"
+        purpose: "Infrastructure events"
+        key_columns: ["id", "level", "message", "adw_id"]
+      - name: "orchestrator_chat"
+        purpose: "Three-way conversation logs"
+        key_columns: ["id", "sender_type", "receiver_type", "content"]
+      - name: "ai_developer_workflows"
+        purpose: "ADW workflows"
+        key_columns: ["id", "name", "status", "orchestrator_agent_id"]
+      - name: "options_positions"
+        purpose: "Trading positions"
+        key_columns: ["id", "underlying", "expiry", "legs"]
+      - name: "trade_orders"
+        purpose: "Order history"
+        key_columns: ["id", "trade_id", "symbol", "side", "qty"]
+      - name: "greeks_snapshots"
+        purpose: "Options Greeks data"
+        key_columns: ["id", "symbol", "delta", "gamma", "theta", "vega"]
+
+    operations:
+      orchestrator:
+        - "get_or_create_orchestrator"
+        - "create_new_orchestrator"
+        - "get_orchestrator_by_session"
+        - "update_orchestrator_session"
+        - "update_orchestrator_costs"
+        - "clear_orchestrator_session"
+      agents:
+        - "create_agent"
+        - "get_agent"
+        - "get_agent_by_name"
+        - "list_agents"
+        - "update_agent_status"
+        - "update_agent_costs"
+        - "delete_agent"
+      logs:
+        - "insert_hook_event"
+        - "insert_message_block"
+        - "get_agent_logs"
+        - "get_tail_summaries"
+        - "insert_system_log"
+        - "list_system_logs"
+      chat:
+        - "insert_chat_message"
+        - "get_chat_history"
+        - "get_turn_count"
+      adw:
+        - "create_adw"
+        - "get_adw"
+        - "update_adw_status"
+        - "list_adws"
+        - "get_adw_logs"
+
+  websocket:
+    manager_file: "modules/websocket_manager.py"
+    events:
+      agent:
+        - type: "agent_created"
+          broadcast: "broadcast_agent_created"
+        - type: "agent_updated"
+          broadcast: "broadcast_agent_updated"
+        - type: "agent_deleted"
+          broadcast: "broadcast_agent_deleted"
+        - type: "agent_status_changed"
+          broadcast: "broadcast_agent_status_change"
+        - type: "agent_log"
+          broadcast: "broadcast_agent_log"
+
+      adw:
+        - type: "adw_created"
+          broadcast: "broadcast_adw_created"
+        - type: "adw_updated"
+          broadcast: "broadcast_adw_updated"
+        - type: "adw_event"
+          broadcast: "broadcast_adw_event"
+        - type: "adw_step_change"
+          broadcast: "broadcast_adw_step_change"
+
+      chat:
+        - type: "chat_stream"
+          broadcast: "broadcast_chat_stream"
+        - type: "chat_typing"
+          broadcast: "broadcast_chat_typing"
+        - type: "orchestrator_chat"
+          broadcast: "broadcast_orchestrator_chat"
+
+      claude_sdk:
+        - type: "thinking_block"
+          broadcast: "broadcast_thinking_block"
+        - type: "tool_use_block"
+          broadcast: "broadcast_tool_use_block"
+
+      alpaca:
+        - type: "option_price_update"
+          broadcast: "broadcast_option_price"
+        - type: "spot_price_update"
+          broadcast: "broadcast_spot_price"
+        - type: "position_update"
+          broadcast: "broadcast_position_update"
+
+      system:
+        - type: "connection_established"
+        - type: "error"
+        - type: "heartbeat"
+
+  services:
+    orchestrator:
+      file: "modules/orchestrator_service.py"
+      class: "OrchestratorService"
+      methods:
+        - "process_user_message"
+        - "load_chat_history"
+      tools:
+        - "create_agent"
+        - "list_agents"
+        - "command_agent"
+        - "check_agent_status"
+        - "delete_agent"
+        - "interrupt_agent"
+        - "read_system_logs"
+        - "report_cost"
+        - "start_adw"
+        - "check_adw"
+
+    agent_manager:
+      file: "modules/agent_manager.py"
+      class: "AgentManager"
+      methods:
+        - "create_agent"
+        - "execute_agent_task"
+        - "interrupt_agent"
+        - "get_agent_status"
+
+    alpaca:
+      file: "modules/alpaca_service.py"
+      class: "AlpacaService"
+      methods:
+        - "get_all_positions"
+        - "get_position_by_id"
+        - "close_strategy"
+        - "close_leg"
+        - "start_price_streaming"
+        - "stop_price_streaming"
+
+    alpaca_sync:
+      file: "modules/alpaca_sync_service.py"
+      class: "AlpacaSyncService"
+      methods:
+        - "sync_orders"
+        - "get_trades"
+        - "get_detailed_trades"
+        - "get_trade_stats"
+
+    autocomplete:
+      file: "modules/autocomplete_service.py"
+      class: "AutocompleteService"
+      methods:
+        - "generate_autocomplete"
+        - "update_completion_history"
+
+    spot_price:
+      file: "modules/spot_price_service.py"
+      class: "SpotPriceService"
+      methods:
+        - "start_streaming"
+        - "stop_streaming"
+        - "subscribe_symbols"
+
+    greeks:
+      file: "modules/greeks_snapshot_service.py"
+      class: "GreeksSnapshotService"
+      methods:
+        - "fetch_and_persist_snapshots"
+        - "get_latest_snapshots"
+        - "get_greeks_history"
+
+  models:
+    file: "modules/orch_database_models.py"
+    core:
+      - name: "OrchestratorAgent"
+        fields: ["id", "session_id", "system_prompt", "status", "metadata", "costs"]
+      - name: "Agent"
+        fields: ["id", "orchestrator_agent_id", "name", "model", "status", "metadata"]
+      - name: "AgentLog"
+        fields: ["id", "agent_id", "event_type", "content", "payload", "summary"]
+      - name: "SystemLog"
+        fields: ["id", "level", "message", "adw_id", "timestamp"]
+      - name: "ChatMessage"
+        fields: ["id", "sender_type", "receiver_type", "content", "timestamp"]
+      - name: "ADW"
+        fields: ["id", "name", "workflow_type", "status", "prompt", "description"]
+
+    alpaca:
+      file: "modules/alpaca_models.py"
+      models:
+        - "OCCSymbol"
+        - "OptionLeg"
+        - "OptionsPosition"
+        - "OptionPriceUpdate"
+        - "CloseOrderResult"
+
+    autocomplete:
+      file: "modules/autocomplete_models.py"
+      models:
+        - "AutocompleteItem"
+        - "AutocompleteResponse"
+
+  hooks:
+    command_agent:
+      file: "modules/command_agent_hooks.py"
+      hooks:
+        - "create_pre_tool_hook"
+        - "create_post_tool_hook"
+        - "create_user_prompt_hook"
+        - "create_stop_hook"
+        - "create_subagent_stop_hook"
+        - "create_pre_compact_hook"
+
+    orchestrator:
+      file: "modules/orchestrator_hooks.py"
+      hooks:
+        - "create_orchestrator_pre_tool_hook"
+        - "create_orchestrator_post_tool_hook"
+
+  utilities:
+    - name: "config"
+      file: "modules/config.py"
+      purpose: "Environment loading, runtime overrides"
+    - name: "logger"
+      file: "modules/logger.py"
+      purpose: "Hourly rotating logs with Rich console"
+    - name: "auth_middleware"
+      file: "modules/auth_middleware.py"
+      purpose: "Better Auth session validation"
+    - name: "slash_command_parser"
+      file: "modules/slash_command_parser.py"
+      purpose: "Parse .claude/commands/*.md frontmatter"
+    - name: "subagent_loader"
+      file: "modules/subagent_loader.py"
+      purpose: "Load .claude/agents/*.md templates"
+    - name: "circuit_breaker"
+      file: "modules/circuit_breaker.py"
+      purpose: "API resilience pattern"
+    - name: "rate_limiter"
+      file: "modules/rate_limiter.py"
+      purpose: "Request throttling"
+    - name: "file_tracker"
+      file: "modules/file_tracker.py"
+      purpose: "Modified file tracking per task"
+    - name: "git_utils"
+      file: "modules/git_utils.py"
+      purpose: "Git operations"
+    - name: "event_summarizer"
+      file: "modules/event_summarizer.py"
+      purpose: "AI-generated event summaries"
+
+  prompts:
+    directory: "prompts/"
+    files:
+      - "orchestrator_agent_system_prompt.md"
+      - "managed_agent_system_prompt_template.md"
+      - "experts/orch_autocomplete/expertise.yaml"
+
+  environment:
+    file: ".env"
+    variables:
+      - name: "DATABASE_URL"
+        required: true
+        description: "PostgreSQL connection string"
+      - name: "ALPACA_API_KEY"
+        required: false
+        description: "Alpaca trading API key"
+      - name: "ALPACA_SECRET_KEY"
+        required: false
+        description: "Alpaca secret key"
+      - name: "ALPACA_BASE_URL"
+        default: "https://paper-api.alpaca.markets"
+        description: "Paper or live trading URL"
+      - name: "ANTHROPIC_API_KEY"
+        required: true
+        description: "Claude API access"
+      - name: "CORS_ORIGINS"
+        default: "http://localhost:5175"
+        description: "Allowed CORS origins"
+      - name: "LOG_LEVEL"
+        default: "INFO"
+        description: "Logging level"
+
+  testing:
+    directory: "tests/"
+    pattern: "Real database, real agents, no mocks"
+    files:
+      - "test_database.py"
+      - "test_websocket_raw.py"
+      - "test_websocket_alpaca.py"
+      - "test_alpaca_endpoints.py"
+      - "test_alpaca_models.py"
+      - "test_alpaca_service.py"
+      - "test_autocomplete_*.py"
+      - "test_agent_events.py"
+      - "test_slash_command_discovery.py"
+
+  logging:
+    file: "modules/logger.py"
+    class: "OrchestratorLogger"
+    features:
+      - "Rich console formatting"
+      - "Hourly rotating file logs"
+      - "Dual output (console + file)"
+    log_directory: "logs/"
+    rotation: "hourly"
+    format: "YYYY-MM-DD_HH.log"
+
+  cli:
+    arguments:
+      - flag: "--session"
+        purpose: "Resume existing session by ID"
+      - flag: "--cwd"
+        purpose: "Override working directory"

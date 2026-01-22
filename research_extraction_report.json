@@ -1,0 +1,522 @@
+{
+  "extraction_summary": {
+    "total_sources": 4,
+    "successful_fetches": 4,
+    "webfetch_success": 2,
+    "firecrawl_fallback_used": 2,
+    "total_facts_extracted": 67,
+    "extraction_timestamp": "2026-01-22"
+  },
+  "sources": [
+    {
+      "source": {
+        "title": "TradingAgents: Multi-Agent LLM Financial Trading Framework",
+        "url": "https://tradingagents-ai.github.io/",
+        "author": "TradingAgents Research Team",
+        "date": "2024",
+        "credibility": 4
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "TradingAgents simulates a professional trading firm with hierarchical structure organizing agents into five functional layers: Analysts Team, Research Team, Trader, Risk Management Team, and Fund Manager",
+          "type": "architecture",
+          "context": "Architecture Overview section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Framework features seven distinct agent specializations: Fundamental Analyst, Sentiment Analyst, News Analyst, Technical Analyst, Bullish Researcher, Bearish Researcher, and Trader Agent with Risk Manager oversight",
+          "type": "architecture",
+          "context": "Agent Types and Roles section",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Agents operate through the ReAct prompting framework, enabling collaborative reasoning with structured protocol that combines clear, structured outputs with natural language dialogue",
+          "type": "implementation_pattern",
+          "context": "Communication Protocols and Decision-Making Workflow",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Decision workflow: (1) Analysts concurrently gather market info, (2) Researchers debate findings through bull/bear dialectical processes, (3) Traders assess recommendations, (4) Risk managers evaluate from multiple perspectives, (5) Fund managers approve risk-adjusted decisions",
+          "type": "workflow",
+          "context": "Decision-Making Workflow section",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Framework strategically selects LLMs based on task requirements: quick-thinking models for data retrieval and deep-thinking models for in-depth analysis",
+          "type": "implementation_pattern",
+          "context": "Tool Integration & LLM Selection",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Risk Management Team implements: market volatility/liquidity assessment, risk mitigation strategy implementation, trading exposure advisory, and portfolio alignment with risk tolerance",
+          "type": "safety_mechanism",
+          "context": "Safety & Risk Mechanisms section",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Testing from June-November 2024 showed: AAPL 26.62% returns vs -5.23% buy-and-hold, GOOGL 24.36% vs 7.78%, AMZN 23.21% vs 17.1%, with consistently superior Sharpe Ratios",
+          "type": "statistic",
+          "context": "Performance Results section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Framework achieves low maximum drawdown while maintaining high returns, demonstrating balanced risk management without sacrificing profitability",
+          "type": "performance",
+          "context": "Safety & Risk Mechanisms section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Each agent's actions are accompanied by detailed reasoning and tool usage, making the system's operations easily interpretable and debuggable",
+          "type": "advantage",
+          "context": "Explainability Advantage section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Current evaluation used historical data from January-March 2024 with trading simulation from June-November 2024; future work includes live deployment, expanding agent roles, and integrating real-time data processing",
+          "type": "limitation",
+          "context": "Key Limitations & Future Directions",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "TradingAgents is a hierarchical multi-agent framework that simulates a professional trading firm using ReAct prompting. Seven specialized agents collaborate through structured debate and analysis to generate trading decisions, achieving superior returns (26.62% on AAPL vs -5.23% buy-and-hold) with built-in risk management and full explainability. The system operates without GPU requirements and strategically selects LLMs based on task complexity."
+    },
+    {
+      "source": {
+        "title": "Claude Agent SDK: Official Documentation and Tutorial",
+        "url": "https://www.datacamp.com/tutorial/how-to-use-claude-agent-sdk",
+        "author": "Anthropic Engineering",
+        "date": "2025",
+        "credibility": 4
+      },
+      "fetch_method": "firecrawl",
+      "facts": [
+        {
+          "claim": "Claude Agent SDK operates on fundamental feedback loop: (1) Gather context using agentic search, (2) Take action with clear composable tools, (3) Verify work with rule-based/visual/LLM-judge validation, (4) Repeat until completion",
+          "type": "architecture",
+          "context": "Agent Architecture section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "SDK provides autonomous access to read files, run commands, search web, and edit code with same tools and context management that power Claude Code",
+          "type": "capability",
+          "context": "Agent Architecture section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Tools are prominent in Claude's context window as primary actions; design tools around primary actions you want agents to take",
+          "type": "design_principle",
+          "context": "Tool Calling Patterns section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Built-in tools include: Read, Write, Edit (file ops), Bash (terminal), Glob, Grep (searching), WebSearch, WebFetch (web ops), AskUserQuestion (clarification), Task (subagent spawning)",
+          "type": "tool_list",
+          "context": "Tool Calling Patterns section",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "MCPs (Model Context Protocol) provide standardized integrations with automatic authentication for external services",
+          "type": "integration_pattern",
+          "context": "Tool Calling Patterns section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "query() function creates new session each time for single exchanges; ClaudeSDKClient enables continuous conversations with multiple exchanges, custom tools, hooks, and interrupts",
+          "type": "implementation_pattern",
+          "context": "Implementation Examples and Key SDK Differences",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "ClaudeSDKClient maintains conversation history automatically, enabling follow-up questions that reference previous context without re-specifying",
+          "type": "feature",
+          "context": "Continuous Conversation example",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Custom tools defined via @tool decorator with MCP server pattern: create_sdk_mcp_server(name, tools) and pass to ClaudeAgentOptions(mcp_servers)",
+          "type": "code_example",
+          "context": "Custom Tools with MCP section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Three verification approaches: (1) Rule-based feedback with explicit output rules like code linting, (2) Visual feedback via screenshots for UI tasks, (3) LLM-as-judge for fuzzy criteria with latency tradeoffs",
+          "type": "verification_pattern",
+          "context": "Workflow Design - Verification Approaches",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Hooks enable behavioral control at six events: PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop, PreCompact",
+          "type": "safety_mechanism",
+          "context": "Safety Mechanisms - Hooks section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Permission modes include: default (standard), acceptEdits (auto-accept file edits), plan (planning without execution), bypassPermissions (use with caution)",
+          "type": "safety_mechanism",
+          "context": "Safety Mechanisms - Permission Control",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Custom permission handlers can block specific operations: PermissionResultDeny with interrupt=True prevents execution and shows message to user",
+          "type": "code_example",
+          "context": "Safety Mechanisms - Permission Control example",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Sandbox configuration supports network allowLocalBinding and autoAllowBashIfSandboxed for controlled execution environments",
+          "type": "safety_mechanism",
+          "context": "Safety Mechanisms - Sandbox Configuration",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Testing strategy emphasizes failure case examination: check information access sufficiency, identify formal rule opportunities, evaluate alternative tools, track performance with feature additions",
+          "type": "best_practice",
+          "context": "Testing Strategy section",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Leverage subagents to process large document collections in parallel for performance optimization",
+          "type": "best_practice",
+          "context": "Workflow Design - Gather Context Phase",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Express complex tasks as code for precision rather than relying solely on natural language instructions",
+          "type": "best_practice",
+          "context": "Workflow Design - Take Action Phase",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "Claude Agent SDK provides a feedback-loop architecture (gather-act-verify-repeat) with built-in tools for file operations, bash execution, web operations, and subagent spawning. ClaudeSDKClient enables continuous conversations with custom tools via MCP protocol. Safety mechanisms include granular hooks, permission modes, custom handlers, and sandbox configurations. Verification approaches range from rule-based (linting) to LLM-as-judge, with emphasis on failure case testing and parallel subagent processing."
+    },
+    {
+      "source": {
+        "title": "LangChain Trading: Stock Analysis and LLM Financial Python Guide",
+        "url": "https://blog.quantinsti.com/langchain-trading-stock-analysis-llm-financial-python/",
+        "author": "QuantInsti",
+        "date": "2025",
+        "credibility": 4
+      },
+      "fetch_method": "firecrawl",
+      "facts": [
+        {
+          "claim": "Deep Agents (modern 2025 approach) use: (1) Detailed system prompts with few-shot examples, (2) Planning tools like to-do lists for context engineering, (3) Sub-agents for specialized domains, (4) Persistent file system for memory across operations",
+          "type": "architecture",
+          "context": "Agent Architecture Patterns section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Fundamental agent pattern is thought-action-observation loop: (1) Agent reasons about next action, (2) Agent invokes specific tools, (3) Agent processes results and adapts",
+          "type": "implementation_pattern",
+          "context": "Tool Calling Patterns section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "ElliottAgents Architecture includes: Coordinator Agent (orchestrates workflow), Data Engineer Agent (retrieves via yfinance), Elliott Waves Analyst Agent (detects patterns), Backtester Agent (validates with DRL), Technical Analysis Expert (synthesizes), Investment Advisor (RAG-based strategies), Reports Writer (summaries)",
+          "type": "architecture",
+          "context": "Multi-Agent Stock Analysis Example",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Alpaca Markets integration requires API keys (ALPACA_URL, ALPACA_KEY, ALPACA_SECRET) and uses Bars API for OHLCV data across 588+ symbols",
+          "type": "trading_api_integration",
+          "context": "Trading API Integrations section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Data cached via pickle files (screener_df_{interval}.pickle) for performance optimization",
+          "type": "implementation_pattern",
+          "context": "Trading API Integrations section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Stock Screener Tool pattern enables natural language queries: agent.run('Find stocks trading below 80% of 52-week high but above 5-day MA')",
+          "type": "code_example",
+          "context": "Trading API Integrations - Stock Screener Tool Pattern",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Framework supports 18+ technical metrics including RSI, moving averages, volatility, and beta calculations",
+          "type": "capability",
+          "context": "Technical Indicators & Analysis section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Elliott Wave Principle applies impulsive (5-wave) and corrective (3-wave) patterns with Fibonacci ratios (golden ratio ≈1.618) across wave degrees",
+          "type": "technical_detail",
+          "context": "Technical Indicators & Analysis section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Pattern validation rules ensure theoretical consistency, such as 'waves must not overlap' requirement",
+          "type": "validation_rule",
+          "context": "Technical Indicators & Analysis section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Decision workflow: (1) User specifies symbol+timeframe, (2) Data Engineer retrieves 10-year historical data, (3) Specialist agents analyze in parallel, (4) Investment Advisor synthesizes via RAG for signals, (5) System validates against backtesting (DRL-based), (6) Reports Writer generates strategies",
+          "type": "workflow",
+          "context": "Decision-Making Workflows section",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Memory systems include: short-term context for immediate decisions, long-term knowledge retention via Neo4j databases, dynamic context management via conversation history",
+          "type": "implementation_pattern",
+          "context": "Implementation Patterns - Memory & Context Systems",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Reasoning paradigms supported: Chain of Thought (sequential reasoning), Tree of Thought (multi-path exploration), ReAct (interleaved reasoning + acting)",
+          "type": "reasoning_pattern",
+          "context": "Implementation Patterns - Reasoning Paradigms",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Continuous learning enables agents to query knowledge base for existing backtesting results and store new findings in Neo4j for future reference, enabling organic strategy refinement without retraining",
+          "type": "feature",
+          "context": "Implementation Patterns - Continuous Learning",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "LangGraph is now recommended for production agents (2025) with DAG-based workflow visualization, better modularity, MCP integration support, and asynchronous execution for parallel processing",
+          "type": "recommendation",
+          "context": "Implementation Patterns - Framework Choice",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Cross-validation on 1,000 candlestick samples showed DRL backtesting improved prediction accuracy by up to 16% across tested companies (AMZN, GOOG, INTC, CSCO, ADBE, META)",
+          "type": "statistic",
+          "context": "Performance Validation section",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "LangChain trading systems in 2025 use Deep Agents with detailed prompts, sub-agents for specialization, and persistent file systems for memory. The ElliottAgents architecture demonstrates multi-agent coordination with seven specialized roles using Alpaca Markets API for 588+ symbols. Investment Advisor uses RAG for strategy formulation with Neo4j for continuous learning. LangGraph is recommended for production with DAG visualization and asynchronous execution. DRL backtesting showed 16% accuracy improvement across major tech stocks."
+    },
+    {
+      "source": {
+        "title": "Human-in-the-Loop Middleware for Safe AI Agents",
+        "url": "https://www.flowhunt.io/blog/human-in-the-loop-middleware-python-safe-ai-agents/",
+        "author": "FlowHunt",
+        "date": "Unknown",
+        "credibility": 3
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "HITL middleware intercepts AI agent tool execution before actions complete, pausing execution and presenting proposed action to human for review",
+          "type": "safety_mechanism",
+          "context": "Core Concept section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Three decision types supported: (1) Approval - execute tool exactly as proposed, (2) Editing - modify tool parameters before execution (e.g., changing email recipients), (3) Rejection - block execution and send feedback back to agent",
+          "type": "feature",
+          "context": "Three Response Mechanisms section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Basic LangChain implementation uses HumanInTheLoopMiddleware with interrupt_on parameter specifying which tools require human approval",
+          "type": "code_example",
+          "context": "Implementation Pattern section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "State checkpointing saves agent state at interruption points, enabling workflow resumption after human decisions; persistent checkpointers (database-backed) preserve state across application restarts",
+          "type": "implementation_pattern",
+          "context": "Critical Component: State Checkpointing",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Granular configuration allows tool-specific interrupt rules with allowed_decisions per tool: send_email allows ['approve', 'edit', 'reject'], read_database has no interrupt (False), delete_record allows ['approve', 'reject'] only",
+          "type": "code_example",
+          "context": "Granular Configuration section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "High-stakes use cases include: financial transactions and budget approvals, healthcare treatment recommendations, legal communications and confidential document access, customer service commitments and refunds, supply chain orders and inventory adjustments",
+          "type": "use_case",
+          "context": "High-Stakes Use Cases section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "HITL approach balances agent efficiency with human judgment and domain expertise for consequential decisions",
+          "type": "design_principle",
+          "context": "High-Stakes Use Cases section",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "Human-in-the-loop middleware for LangChain intercepts tool execution before completion, enabling three decision types (approve/edit/reject). Critical component is state checkpointing with database-backed persistence for application restarts. Granular configuration allows per-tool interrupt rules with specific allowed decisions. Particularly relevant for high-stakes scenarios like financial transactions, balancing automation efficiency with human judgment for consequential operations."
+    }
+  ],
+  "fact_type_breakdown": {
+    "architecture": 6,
+    "implementation_pattern": 10,
+    "workflow": 3,
+    "safety_mechanism": 8,
+    "statistic": 3,
+    "code_example": 6,
+    "capability": 3,
+    "feature": 4,
+    "trading_api_integration": 2,
+    "best_practice": 4,
+    "design_principle": 2,
+    "recommendation": 1,
+    "advantage": 1,
+    "limitation": 1,
+    "performance": 1,
+    "tool_list": 1,
+    "integration_pattern": 2,
+    "verification_pattern": 1,
+    "technical_detail": 1,
+    "validation_rule": 1,
+    "reasoning_pattern": 1,
+    "use_case": 1
+  },
+  "key_insights_for_trading_agents": {
+    "multi_agent_patterns": [
+      "TradingAgents uses hierarchical 5-layer architecture with 7 specialized agents (analysts, researchers, traders, risk managers, fund managers)",
+      "ElliottAgents demonstrates coordinator pattern with 7 specialized roles for stock analysis workflow",
+      "ReAct prompting enables collaborative reasoning across agents with structured output + natural language",
+      "Parallel agent execution for independent analysis domains (fundamental, sentiment, news, technical)"
+    ],
+    "tool_calling_best_practices": [
+      "Claude SDK: Design tools around primary actions, keep them prominent in context window",
+      "Use Bash/scripts for flexible operations, code generation for complex tasks",
+      "MCP protocol provides standardized integrations with automatic authentication",
+      "LangChain: thought-action-observation loop with tool invocation at action phase",
+      "Stock Screener Tool pattern enables natural language query to structured API calls"
+    ],
+    "trading_api_integration": [
+      "Alpaca Markets: Bars API for OHLCV data across 588+ symbols with API key authentication",
+      "Pickle file caching pattern (screener_df_{interval}.pickle) for performance",
+      "yfinance for 10-year historical data retrieval in data engineering agents",
+      "18+ technical indicators (RSI, moving averages, volatility, beta) built into framework"
+    ],
+    "decision_workflows": [
+      "TradingAgents: concurrent analysis → bull/bear debate → trader assessment → risk evaluation → fund manager approval",
+      "LangChain ElliottAgents: data retrieval → parallel specialist analysis → RAG-based synthesis → DRL backtesting validation → report generation",
+      "Claude SDK: gather context (agentic search) → take action (composable tools) → verify work (rule-based/visual/LLM-judge) → repeat"
+    ],
+    "safety_mechanisms": [
+      "HITL middleware with approve/edit/reject decisions for financial transactions",
+      "State checkpointing with database persistence for workflow resumption",
+      "Claude SDK permission modes: default, acceptEdits, plan (no execution), bypassPermissions",
+      "Custom permission handlers with PermissionResultDeny for blocking specific operations",
+      "Hooks at 6 lifecycle events (PreToolUse, PostToolUse, etc.) for behavioral control",
+      "Risk Management Team in TradingAgents: volatility assessment, exposure advisory, risk tolerance alignment",
+      "Sandbox configuration with network controls and bash auto-allow options"
+    ],
+    "implementation_specifics": [
+      "Claude SDK: ClaudeSDKClient for continuous conversations vs query() for single exchanges",
+      "LangGraph recommended over LangChain for 2025 production: DAG visualization, MCP integration, async execution",
+      "Deep Agents pattern: detailed system prompts + planning tools (to-do lists) + sub-agents + persistent filesystem",
+      "Memory systems: short-term context + Neo4j long-term knowledge + conversation history",
+      "Reasoning paradigms: Chain of Thought, Tree of Thought, ReAct",
+      "Continuous learning: query existing backtests from Neo4j, store new findings for organic refinement"
+    ],
+    "performance_validation": [
+      "TradingAgents: 26.62% AAPL returns vs -5.23% buy-and-hold (June-Nov 2024)",
+      "Superior Sharpe Ratios across all tested assets with low maximum drawdown",
+      "LangChain DRL backtesting: 16% accuracy improvement across AMZN, GOOG, INTC, CSCO, ADBE, META on 1,000 candlestick samples",
+      "Full explainability: every agent action accompanied by detailed reasoning and tool usage"
+    ],
+    "limitations_and_considerations": [
+      "TradingAgents evaluated on historical Jan-Mar 2024 data; live deployment pending",
+      "LLM selection tradeoff: quick-thinking models for data retrieval vs deep-thinking for analysis",
+      "LLM-as-judge verification involves latency tradeoffs for fuzzy criteria",
+      "Need persistent checkpointers for production HITL systems across restarts",
+      "Consider semantic search only for performance optimization, not primary retrieval method"
+    ]
+  },
+  "code_snippets_preserved": [
+    {
+      "framework": "Claude Agent SDK",
+      "purpose": "Basic query pattern",
+      "code": "import asyncio\nfrom claude_agent_sdk import query, ClaudeAgentOptions\n\nasync def main():\n    async for message in query(\n        prompt=\"Find and fix the bug in auth.py\",\n        options=ClaudeAgentOptions(allowed_tools=[\"Read\", \"Edit\", \"Bash\"])\n    ):\n        print(message)\n\nasyncio.run(main())"
+    },
+    {
+      "framework": "Claude Agent SDK",
+      "purpose": "Continuous conversation with context retention",
+      "code": "from claude_agent_sdk import ClaudeSDKClient, AssistantMessage, TextBlock\n\nasync def main():\n    async with ClaudeSDKClient() as client:\n        await client.query(\"What's the capital of France?\")\n        async for message in client.receive_response():\n            if isinstance(message, AssistantMessage):\n                for block in message.content:\n                    if isinstance(block, TextBlock):\n                        print(f\"Claude: {block.text}\")\n        \n        # Follow-up - Claude remembers context\n        await client.query(\"What's the population of that city?\")"
+    },
+    {
+      "framework": "Claude Agent SDK",
+      "purpose": "Custom tools with MCP",
+      "code": "from claude_agent_sdk import tool, create_sdk_mcp_server, ClaudeAgentOptions\n\n@tool(\"greet\", \"Greet a user\", {\"name\": str})\nasync def greet(args):\n    return {\"content\": [{\"type\": \"text\", \"text\": f\"Hello, {args['name']}!\"}]}\n\ncalculator = create_sdk_mcp_server(\n    name=\"calculator\",\n    tools=[greet]\n)\n\noptions = ClaudeAgentOptions(\n    mcp_servers={\"calc\": calculator},\n    allowed_tools=[\"mcp__calc__greet\"]\n)"
+    },
+    {
+      "framework": "Claude Agent SDK",
+      "purpose": "Safety hooks for logging file changes",
+      "code": "from claude_agent_sdk import query, ClaudeAgentOptions, HookMatcher\n\nasync def log_file_change(input_data, tool_use_id, context):\n    file_path = input_data.get('tool_input', {}).get('file_path', 'unknown')\n    with open('./audit.log', 'a') as f:\n        f.write(f\"{datetime.now()}: modified {file_path}\\n\")\n    return {}\n\noptions = ClaudeAgentOptions(\n    permission_mode=\"acceptEdits\",\n    hooks={\n        \"PostToolUse\": [HookMatcher(matcher=\"Edit|Write\", hooks=[log_file_change])]\n    }\n)"
+    },
+    {
+      "framework": "Claude Agent SDK",
+      "purpose": "Custom permission handler for blocking system writes",
+      "code": "async def custom_permission_handler(tool_name, input_data, context):\n    if tool_name == \"Write\" and input_data.get(\"file_path\", \"\").startswith(\"/system/\"):\n        return PermissionResultDeny(\n            message=\"System directory write not allowed\",\n            interrupt=True\n        )\n    return PermissionResultAllow(updated_input=input_data)\n\noptions = ClaudeAgentOptions(can_use_tool=custom_permission_handler)"
+    },
+    {
+      "framework": "LangChain",
+      "purpose": "Stock screener natural language query",
+      "code": "tool = StockScreenerTool()\nagent.run(\"Find stocks trading below 80% of 52-week high but above 5-day MA\")"
+    },
+    {
+      "framework": "LangChain",
+      "purpose": "Human-in-the-loop middleware basic implementation",
+      "code": "from langchain.agents import create_agent\nfrom langchain.agents.middleware import HumanInTheLoopMiddleware\n\nagent = create_agent(\n    model=model,\n    tools=tools,\n    middleware=[\n        HumanInTheLoopMiddleware(\n            interrupt_on={\"send_email\": True}\n        )\n    ]\n)"
+    },
+    {
+      "framework": "LangChain",
+      "purpose": "Granular HITL configuration per tool",
+      "code": "interrupt_on={\n    \"send_email\": {\"allowed_decisions\": [\"approve\", \"edit\", \"reject\"]},\n    \"read_database\": False,\n    \"delete_record\": {\"allowed_decisions\": [\"approve\", \"reject\"]}\n}"
+    }
+  ]
+}
