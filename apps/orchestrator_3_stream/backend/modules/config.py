@@ -186,6 +186,10 @@ IDE_ENABLED = os.getenv("IDE_ENABLED", "true").lower() in ["true", "1", "yes"]
 # ALPACA TRADING API CONFIGURATION
 # ============================================================================
 
+# Alpaca Agent Configuration
+ALPACA_MCP_CONFIG_PATH = os.getenv("ALPACA_MCP_CONFIG_PATH", ".mcp.json.alpaca")
+ALPACA_AGENT_MODEL = os.getenv("ALPACA_AGENT_MODEL", "claude-sonnet-4-5-20250929")
+
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY", "")
 ALPACA_PAPER = os.getenv("ALPACA_PAPER", "true").lower() in ["true", "1", "yes"]

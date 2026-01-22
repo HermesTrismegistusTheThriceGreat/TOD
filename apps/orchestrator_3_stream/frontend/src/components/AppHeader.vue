@@ -40,6 +40,7 @@
         </div> -->
 
         <div class="header-actions">
+          <!-- Logs/ADWS view mode switcher - commented out per user request
           <div
             class="view-mode-switcher"
             title="Toggle view mode (Cmd+J / Ctrl+J)"
@@ -63,6 +64,8 @@
             </button>
             <span class="switcher-hint">(Cmd+J)</span>
           </div>
+          -->
+          <!-- Prompt button - commented out per user request
           <button
             class="btn-prompt"
             :class="{ active: store.commandInputVisible }"
@@ -71,31 +74,98 @@
           >
             PROMPT <span class="btn-hint">(Cmd+K)</span>
           </button>
+          -->
+          <!-- Desktop navigation buttons (hidden on mobile) -->
           <button
-            class="btn-prompt"
-            :class="{ active: store.viewMode === 'open-positions' }"
-            @click="store.setViewMode('open-positions')"
+            class="btn-prompt desktop-nav btn-alpaca"
+            :class="{ active: isAlpacaAgentRoute }"
+            @click="navigateToAlpacaAgent"
+            title="Alpaca Trading Agent"
+          >
+            <svg class="alpaca-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+            ALPACA
+          </button>
+          <button
+            class="btn-prompt desktop-nav"
+            :class="{ active: store.viewMode === 'open-positions' && !isAlpacaAgentRoute }"
+            @click="navigateToViewMode('open-positions')"
             title="View open positions"
           >
             POSITIONS
           </button>
           <button
-            class="btn-prompt"
-            :class="{ active: store.viewMode === 'calendar' }"
-            @click="store.setViewMode('calendar')"
+            class="btn-prompt desktop-nav"
+            :class="{ active: store.viewMode === 'calendar' && !isAlpacaAgentRoute }"
+            @click="navigateToViewMode('calendar')"
             title="View calendar"
           >
             CALENDAR
           </button>
           <button
-            class="btn-prompt"
-            :class="{ active: store.viewMode === 'trade-stats' }"
-            @click="store.setViewMode('trade-stats')"
+            class="btn-prompt desktop-nav"
+            :class="{ active: store.viewMode === 'trade-stats' && !isAlpacaAgentRoute }"
+            @click="navigateToViewMode('trade-stats')"
             title="View trade statistics"
           >
             TRADE STATS
           </button>
-          <!-- Logout button - only show when authenticated -->
+          <!-- Mobile hamburger menu -->
+          <div class="mobile-menu">
+            <button
+              class="hamburger-btn"
+              @click="toggleMobileMenu"
+              :class="{ active: mobileMenuOpen }"
+              title="Menu"
+            >
+              <span class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+            </button>
+            <div v-if="mobileMenuOpen" class="mobile-dropdown">
+              <button
+                class="mobile-menu-item"
+                :class="{ active: isAlpacaAgentRoute }"
+                @click="handleMobileAlpacaNav"
+              >
+                ALPACA AGENT
+              </button>
+              <button
+                class="mobile-menu-item"
+                :class="{ active: store.viewMode === 'open-positions' && !isAlpacaAgentRoute }"
+                @click="handleMobileNav('open-positions')"
+              >
+                POSITIONS
+              </button>
+              <button
+                class="mobile-menu-item"
+                :class="{ active: store.viewMode === 'calendar' && !isAlpacaAgentRoute }"
+                @click="handleMobileNav('calendar')"
+              >
+                CALENDAR
+              </button>
+              <button
+                class="mobile-menu-item"
+                :class="{ active: store.viewMode === 'trade-stats' && !isAlpacaAgentRoute }"
+                @click="handleMobileNav('trade-stats')"
+              >
+                TRADE STATS
+              </button>
+              <button
+                v-if="authStore.isAuthenticated"
+                class="mobile-menu-item mobile-logout"
+                @click="handleMobileLogout"
+              >
+                LOGOUT
+              </button>
+            </div>
+          </div>
+          <!-- Logout button - only show when authenticated (desktop only) -->
           <button
             v-if="authStore.isAuthenticated"
             class="btn-logout"
@@ -111,11 +181,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, onUnmounted, watch, ref, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useHeaderBar } from "../composables/useHeaderBar";
 import { useOrchestratorStore } from "../stores/orchestratorStore";
 import { useAuthStore } from "../stores/authStore";
+import type { ViewMode } from "../types.d";
 
 // Use header bar composable for state management
 const headerBar = useHeaderBar();
@@ -126,6 +197,50 @@ const store = useOrchestratorStore();
 // Use auth store for authentication state
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+
+// Mobile menu state
+const mobileMenuOpen = ref(false);
+
+// Alpaca Agent navigation
+const isAlpacaAgentRoute = computed(() => route.path === '/alpaca-agent');
+
+function navigateToAlpacaAgent() {
+  if (route.path !== '/alpaca-agent') {
+    router.push('/alpaca-agent');
+  }
+}
+
+// Navigate to a view mode, ensuring we're on the home route first
+function navigateToViewMode(mode: ViewMode) {
+  if (route.path !== '/') {
+    // Navigate to home first, then set view mode
+    router.push('/').then(() => {
+      store.setViewMode(mode);
+    });
+  } else {
+    store.setViewMode(mode);
+  }
+}
+
+function toggleMobileMenu() {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+}
+
+function handleMobileNav(mode: ViewMode) {
+  mobileMenuOpen.value = false;
+  navigateToViewMode(mode);
+}
+
+function handleMobileAlpacaNav() {
+  mobileMenuOpen.value = false;
+  navigateToAlpacaAgent();
+}
+
+function handleMobileLogout() {
+  mobileMenuOpen.value = false;
+  handleLogout();
+}
 
 // Debug: Log auth state changes
 watch(
@@ -422,6 +537,147 @@ onUnmounted(() => {
   box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
 }
 
+/* Alpaca Button */
+.btn-alpaca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.btn-alpaca .alpaca-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.btn-alpaca.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.btn-alpaca:hover:not(.active) {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.btn-alpaca:hover:not(.active) .alpaca-icon {
+  stroke: #3b82f6;
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  display: none;
+  position: relative;
+}
+
+.hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hamburger-btn:hover {
+  background: var(--bg-quaternary);
+  border-color: var(--accent-primary);
+}
+
+.hamburger-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 20px;
+  height: 20px;
+}
+
+.hamburger-icon span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--text-secondary);
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.hamburger-btn:hover .hamburger-icon span,
+.hamburger-btn.active .hamburger-icon span {
+  background: var(--text-primary);
+}
+
+.hamburger-btn.active .hamburger-icon span {
+  background: white;
+}
+
+.mobile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.mobile-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-align: left;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-item:last-child {
+  border-bottom: none;
+}
+
+.mobile-menu-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.mobile-menu-item.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Mobile Logout Button */
+.mobile-logout {
+  color: var(--status-error, #ef4444);
+  border-top: 1px solid var(--border-color);
+  margin-top: 0.25rem;
+}
+
+.mobile-logout:hover {
+  background: var(--status-error, #ef4444);
+  color: white;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .header-stats {
@@ -436,6 +692,39 @@ onUnmounted(() => {
 
   .header-subtitle {
     font-size: 0.75rem;
+  }
+}
+
+/* Mobile responsive - show hamburger, hide desktop nav */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: block;
+  }
+
+  .header-content {
+    padding: 0;
+  }
+
+  .header-actions {
+    padding-left: var(--spacing-sm);
+    border-left: none;
+    gap: var(--spacing-xs);
+  }
+
+  .header-title h1 {
+    font-size: 0.8rem;
+  }
+
+  .connection-status {
+    display: none;
+  }
+
+  .btn-logout {
+    display: none;
   }
 }
 

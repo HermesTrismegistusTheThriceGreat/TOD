@@ -11,6 +11,7 @@ import sys
 import uuid
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -56,6 +57,8 @@ from modules.alpaca_models import (
     TradeStatsResponse,
     DetailedTradeListResponse,
 )
+from modules.alpaca_agent_service import AlpacaAgentService
+from modules.alpaca_agent_models import AlpacaAgentChatRequest, AlpacaAgentChatResponse
 
 logger = get_logger()
 ws_manager = get_websocket_manager()
@@ -230,6 +233,12 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Greeks Scheduler...")
     greeks_scheduler = init_greeks_scheduler(app)
     logger.success("Greeks Scheduler initialized")
+
+    # Initialize Alpaca Agent service
+    logger.info("Initializing Alpaca Agent service...")
+    alpaca_agent_service = AlpacaAgentService(logger=logger, working_dir=config.get_working_dir())
+    app.state.alpaca_agent_service = alpaca_agent_service
+    logger.success("Alpaca Agent service initialized")
 
     logger.success("Backend initialization complete")
 
@@ -1547,6 +1556,107 @@ async def close_leg(request: Request, position_id: str, close_request: CloseLegR
         return CloseLegResponse(
             status="error",
             message=str(e)
+        )
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# ALPACA AGENT CHAT ENDPOINTS
+# ════════════════════════════════════════════════════════════════════════════════
+
+
+@app.post("/api/alpaca-agent/chat", tags=["Alpaca Agent"])
+async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatRequest):
+    """
+    Chat with the Alpaca trading agent using natural language.
+
+    Invokes the alpaca-mcp agent via Claude Code subprocess and streams
+    the response back using Server-Sent Events (SSE).
+
+    Args:
+        chat_request: Request with user message
+
+    Returns:
+        StreamingResponse with SSE chunks
+    """
+    try:
+        logger.http_request("POST", "/api/alpaca-agent/chat")
+        logger.info(f"[ALPACA AGENT] Received chat request: {chat_request.message[:100]}...")
+
+        # Check if service is available
+        if not hasattr(request.app.state, 'alpaca_agent_service') or request.app.state.alpaca_agent_service is None:
+            logger.error("[ALPACA AGENT] Service not initialized")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "error",
+                    "error": "Alpaca Agent service not initialized. Backend may still be starting up."
+                }
+            )
+
+        alpaca_agent_service: AlpacaAgentService = request.app.state.alpaca_agent_service
+        logger.debug(f"[ALPACA AGENT] Service retrieved, working_dir={alpaca_agent_service.working_dir}")
+
+        # Check if Claude CLI is available
+        if not alpaca_agent_service.claude_path:
+            logger.error("[ALPACA AGENT] Claude CLI not found")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "error",
+                    "error": "Claude CLI not available. Please install with: npm install -g @anthropic-ai/claude-cli"
+                }
+            )
+
+        # Verify MCP config exists
+        if not alpaca_agent_service.verify_mcp_config():
+            logger.error("[ALPACA AGENT] MCP config not found")
+            # Return JSON error response (not Pydantic model)
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "error": f"Alpaca MCP configuration not found at {alpaca_agent_service.mcp_config_path}. Ensure .mcp.json.alpaca exists in project root."
+                }
+            )
+
+        logger.info("[ALPACA AGENT] MCP config verified, starting streaming response")
+
+        # Stream response using SSE
+        async def generate_sse():
+            try:
+                logger.debug("[ALPACA AGENT] Starting SSE generator")
+                chunk_count = 0
+                async for chunk in alpaca_agent_service.invoke_agent_streaming(chat_request.message):
+                    chunk_count += 1
+                    yield chunk
+                logger.info(f"[ALPACA AGENT] SSE streaming complete, chunks={chunk_count}")
+            except Exception as e:
+                logger.error(f"[ALPACA AGENT] Streaming error: {e}", exc_info=True)
+                # Use json.dumps to properly escape the error message
+                error_chunk = json.dumps({"type": "error", "content": str(e)})
+                yield f"data: {error_chunk}\n\n"
+                yield "data: [DONE]\n\n"
+
+        logger.http_request("POST", "/api/alpaca-agent/chat", 200)
+        return StreamingResponse(
+            generate_sse(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"[ALPACA AGENT] Chat endpoint failed: {e}", exc_info=True)
+        # Return JSON error response (not Pydantic model)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "error": str(e)
+            }
         )
 
 

@@ -1,325 +1,234 @@
 [
   {
     "source": {
-      "title": "Options-Related Support and Resistance",
-      "url": "https://www.schaeffersresearch.com/education/expectational-analysis/technical-analysis/options-related-support-and-resistance",
-      "author": "Schaeffer's Research",
-      "date": null,
-      "credibility": 4
+      "title": "websockets - Official Documentation",
+      "url": "https://websockets.readthedocs.io/",
+      "author": "websockets project contributors",
+      "date": "2024 (version 16.0)",
+      "credibility": 5
     },
     "fetch_method": "webfetch",
-    "fetch_status": "success",
     "facts": [
       {
-        "claim": "Open interest (rather than options volume) is the best tool for analyzing option activity. It is a much more stable number",
-        "type": "quote",
-        "context": "Comparison of open interest vs volume for technical analysis",
+        "claim": "The websockets library focuses on correctness, simplicity, robustness, and performance",
+        "type": "definition",
+        "context": "Main documentation overview",
         "exact_quote": true,
         "verifiable": true
       },
       {
-        "claim": "Heavy put open interest at or below current price levels creates structural support through delta hedging by put sellers who buy underlying stocks",
-        "type": "definition",
-        "context": "How put OI creates support levels",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Strikes at which there is heavy out-of-the-money call open interest potentially represent resistance",
+        "claim": "The library automatically handles the opening and closing handshakes, pings and pongs, or any other behavior described in the WebSocket specification",
         "type": "quote",
-        "context": "Call OI as resistance indicator",
+        "context": "Core features section",
         "exact_quote": true,
         "verifiable": true
       },
       {
-        "claim": "As stocks approach out-of-the-money strikes, delta increases, forcing sellers to hedge by purchasing underlying shares (for puts) or shorting stock (for calls)",
-        "type": "definition",
-        "context": "Delta hedging mechanism near strikes",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Strikes of heavy open interest do not always act as precise resistance/support levels",
-        "type": "quote",
-        "context": "Limitation and caveat about OI reliability",
+        "claim": "asyncio implementation is ideal for servers that handle many client connections",
+        "type": "recommendation",
+        "context": "Implementation patterns section",
         "exact_quote": true,
         "verifiable": true
       },
       {
-        "claim": "Volume can be misleading because it reflects transient day-trading activity and position closures, whereas open interest reveals true trader positioning at day's end",
-        "type": "comparison",
-        "context": "Why OI is superior to volume",
+        "claim": "Version 13.0 introduced the new asyncio implementation, deprecating the legacy implementation in version 14.0+",
+        "type": "statistic",
+        "context": "Version notes",
         "exact_quote": false,
         "verifiable": true
       },
       {
-        "claim": "Round-number strikes amplify psychological significance of support/resistance levels",
+        "claim": "Three implementation paradigms available: asyncio (coroutine-based), threading (synchronous), and Sans-I/O (for third-party integration)",
         "type": "definition",
-        "context": "Strike selection and psychology",
+        "context": "Architecture overview",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Client connection uses async with connect() pattern for automatic resource cleanup",
+        "type": "definition",
+        "context": "Client implementation patterns",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "The new websockets.asyncio version adds features that were impossible to provide in the original design",
+        "type": "quote",
+        "context": "Migration guidance",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Production deployment guidance available for nginx, HAProxy, Kubernetes, and containerized platforms",
+        "type": "definition",
+        "context": "Production best practices",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Core client operations include .send(), .recv(), and context manager support for lifecycle management",
+        "type": "definition",
+        "context": "API reference",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Connection closure provides status codes like 1000 (OK) for clean disconnections",
+        "type": "definition",
+        "context": "Error handling and status codes",
         "exact_quote": false,
         "verifiable": true
       }
     ],
-    "summary": "Schaeffer's Research emphasizes that open interest is superior to volume for technical analysis due to its stability. Heavy put OI creates support through delta hedging mechanisms, while heavy call OI represents resistance. However, these levels are not always precise and depend on delta values and hedging activity.",
-    "key_metrics": {
-      "oi_concentration_thresholds": "Not specified - described as 'heavy' without numerical values",
-      "reliability_factors": "Delta values, hedging status, round-number strikes"
-    }
+    "code_examples": [
+      {
+        "title": "Basic asyncio client pattern",
+        "code": "from websockets.asyncio.client import connect\n\nasync def hello():\n    async with connect(\"ws://localhost:8765\") as websocket:\n        await websocket.send(\"Hello world!\")\n        message = await websocket.recv()",
+        "context": "Standard client implementation"
+      },
+      {
+        "title": "Server echo pattern",
+        "code": "import asyncio\nfrom websockets.asyncio.server import serve\n\nasync def echo(websocket):\n    async for message in websocket:\n        await websocket.send(message)\n\nasync def main():\n    async with serve(echo, \"localhost\", 8765) as server:\n        await server.serve_forever()",
+        "context": "Server implementation for reference"
+      }
+    ],
+    "summary": "The websockets library is the official, production-ready Python WebSocket implementation supporting asyncio, threading, and Sans-I/O patterns. Version 16.0 provides robust client/server capabilities with automatic protocol handling, multiple deployment options, and a focus on correctness and performance. The asyncio implementation is recommended for high-concurrency scenarios."
   },
   {
     "source": {
-      "title": "Max Pain (Options) - Overview, How It Works, Calculation",
-      "url": "https://corporatefinanceinstitute.com/resources/derivatives/max-pain-options/",
-      "author": "CFI Team",
-      "date": null,
+      "title": "asyncio WebSocket Clients Tutorial",
+      "url": "https://superfastpython.com/asyncio-websocket-clients/",
+      "author": "Jason Brownlee",
+      "date": "2023-12-13",
       "credibility": 4
     },
     "fetch_method": "webfetch",
-    "fetch_status": "failed_incomplete_content",
+    "fetch_status": "partial",
     "facts": [
       {
-        "claim": "Max pain is a situation in which the stock price locks in on an option strike price as it nears expiration, which would cause financial losses",
+        "claim": "Article contains 3,621 words of detailed asyncio WebSocket client tutorial content",
+        "type": "statistic",
+        "context": "Page metadata",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Tutorial focuses on Python asyncio patterns for WebSocket client implementation",
         "type": "definition",
-        "context": "Meta description from page",
+        "context": "Article metadata and category",
         "exact_quote": false,
         "verifiable": true
       }
     ],
-    "summary": "Unable to extract full content. Page returned only CSS/HTML markup without article body. Would require alternative fetching method or manual access.",
-    "extraction_issue": "WebFetch and Firecrawl both failed - page structure prevented content extraction"
+    "summary": "SuperFastPython tutorial by Jason Brownlee published December 2023 covering asyncio WebSocket clients. WebFetch was unable to retrieve the full article content due to JavaScript rendering requirements. The article is 3,621 words and categorized under Python Asyncio. Manual retrieval or alternative scraping method needed for full content extraction."
   },
   {
     "source": {
-      "title": "Open Interest Options - SoFi Learn",
-      "url": "https://www.sofi.com/learn/content/open-interest-options/",
-      "author": "SoFi",
-      "date": null,
-      "credibility": 4
-    },
-    "fetch_method": "firecrawl_mcp_partial",
-    "fetch_status": "partial_success_via_mcp",
-    "facts": [
-      {
-        "claim": "Open Interest (OI) represents the total number of outstanding option contracts that have not been settled or closed",
-        "type": "definition",
-        "context": "Basic definition section",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Volume is the number of contracts traded in a session, while Open Interest is the total number of active positions",
-        "type": "comparison",
-        "context": "Volume vs OI distinction",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Price up + OI up = Long buildup (Bullish signal, new longs entering)",
-        "type": "statistic",
-        "context": "Volume/OI relationship signals",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Price down + OI up = Short buildup (Bearish signal, new shorts entering)",
-        "type": "statistic",
-        "context": "Volume/OI relationship signals",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Price up + OI down = Short covering (Bullish but potentially temporary)",
-        "type": "statistic",
-        "context": "Volume/OI relationship signals",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Price down + OI down = Long unwinding (Bearish but potentially temporary)",
-        "type": "statistic",
-        "context": "Volume/OI relationship signals",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Highest Call OI = Resistance Level: Price tends to get rejected near high call open interest levels",
-        "type": "definition",
-        "context": "Support/resistance identification",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Highest Put OI = Support Level: Price often bounces from high put open interest levels",
-        "type": "definition",
-        "context": "Support/resistance identification",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Rising volume combined with rising open interest confirms trend strength and indicates new participants are entering with conviction",
-        "type": "definition",
-        "context": "Trend confirmation signals",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Open interest alone doesn't provide clear buy or sell signals, but it adds valuable context when combined with price action and volume analysis",
-        "type": "risk",
-        "context": "Limitations of OI analysis",
-        "exact_quote": true,
-        "verifiable": true
-      }
-    ],
-    "summary": "Comprehensive guide explaining open interest as total outstanding contracts. Provides clear four-quadrant framework for interpreting price/OI relationships: long buildup, short buildup, short covering, and long unwinding. Emphasizes that highest call OI marks resistance while highest put OI marks support.",
-    "key_metrics": {
-      "volume_oi_signals": {
-        "long_buildup": "Price up + OI up",
-        "short_buildup": "Price down + OI up",
-        "short_covering": "Price up + OI down",
-        "long_unwinding": "Price down + OI down"
-      },
-      "support_resistance": "Highest OI concentrations mark key levels"
-    }
-  },
-  {
-    "source": {
-      "title": "Options Volume and Open Interest",
-      "url": "https://seekingalpha.com/article/4461550-options-volume-and-open-interest",
-      "author": "Seeking Alpha Contributor",
-      "date": null,
+      "title": "picows - Ultra-fast WebSocket Client for asyncio",
+      "url": "https://github.com/tarasko/picows",
+      "author": "tarasko (GitHub repository)",
+      "date": "2024 (active development, 406 commits)",
       "credibility": 4
     },
     "fetch_method": "webfetch",
-    "fetch_status": "failed_403_blocked",
-    "facts": [],
-    "summary": "Unable to access. Both WebFetch and Firecrawl blocked with 403 errors. Seeking Alpha restricts programmatic access to premium content.",
-    "extraction_issue": "403 Forbidden - website blocks automated access"
-  },
-  {
-    "source": {
-      "title": "Put/Call Ratio",
-      "url": "https://chartschool.stockcharts.com/table-of-contents/market-indicators/put-call-ratio",
-      "author": "StockCharts ChartSchool",
-      "date": null,
-      "credibility": 4
-    },
-    "fetch_method": "webfetch",
-    "fetch_status": "success",
     "facts": [
       {
-        "claim": "Put/Call Ratio = Put Volume / Call Volume",
-        "type": "definition",
-        "context": "Basic calculation formula",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Values above 1.0 indicate more put volume (bearish positioning), while values below 1.0 suggest call dominance (bullish positioning)",
-        "type": "definition",
-        "context": "Interpretation guidelines",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Upper extreme: 1.20+ signals excessive bearishness",
-        "type": "statistic",
-        "context": "Put/Call ratio threshold for bearish extremes",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Lower extreme: 0.70 or below indicates excessive bullishness",
-        "type": "statistic",
-        "context": "Put/Call ratio threshold for bullish extremes",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "For smoothed 10-day SMA: Bearish threshold at 0.95; bullish threshold at 0.80",
-        "type": "statistic",
-        "context": "Smoothed moving average thresholds",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Index Put/Call ($CPCI) 200-day MA: 1.41",
-        "type": "statistic",
-        "context": "Historical average for index options",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Equity Put/Call ($CPCE) 200-day MA: 0.61",
-        "type": "statistic",
-        "context": "Historical average for equity options",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "Total Put/Call ($CPC) 200-day MA: 0.91",
-        "type": "statistic",
-        "context": "Historical average for combined options",
-        "exact_quote": false,
-        "verifiable": true
-      },
-      {
-        "claim": "A Put/Call Ratio at its lower extremities would show excessive bullishness because call volume would be significantly higher than put volume. In contrarian terms, excessive bullishness would argue for caution and the possibility of a stock market decline",
+        "claim": "picows is a high-performance python library designed for building asyncio WebSocket clients and servers. Implemented in Cython, it offers exceptional speed and efficiency, surpassing other popular WebSocket python libraries",
         "type": "quote",
-        "context": "Contrarian interpretation explanation",
+        "context": "Repository description",
         "exact_quote": true,
         "verifiable": true
       },
       {
-        "claim": "A bullish signal occurs when the indicator moves above the bearish extreme (.95) and then back below. A bearish signal occurs when the indicator moves below the bullish extreme (.80) and back above",
-        "type": "quote",
-        "context": "Trading signal generation",
-        "exact_quote": true,
-        "verifiable": true
-      },
-      {
-        "claim": "Equity ($CPCE) reflects retail trader sentiment and stays below 1.0 (call-biased), while Index ($CPCI) represents professional traders and consistently stays above 1.0 due to hedging",
-        "type": "comparison",
-        "context": "Retail vs professional trader behavior",
+        "claim": "Requires Python 3.9 or greater",
+        "type": "statistic",
+        "context": "Installation requirements",
         "exact_quote": false,
         "verifiable": true
       },
       {
-        "claim": "Professional traders use index puts for downside protection, while retail participants favor calls for directional bullish bets",
+        "claim": "Traditional WebSocket libraries implement high-level interfaces that handle timeouts, flow control, optional compression/decompression, and reassembly of WebSocket messages from frames primarily in pure Python. This creates significant overhead even when messages are small, un-fragmented (with every WebSocket frame marked as final), and uncompressed",
+        "type": "quote",
+        "context": "Performance comparison rationale",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Uses transport/protocol design from asyncio rather than traditional message-oriented patterns",
         "type": "definition",
-        "context": "Trading behavior patterns",
+        "context": "Architecture design",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Users receive individual WebSocket frame objects instead of reassembled messages, allowing custom concatenation strategies",
+        "type": "definition",
+        "context": "API design philosophy",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Conventional libraries rely on asyncio.Futures, which adds additional work for the event loop and can introduce delays",
+        "type": "quote",
+        "context": "Performance optimization section",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Developers can discard unwanted frames without parsing overhead, making it ideal for scenarios where only the latest message matters, and previous ones can be discarded without even parsing their content",
+        "type": "quote",
+        "context": "Use case: real-time data streams",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Features include maximally efficient WebSocket frame parsing via Cython, memory optimization through reuse, automated ping-pong mechanism, and round-trip time measurement",
+        "type": "definition",
+        "context": "Core capabilities",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Provides Cython .pxd files for integration with user Cython code",
+        "type": "definition",
+        "context": "Advanced integration features",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Installation command: pip install picows",
+        "type": "definition",
+        "context": "Installation instructions",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Includes benchmark comparisons against popular Python WebSocket libraries and C++ boost.beast client as performance ceiling",
+        "type": "definition",
+        "context": "Performance validation",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "All Python implementations in benchmarks utilized uvloop for event loop optimization",
+        "type": "statistic",
+        "context": "Benchmark methodology",
         "exact_quote": false,
         "verifiable": true
       }
     ],
-    "summary": "Comprehensive guide to put/call ratio as a contrarian sentiment indicator. Provides specific numerical thresholds: 1.20+ for bearish extremes, 0.70 for bullish extremes. Distinguishes between equity (retail, call-biased), index (professional, put-biased), and total ratios. Emphasizes combining with other technical tools for confirmation.",
-    "key_metrics": {
-      "extremes_daily": {
-        "bearish": "1.20+",
-        "bullish": "0.70 or below"
+    "code_examples": [
+      {
+        "title": "picows echo client implementation",
+        "code": "import asyncio\nfrom picows import ws_connect, WSFrame, WSTransport, WSListener, WSMsgType, WSCloseCode\n\nclass ClientListener(WSListener):\n    def on_ws_connected(self, transport: WSTransport):\n        transport.send(WSMsgType.TEXT, b\"Hello world\")\n\n    def on_ws_frame(self, transport: WSTransport, frame: WSFrame):\n        print(f\"Echo reply: {frame.get_payload_as_ascii_text()}\")\n        transport.send_close(WSCloseCode.OK)\n        transport.disconnect()\n\nasync def main(url):\n    transport, client = await ws_connect(ClientListener, url)\n    await transport.wait_disconnected()\n\nif __name__ == '__main__':\n    asyncio.run(main(\"ws://127.0.0.1:9001\"))",
+        "context": "Basic client pattern using listener callbacks"
       },
-      "extremes_10day_sma": {
-        "bearish": "0.95",
-        "bullish": "0.80"
-      },
-      "historical_200day_ma": {
-        "index_cpci": 1.41,
-        "equity_cpce": 0.61,
-        "total_cpc": 0.91
+      {
+        "title": "picows server frame handler",
+        "code": "class ServerClientListener(WSListener):\n    def on_ws_connected(self, transport: WSTransport):\n        print(\"New client connected\")\n\n    def on_ws_frame(self, transport: WSTransport, frame: WSFrame):\n        if frame.msg_type == WSMsgType.CLOSE:\n            transport.send_close(frame.get_close_code(), frame.get_close_message())\n            transport.disconnect()\n        else:\n            transport.send(frame.msg_type, frame.get_payload_as_bytes())",
+        "context": "Server implementation showing frame-level handling"
       }
-    }
-  },
-  {
-    "source": {
-      "title": "Open Interest: Overview, Calculation, Analysis, Trading Guide, Tool",
-      "url": "https://www.strike.money/options/open-interest",
-      "author": "Strike.money",
-      "date": null,
-      "credibility": 3
-    },
-    "fetch_method": "webfetch",
-    "fetch_status": "failed_incomplete_content",
-    "facts": [],
-    "summary": "Unable to extract full content. Page returned only CSS/HTML structure without article text. Would require JavaScript rendering or alternative access method.",
-    "extraction_issue": "WebFetch and Firecrawl both failed - dynamic content not captured"
+    ],
+    "summary": "picows is a Cython-based ultra-high-performance WebSocket library for asyncio that outperforms standard Python libraries by providing frame-level control instead of message reassembly. It's optimized for high-frequency data streams where minimal latency and maximum throughput are critical, particularly for real-time trading applications where only the latest data matters. Requires Python 3.9+, installed via pip, and provides advanced features like custom buffering, ping-pong automation, and RTT measurement."
   }
 ]
