@@ -1,0 +1,21 @@
+{
+  "mode": "yolo",
+  "depth": "comprehensive",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "custom",
+  "model_assignments": {
+    "planner": "opus",
+    "roadmapper": "opus",
+    "researcher": "haiku",
+    "synthesizer": "haiku",
+    "plan_checker": "opus",
+    "executor": "sonnet",
+    "verifier": "sonnet"
+  },
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true
+  }
+}
