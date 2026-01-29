@@ -16,6 +16,7 @@ dependencies = [
     "alpaca-py>=0.43.2",
     "apscheduler>=3.11.2",
     "pytz>=2025.2",
+    "cryptography>=44.0.0",
 ]
 
 [tool.uv]
