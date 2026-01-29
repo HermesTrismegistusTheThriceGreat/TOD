@@ -95,36 +95,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ACCT-01 | TBD | Pending |
-| ACCT-02 | TBD | Pending |
-| ACCT-03 | TBD | Pending |
-| ACCT-04 | TBD | Pending |
-| ACCT-05 | TBD | Pending |
-| ACCT-06 | TBD | Pending |
-| CRED-01 | TBD | Pending |
-| CRED-02 | TBD | Pending |
-| CRED-03 | TBD | Pending |
-| CRED-04 | TBD | Pending |
-| DISP-01 | TBD | Pending |
-| DISP-02 | TBD | Pending |
-| DISP-03 | TBD | Pending |
-| DISP-04 | TBD | Pending |
-| TRADE-01 | TBD | Pending |
-| TRADE-02 | TBD | Pending |
-| TRADE-03 | TBD | Pending |
-| TRADE-04 | TBD | Pending |
-| ISO-01 | TBD | Pending |
-| ISO-02 | TBD | Pending |
-| ISO-03 | TBD | Pending |
-| MOB-01 | TBD | Pending |
-| MOB-02 | TBD | Pending |
-| MOB-03 | TBD | Pending |
+| ACCT-01 | Phase 4 | Pending |
+| ACCT-02 | Phase 4 | Pending |
+| ACCT-03 | Phase 4 | Pending |
+| ACCT-04 | Phase 4 | Pending |
+| ACCT-05 | Phase 4 | Pending |
+| ACCT-06 | Phase 8 | Pending |
+| CRED-01 | Phase 1 | Pending |
+| CRED-02 | Phase 3 | Pending |
+| CRED-03 | Phase 1 | Pending |
+| CRED-04 | Phase 2 | Pending |
+| DISP-01 | Phase 5 | Pending |
+| DISP-02 | Phase 5 | Pending |
+| DISP-03 | Phase 5 | Pending |
+| DISP-04 | Phase 5 | Pending |
+| TRADE-01 | Phase 6 | Pending |
+| TRADE-02 | Phase 6 | Pending |
+| TRADE-03 | Phase 6 | Pending |
+| TRADE-04 | Phase 6 | Pending |
+| ISO-01 | Phase 7 | Pending |
+| ISO-02 | Phase 7 | Pending |
+| ISO-03 | Phase 7 | Pending |
+| MOB-01 | Phase 8 | Pending |
+| MOB-02 | Phase 8 | Pending |
+| MOB-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 (pending roadmap)
+- Mapped to phases: 24
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after initial definition*
+*Last updated: 2026-01-29 after roadmap creation*
