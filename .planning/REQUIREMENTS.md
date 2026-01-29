@@ -18,9 +18,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Credential Security
 
-- [ ] **CRED-01**: API credentials are encrypted at rest in database (Fernet)
+- [x] **CRED-01**: API credentials are encrypted at rest in database (Fernet)
 - [ ] **CRED-02**: Credentials are decrypted only during API calls, never cached
-- [ ] **CRED-03**: Credentials never appear in logs or error messages
+- [x] **CRED-03**: Credentials never appear in logs or error messages
 - [ ] **CRED-04**: Database enforces user can only access own accounts (RLS/FK)
 
 ### Account Display
@@ -101,9 +101,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACCT-04 | Phase 4 | Pending |
 | ACCT-05 | Phase 4 | Pending |
 | ACCT-06 | Phase 8 | Pending |
-| CRED-01 | Phase 1 | Pending |
+| CRED-01 | Phase 1 | Complete |
 | CRED-02 | Phase 3 | Pending |
-| CRED-03 | Phase 1 | Pending |
+| CRED-03 | Phase 1 | Complete |
 | CRED-04 | Phase 2 | Pending |
 | DISP-01 | Phase 5 | Pending |
 | DISP-02 | Phase 5 | Pending |
@@ -127,4 +127,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after roadmap creation*
+*Last updated: 2026-01-29 after Phase 1 completion*
