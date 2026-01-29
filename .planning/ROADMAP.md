@@ -32,10 +32,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Credential values are encrypted/decrypted correctly in round-trip tests
   3. API credentials never appear in application logs (verified via log audit)
   4. Pre-commit hook blocks commits containing secrets
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md — Create encryption service and config
+- [ ] 01-02-PLAN.md — Add log redaction filter and pre-commit hooks
+- [ ] 01-03-PLAN.md — Write tests and verify phase success criteria
 
 ### Phase 2: Database Schema
 **Goal**: Create user_accounts and user_credentials tables with row-level security
@@ -145,7 +147,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Foundation | 0/TBD | Not started | - |
+| 1. Security Foundation | 0/3 | Ready to execute | - |
 | 2. Database Schema | 0/TBD | Not started | - |
 | 3. Credential Management | 0/TBD | Not started | - |
 | 4. Account Management UI | 0/TBD | Not started | - |
@@ -187,4 +189,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 ---
 *Roadmap created: 2026-01-29*
+*Phase 1 planned: 2026-01-29*
 *Depth: comprehensive (8 phases)*
