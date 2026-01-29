@@ -1,0 +1,20 @@
+# Pre-commit hooks for security and code quality
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Detect secrets before they get committed
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: detect-secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            .*-lock\.json$|
+            \.secrets\.baseline$
+          )$
