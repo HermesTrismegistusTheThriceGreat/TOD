@@ -17,6 +17,7 @@ dependencies = [
     "apscheduler>=3.11.2",
     "pytz>=2025.2",
     "cryptography>=44.0.0",
+    "sqlalchemy>=2.0.0",
 ]
 
 [tool.uv]
