@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 2 of 8 (Database Schema)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-30 — Completed 02-01-PLAN.md (User Accounts Schema)
+Last activity: 2026-01-30 — Completed 02-02-PLAN.md (Row-Level Security)
 
-Progress: [████░░░░░░] 40% (4/10 plans total: Phase 1: 3/3, Phase 2: 1/3)
+Progress: [█████░░░░░] 50% (5/10 plans total: Phase 1: 3/3, Phase 2: 2/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 12.9min
-- Total execution time: 0.86 hours
+- Total plans completed: 5
+- Average duration: 10.5min
+- Total execution time: 0.88 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-security-foundation | 3 | 49.5min | 16.5min |
-| 02-database-schema | 1 | 2min | 2min |
+| 02-database-schema | 2 | 4min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (2.5min), 01-03 (45min), 02-01 (2min)
-- Trend: Database schema plans are fast (straightforward SQL + model creation)
+- Last 5 plans: 01-02 (2.5min), 01-03 (45min), 02-01 (2min), 02-02 (2min)
+- Trend: Database schema plans are fast (straightforward SQL migrations)
 
 *Updated after each plan completion*
 
@@ -60,6 +60,10 @@ Recent decisions affecting current work:
 - [02-01]: Use VARCHAR(255) for account_name to support descriptive names
 - [02-01]: Add unique constraint on (user_account_id, credential_type) to prevent duplicate credentials per account
 - [02-01]: Include optional expires_at field for future credential expiration support
+- [02-02]: Use current_user_id() function to retrieve session variable (app.current_user_id)
+- [02-02]: FORCE ROW LEVEL SECURITY on both tables for complete policy enforcement including testing
+- [02-02]: Mark current_user_id() as STABLE for query planner caching per statement
+- [02-02]: Return NULL from current_user_id() if session variable not set (fail-safe behavior)
 
 ### Pending Todos
 
@@ -72,12 +76,12 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 13:19:34 UTC
-Stopped at: Completed 02-01-PLAN.md (User Accounts Schema) - Phase 2 in progress
+Last session: 2026-01-30 13:23:57 UTC
+Stopped at: Completed 02-02-PLAN.md (Row-Level Security) - Phase 2 in progress
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
-**Phase 2 Progress:** Database schema for user accounts and credentials tables created with RLS-optimized indexes.
+**Phase 2 Progress:** Database schema for user accounts and credentials tables created with RLS-optimized indexes. RLS policies implemented for database-enforced user isolation.
 
 ---
 *State initialized: 2026-01-29*
