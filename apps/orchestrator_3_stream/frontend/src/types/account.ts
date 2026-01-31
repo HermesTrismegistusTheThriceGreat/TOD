@@ -118,3 +118,30 @@ export interface GetOrCreateAccountResponse {
   /** True if account was just created, False if it already existed */
   created: boolean
 }
+
+/**
+ * Real-time account data response from Alpaca API.
+ * Mirrors backend AccountDataResponse schema.
+ */
+export interface AccountDataResponse {
+  /** Account type: "paper" or "live" */
+  account_type: string
+  /** Cash balance as string (e.g., "100000.25") */
+  balance: string
+  /** Total equity (cash + positions) as string */
+  equity: string
+  /** Available buying power as string */
+  buying_power: string
+  /** Account currency (default: USD) */
+  currency: string
+  /** Whether trading is blocked */
+  trading_blocked: boolean
+  /** Whether account activity is prohibited */
+  account_blocked: boolean
+  /** Whether flagged as pattern day trader */
+  pattern_day_trader: boolean
+  /** Day trades in last 5 trading days */
+  daytrade_count: number
+  /** ISO 8601 timestamp of last update */
+  last_updated: string
+}
