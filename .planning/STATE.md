@@ -5,28 +5,27 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Friends can log in, add their own Alpaca accounts, and trade via chat — each person controls their own money.
-**Current focus:** Phase 5 - Account Display
+**Current focus:** Phase 5.1 - Multiple Credentials Support
 
 ## Current Position
 
-Phase: 5 of 8 (Account Display) - COMPLETE
-Plan: 3 of 3 in current phase
-Status: Complete
-Last activity: 2026-01-31 — Completed 05-03-PLAN.md (AccountDataDisplay UI)
+Phase: 5.1 of 8 (Multiple Credentials Support)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-01-31 - Completed 05.1-01-PLAN.md (Database Schema)
 
-Progress: [█████████████] 100% Phase 5 (15/15 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3)
+Progress: [█████████████░░] 88% (16/18 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 1/3)
 
 ### Pending Todos
 
-1 todo(s) pending - see `.planning/todos/pending/`
-- Support multiple Alpaca credentials per account (409 conflict fix)
+0 todo(s) pending - see `.planning/todos/pending/`
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 5.3min
-- Total execution time: 1.6 hours
+- Total plans completed: 16
+- Average duration: 4.8min
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -36,11 +35,12 @@ Progress: [█████████████] 100% Phase 5 (15/15 plans to
 | 02-database-schema | 3 | 7.3min | 2.4min |
 | 03-credential-management | 3 | 11.4min | 3.8min |
 | 04-account-management-ui | 3 | 12.5min | 4.2min |
-| 05-account-display | 2 | 4.0min | 2.0min |
+| 05-account-display | 3 | 6.0min | 2.0min |
+| 05.1-multiple-credentials-support | 1 | 1.0min | 1.0min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (2.5min), 04-03 (8min), 05-01 (1.8min), 05-02 (2.2min)
-- Trend: Backend API and service layer plans extremely fast (simple CRUD and state patterns)
+- Last 5 plans: 04-03 (8min), 05-01 (1.8min), 05-02 (2.2min), 05-03 (2.0min), 05.1-01 (1.0min)
+- Trend: Database and model update plans extremely fast (schema changes only)
 
 *Updated after each plan completion*
 
@@ -108,10 +108,17 @@ Recent decisions affecting current work:
 - [05-02]: Auto-trigger fetchAccountData when setActiveCredential called for immediate data availability
 - [05-02]: Don't throw errors from fetchAccountData - account data is supplementary, not critical
 - [05-02]: Clear account data when active credential is deleted
+- [05.1-01]: Drop unique constraint on (user_account_id, credential_type) to allow multiple credentials of same type
+- [05.1-01]: Backfill nickname with credential_type for existing credentials
+- [05.1-01]: Add index on (user_account_id, nickname) for efficient lookups (not unique constraint)
 
 ### Pending Todos
 
 None yet.
+
+### Roadmap Evolution
+
+- Phase 5.1 inserted after Phase 5: Multiple Credentials Support (URGENT - 409 conflict fix)
 
 ### Blockers/Concerns
 
@@ -120,15 +127,16 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 17:07:02 UTC
-Stopped at: Completed 05-02-PLAN.md (Service Layer)
+Last session: 2026-01-31 19:35:48 UTC
+Stopped at: Completed 05.1-01-PLAN.md (Database Schema)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
 **Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
-**Phase 5 In Progress:** Account data endpoint and service layer complete. Backend fetches real-time Alpaca metrics; frontend credentialService and accountStore provide reactive access to balance, equity, and buying power data.
+**Phase 5 Complete:** Account data endpoint, service layer, and AccountDataDisplay component complete. Backend fetches real-time Alpaca metrics; frontend displays balance, equity, and buying power.
+**Phase 5.1 In Progress:** Database schema updated to support multiple credentials per account. Migration 15 drops unique constraint, adds nickname column with backfill.
 
 ---
 *State initialized: 2026-01-29*
