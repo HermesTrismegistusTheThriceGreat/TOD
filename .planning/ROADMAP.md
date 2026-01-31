@@ -81,11 +81,12 @@ Plans:
   3. User can switch active account via dropdown selector
   4. User can update credentials for an existing account
   5. User can remove a connected account
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Backend user_accounts API (router + schemas)
+- [ ] 04-02-PLAN.md — Frontend service layer (types + credentialService + accountStore)
+- [ ] 04-03-PLAN.md — Frontend components (dialog, list, selector, header integration)
 
 ### Phase 5: Account Display
 **Goal**: Active account shows type (paper/live), balance, equity, and buying power
@@ -96,10 +97,12 @@ Plans:
   2. Active account shows real-time balance and equity
   3. Active account shows buying power
   4. Visual indicator clearly distinguishes paper vs live (color/banner)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — Backend account-data endpoint with Alpaca API integration
+- [ ] 05-02-PLAN.md — Frontend service layer (types, getAccountData, store state)
+- [ ] 05-03-PLAN.md — AccountDataDisplay component with header integration
 
 ### Phase 6: Trading Context
 **Goal**: Chat and positions/orders display use only the selected account
@@ -154,8 +157,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 1. Security Foundation | 3/3 | ✓ Complete | 2026-01-29 |
 | 2. Database Schema | 3/3 | ✓ Complete | 2026-01-30 |
 | 3. Credential Management | 3/3 | ✓ Complete | 2026-01-31 |
-| 4. Account Management UI | 0/TBD | Not started | - |
-| 5. Account Display | 0/TBD | Not started | - |
+| 4. Account Management UI | 0/3 | Planning complete | - |
+| 5. Account Display | 0/3 | Planning complete | - |
 | 6. Trading Context | 0/TBD | Not started | - |
 | 7. Data Isolation | 0/TBD | Not started | - |
 | 8. Mobile Polish | 0/TBD | Not started | - |
@@ -199,4 +202,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 *Phase 2 executed: 2026-01-30*
 *Phase 3 planned: 2026-01-30*
 *Phase 3 executed: 2026-01-31*
+*Phase 5 planned: 2026-01-31*
 *Depth: comprehensive (8 phases)*
