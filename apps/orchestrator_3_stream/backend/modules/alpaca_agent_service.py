@@ -2,14 +2,14 @@
 """
 Alpaca Agent Service
 
-Provides integration with the Alpaca MCP agent via Claude Code subprocess invocation.
-This service handles natural language trading commands by spawning a Claude Code
-subprocess with the Alpaca MCP configuration enabled.
+Provides integration with the Alpaca trading tools via Claude Agent SDK.
+This service handles natural language trading commands by creating a Claude
+agent with Alpaca MCP server configuration.
 
 Key Features:
-- Subprocess invocation of Claude Code with Alpaca MCP tools
+- Uses Claude Agent SDK directly (no CLI subprocess needed)
+- Alpaca MCP server for trading operations
 - Streaming response support via SSE-formatted chunks
-- MCP configuration validation
 - Comprehensive error handling and logging
 
 Reference: .claude/agents/alpaca-mcp.md
@@ -18,60 +18,88 @@ Reference: .claude/agents/alpaca-mcp.md
 import asyncio
 import json
 import os
-import shutil
+from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, Dict, Any
 
 from .logger import OrchestratorLogger
+from .credential_service import get_decrypted_alpaca_credential
+from .database import get_connection_with_rls
+
+# Claude SDK imports
+from claude_agent_sdk import (
+    ClaudeSDKClient,
+    ClaudeAgentOptions,
+    AssistantMessage,
+    SystemMessage,
+    TextBlock,
+    ThinkingBlock,
+    ToolUseBlock,
+    ResultMessage,
+)
 
 
-def find_claude_executable() -> str:
-    """
-    Find the claude executable in the system PATH.
+# Alpaca Agent System Prompt
+ALPACA_AGENT_SYSTEM_PROMPT = """You are an Alpaca trading account management specialist. You help users interact with their Alpaca trading account through natural language commands.
 
-    Searches common locations and returns the full path if found.
+## Capabilities
 
-    Returns:
-        Full path to claude executable
+You have access to Alpaca MCP tools that allow you to:
 
-    Raises:
-        FileNotFoundError: If claude command is not found in PATH
-    """
-    # First try to find claude in PATH
-    claude_path = shutil.which("claude")
-    if claude_path:
-        return claude_path
+### Account & Portfolio Management
+- Get account details, balances, buying power, PDT status
+- View all current positions or specific position details
+- Get portfolio history and P/L over time
+- Close positions (individual or all)
 
-    # Try common installation locations
-    common_paths = [
-        Path.home() / ".local" / "bin" / "claude",
-        Path("/usr/local/bin/claude"),
-        Path("/usr/bin/claude"),
-        Path("/opt/homebrew/bin/claude"),
-    ]
+### Market Data
+- Get stock/crypto bars, quotes, trades, and snapshots
+- Get latest prices and market data
+- Check market calendar and clock status
 
-    for path in common_paths:
-        if path.exists():
-            return str(path)
+### Options Trading
+- Search and filter option contracts
+- Get option quotes, snapshots, and chains
+- Place single-leg and multi-leg option orders
+- Exercise options positions
 
-    raise FileNotFoundError(
-        "Claude CLI not found. Please install with: npm install -g @anthropic-ai/claude-cli"
-    )
+### Order Management
+- Place stock orders (market, limit, stop, trailing stop)
+- Place crypto orders
+- View and manage existing orders
+- Cancel orders
+
+### Watchlists
+- Create, view, update, and delete watchlists
+- Add/remove symbols from watchlists
+
+## Important Notes
+
+- This is a PAPER TRADING account - no real money at risk
+- Always confirm order details before executing trades
+- For options, use proper OCC symbol format: SYMBOL + YYMMDD + C/P + Strike*1000
+  - Example: SPY260221C00600000 = SPY Feb 21, 2026 $600 Call
+- Display monetary values with proper formatting ($X,XXX.XX)
+- When rolling positions, close the existing position first, then open the new one
+
+## Response Format
+
+Provide clear, well-formatted responses with:
+- Status indicators (✅ Success, ❌ Failed)
+- Tables for position/account data
+- Relevant details and any warnings
+"""
 
 
 class AlpacaAgentService:
     """
-    Service for invoking the Alpaca MCP agent via Claude Code subprocess.
+    Service for invoking the Alpaca agent using Claude Agent SDK.
 
-    The agent uses Claude Code with the .mcp.json.alpaca configuration to provide
+    The agent uses Claude SDK with Alpaca MCP server to provide
     access to Alpaca trading tools through natural language commands.
 
     Usage:
         service = AlpacaAgentService(logger, working_dir="/path/to/project")
-
-        # Verify MCP config exists
-        if not service.verify_mcp_config():
-            raise RuntimeError("Alpaca MCP config not found")
 
         # Invoke agent with streaming
         async for chunk in service.invoke_agent_streaming("Check my account balance"):
@@ -84,45 +112,192 @@ class AlpacaAgentService:
 
         Args:
             logger: Logger instance for logging events and errors
-            working_dir: Working directory containing .mcp.json.alpaca file
+            working_dir: Working directory containing configuration files
         """
         self.logger = logger
         self.working_dir = Path(working_dir)
         self.mcp_config_path = self.working_dir / ".mcp.json.alpaca"
-        self.claude_path = None
+
+        # For backwards compatibility with existing endpoint checks
+        self.claude_path = "sdk"  # Indicate SDK is available (not CLI)
 
         self.logger.info(f"AlpacaAgentService initialized with working_dir={working_dir}")
-
-        # Find claude executable on initialization
-        try:
-            self.claude_path = find_claude_executable()
-            self.logger.success(f"Claude CLI found at: {self.claude_path}")
-        except FileNotFoundError as e:
-            self.logger.error(f"Claude CLI not found: {e}")
-            self.claude_path = None
+        self.logger.success("Using Claude Agent SDK (no CLI required)")
 
     def verify_mcp_config(self) -> bool:
         """
-        Verify that the Alpaca MCP configuration file exists.
+        Verify that the Alpaca MCP configuration is available.
+
+        Config can come from either:
+        1. .mcp.json.alpaca file in working_dir (local development)
+        2. Environment variables ALPACA_API_KEY and ALPACA_SECRET_KEY (production)
 
         Returns:
-            True if .mcp.json.alpaca exists in working_dir, False otherwise
+            True if config is available from either source, False otherwise
         """
-        exists = self.mcp_config_path.exists()
-
-        if exists:
+        # Check for config file first
+        if self.mcp_config_path.exists():
             self.logger.success(f"Alpaca MCP config found at {self.mcp_config_path}")
-        else:
-            self.logger.error(f"Alpaca MCP config not found at {self.mcp_config_path}")
+            return True
 
-        return exists
+        # Fall back to environment variables
+        api_key = os.environ.get("ALPACA_API_KEY", "")
+        secret_key = os.environ.get("ALPACA_SECRET_KEY", "")
+
+        if api_key and secret_key:
+            self.logger.success("Alpaca credentials found in environment variables")
+            return True
+
+        self.logger.error(
+            f"Alpaca MCP config not found. Either create {self.mcp_config_path} "
+            "or set ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables."
+        )
+        return False
+
+    def _load_mcp_config(self) -> Optional[Dict[str, Any]]:
+        """
+        Load the Alpaca MCP configuration from file or create from environment variables.
+
+        The config file (.mcp.json.alpaca) is gitignored since it contains credentials.
+        In production (Railway), we create the config dynamically from environment variables.
+
+        Returns:
+            Dict containing MCP configuration, or None if load fails
+        """
+        # First, try to load from file (local development)
+        if self.mcp_config_path.exists():
+            try:
+                with open(self.mcp_config_path, 'r') as f:
+                    config = json.load(f)
+                self.logger.info(f"Loaded MCP config from {self.mcp_config_path}")
+                return config
+            except Exception as e:
+                self.logger.warning(f"Failed to load MCP config from file: {e}")
+
+        # Fall back to creating config from environment variables (production)
+        api_key = os.environ.get("ALPACA_API_KEY", "")
+        secret_key = os.environ.get("ALPACA_SECRET_KEY", "")
+        paper_trade = os.environ.get("ALPACA_PAPER", "true")
+
+        if not api_key or not secret_key:
+            self.logger.error("Alpaca credentials not found in file or environment variables")
+            return None
+
+        self.logger.info("Creating MCP config from environment variables")
+        return {
+            "mcpServers": {
+                "alpaca": {
+                    "command": "uvx",
+                    "args": ["alpaca-mcp-server", "serve"],
+                    "env": {
+                        "ALPACA_API_KEY": api_key,
+                        "ALPACA_SECRET_KEY": secret_key,
+                        "ALPACA_PAPER_TRADE": paper_trade
+                    }
+                }
+            }
+        }
+
+    def _create_agent_options(self) -> ClaudeAgentOptions:
+        """
+        Create Claude Agent SDK options for Alpaca agent.
+
+        Returns:
+            ClaudeAgentOptions configured for Alpaca trading
+        """
+        # Load MCP config
+        mcp_config = self._load_mcp_config()
+
+        # Build environment variables - pass through Alpaca keys
+        env_vars = {}
+        if "ANTHROPIC_API_KEY" in os.environ:
+            env_vars["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY"]
+
+        # Get Alpaca credentials from environment or MCP config
+        alpaca_config = mcp_config.get("mcpServers", {}).get("alpaca", {}).get("env", {}) if mcp_config else {}
+
+        # Prioritize environment variables over config file
+        env_vars["ALPACA_API_KEY"] = os.environ.get("ALPACA_API_KEY", alpaca_config.get("ALPACA_API_KEY", ""))
+        env_vars["ALPACA_SECRET_KEY"] = os.environ.get("ALPACA_SECRET_KEY", alpaca_config.get("ALPACA_SECRET_KEY", ""))
+        env_vars["ALPACA_PAPER_TRADE"] = os.environ.get("ALPACA_PAPER", alpaca_config.get("ALPACA_PAPER_TRADE", "true"))
+
+        # Build options dict
+        options_dict = {
+            "system_prompt": ALPACA_AGENT_SYSTEM_PROMPT,
+            "model": "sonnet",
+            "cwd": str(self.working_dir),
+            "env": env_vars,
+        }
+
+        # Configure MCP server - use stdio transport for external MCP server
+        # The SDK expects mcp_servers dict with server configs
+        if mcp_config and "mcpServers" in mcp_config:
+            alpaca_server_config = mcp_config["mcpServers"].get("alpaca", {})
+            if alpaca_server_config:
+                # Format for Claude SDK external MCP server (stdio transport)
+                options_dict["mcp_servers"] = {
+                    "alpaca": {
+                        "type": "stdio",
+                        "command": alpaca_server_config.get("command", "uvx"),
+                        "args": alpaca_server_config.get("args", ["alpaca-mcp-server", "serve"]),
+                        "env": alpaca_server_config.get("env", {})
+                    }
+                }
+
+        # Add allowed tools for Alpaca operations
+        options_dict["allowed_tools"] = [
+            # All Alpaca MCP tools
+            "mcp__alpaca__get_account_info",
+            "mcp__alpaca__get_all_positions",
+            "mcp__alpaca__get_open_position",
+            "mcp__alpaca__get_portfolio_history",
+            "mcp__alpaca__close_position",
+            "mcp__alpaca__close_all_positions",
+            "mcp__alpaca__get_asset",
+            "mcp__alpaca__get_all_assets",
+            "mcp__alpaca__get_calendar",
+            "mcp__alpaca__get_clock",
+            "mcp__alpaca__get_corporate_actions",
+            "mcp__alpaca__get_stock_bars",
+            "mcp__alpaca__get_stock_quotes",
+            "mcp__alpaca__get_stock_trades",
+            "mcp__alpaca__get_stock_latest_bar",
+            "mcp__alpaca__get_stock_latest_quote",
+            "mcp__alpaca__get_stock_latest_trade",
+            "mcp__alpaca__get_stock_snapshot",
+            "mcp__alpaca__get_crypto_bars",
+            "mcp__alpaca__get_crypto_quotes",
+            "mcp__alpaca__get_crypto_trades",
+            "mcp__alpaca__get_crypto_latest_bar",
+            "mcp__alpaca__get_crypto_latest_quote",
+            "mcp__alpaca__get_crypto_latest_trade",
+            "mcp__alpaca__get_crypto_snapshot",
+            "mcp__alpaca__get_crypto_latest_orderbook",
+            "mcp__alpaca__get_option_contracts",
+            "mcp__alpaca__get_option_latest_quote",
+            "mcp__alpaca__get_option_snapshot",
+            "mcp__alpaca__get_option_chain",
+            "mcp__alpaca__place_option_market_order",
+            "mcp__alpaca__exercise_options_position",
+            "mcp__alpaca__place_stock_order",
+            "mcp__alpaca__place_crypto_order",
+            "mcp__alpaca__get_orders",
+            "mcp__alpaca__cancel_order_by_id",
+            "mcp__alpaca__cancel_all_orders",
+            "mcp__alpaca__get_watchlists",
+            "mcp__alpaca__get_watchlist_by_id",
+            "mcp__alpaca__create_watchlist",
+            "mcp__alpaca__update_watchlist_by_id",
+            "mcp__alpaca__add_asset_to_watchlist_by_id",
+            "mcp__alpaca__remove_asset_from_watchlist_by_id",
+            "mcp__alpaca__delete_watchlist_by_id",
+        ]
+
+        return ClaudeAgentOptions(**options_dict)
 
     async def invoke_agent(self, message: str) -> str:
         """
         Invoke the Alpaca agent with a message and return the full response.
-
-        This method runs the Claude Code subprocess and collects all output
-        into a single string response. For streaming use invoke_agent_streaming().
 
         Args:
             message: Natural language message/command for the Alpaca agent
@@ -131,54 +306,31 @@ class AlpacaAgentService:
             Full response text from the agent
 
         Raises:
-            RuntimeError: If MCP config doesn't exist
-            Exception: If subprocess execution fails
+            RuntimeError: If configuration doesn't exist
+            Exception: If execution fails
         """
         if not self.verify_mcp_config():
             error_msg = f"Cannot invoke agent: MCP config not found at {self.mcp_config_path}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
 
-        if not self.claude_path:
-            error_msg = "Claude CLI not available. Please install with: npm install -g @anthropic-ai/claude-cli"
-            self.logger.error(error_msg)
-            raise RuntimeError(error_msg)
-
         self.logger.info(f"Invoking Alpaca agent with message: {message[:100]}...")
 
         try:
-            # Build the command using full path to claude
-            cmd = [
-                self.claude_path,
-                "--mcp-config", ".mcp.json.alpaca",
-                "--model", "sonnet",
-                "--dangerously-skip-permissions",
-                "-p", message
-            ]
+            options = self._create_agent_options()
+            response_text = ""
 
-            # Create subprocess
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(self.working_dir)
-            )
+            async with ClaudeSDKClient(options=options) as client:
+                await client.query(message)
 
-            # Wait for completion and capture output
-            stdout, stderr = await process.communicate()
+                async for msg in client.receive_response():
+                    if isinstance(msg, AssistantMessage):
+                        for block in msg.content:
+                            if isinstance(block, TextBlock):
+                                response_text += block.text
 
-            # Check return code
-            if process.returncode != 0:
-                stderr_text = stderr.decode('utf-8', errors='replace')
-                error_msg = f"Alpaca agent subprocess failed with code {process.returncode}: {stderr_text}"
-                self.logger.error(error_msg)
-                raise Exception(error_msg)
-
-            # Decode and return response
-            response = stdout.decode('utf-8', errors='replace')
-            self.logger.success(f"Alpaca agent invocation completed, response_length={len(response)}")
-
-            return response
+            self.logger.success(f"Alpaca agent invocation completed, response_length={len(response_text)}")
+            return response_text
 
         except Exception as e:
             self.logger.error(f"Failed to invoke Alpaca agent: {e}", exc_info=True)
@@ -189,7 +341,7 @@ class AlpacaAgentService:
         Invoke the Alpaca agent with streaming SSE-formatted responses.
 
         This method yields Server-Sent Events (SSE) formatted chunks as they arrive
-        from the Claude Code subprocess. Each chunk is formatted as:
+        from the Claude Agent SDK. Each chunk is formatted as:
             data: {"type": "text", "content": "..."}\n\n
 
         The final chunk is:
@@ -203,144 +355,238 @@ class AlpacaAgentService:
 
         Raises:
             RuntimeError: If MCP config doesn't exist
-            Exception: If subprocess execution fails
-
-        Example:
-            async for chunk in service.invoke_agent_streaming("Check positions"):
-                # chunk = 'data: {"type": "text", "content": "Current positions:"}\n\n'
-                await websocket.send(chunk)
+            Exception: If execution fails
         """
         if not self.verify_mcp_config():
             error_msg = f"Cannot invoke agent: MCP config not found at {self.mcp_config_path}"
             self.logger.error(error_msg)
 
-            # Yield error chunk in SSE format
-            error_chunk = {
-                "type": "error",
-                "content": error_msg
-            }
-            yield f"data: {json.dumps(error_chunk)}\n\n"
-            yield "data: [DONE]\n\n"
-            return
-
-        if not self.claude_path:
-            error_msg = "Claude CLI not available. Please install with: npm install -g @anthropic-ai/claude-cli"
-            self.logger.error(error_msg)
-
-            # Yield error chunk in SSE format
-            error_chunk = {
-                "type": "error",
-                "content": error_msg
-            }
+            error_chunk = {"type": "error", "content": error_msg}
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
             return
 
         self.logger.info(f"[ALPACA AGENT SERVICE] Invoking agent (streaming) with message: {message[:100]}...")
 
-        process = None
+        client = None
 
         try:
-            # Build the command using full path to claude
-            cmd = [
-                self.claude_path,
-                "--mcp-config", ".mcp.json.alpaca",
-                "--model", "sonnet",
-                "--dangerously-skip-permissions",
-                "-p", message
-            ]
-
-            self.logger.info(f"[ALPACA AGENT SERVICE] Command: {' '.join(cmd[:6])} -p '<message>'")
+            options = self._create_agent_options()
             self.logger.info(f"[ALPACA AGENT SERVICE] Working directory: {self.working_dir}")
 
-            # Create subprocess with piped stdout/stderr
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(self.working_dir)
-            )
+            client = ClaudeSDKClient(options=options)
+            await client.__aenter__()
 
-            self.logger.info(f"[ALPACA AGENT SERVICE] Subprocess started (PID: {process.pid})")
+            self.logger.info("[ALPACA AGENT SERVICE] Claude SDK client started")
 
-            # Stream stdout line by line
-            line_count = 0
-            async for line_bytes in process.stdout:
-                try:
-                    line = line_bytes.decode('utf-8', errors='replace').rstrip('\n\r')
+            # Send user's prompt
+            await client.query(message)
 
-                    # Include all lines (even empty ones for proper newline handling)
-                    line_count += 1
+            # Stream responses
+            chunk_count = 0
 
-                    # Format as SSE chunk - preserve newline for markdown rendering
-                    chunk_data = {
-                        "type": "text",
-                        "content": line + "\n"
-                    }
-
-                    sse_chunk = f"data: {json.dumps(chunk_data)}\n\n"
-                    yield sse_chunk
-
-                    self.logger.debug(f"Streamed line {line_count}: {line[:80]}...")
-
-                except Exception as e:
-                    self.logger.warning(f"Error processing line: {e}")
+            async for msg in client.receive_response():
+                # Handle SystemMessage (informational)
+                if isinstance(msg, SystemMessage):
+                    subtype = getattr(msg, "subtype", "unknown")
+                    self.logger.debug(f"[ALPACA AGENT SERVICE] SystemMessage: {subtype}")
                     continue
 
-            # Wait for process to complete
-            await process.wait()
+                # Process AssistantMessage blocks
+                if isinstance(msg, AssistantMessage):
+                    for block in msg.content:
+                        # Stream text responses
+                        if isinstance(block, TextBlock):
+                            chunk_count += 1
+                            chunk_data = {
+                                "type": "text",
+                                "content": block.text
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            self.logger.debug(f"Streamed text chunk {chunk_count}")
 
-            # Check return code
-            if process.returncode != 0:
-                stderr_bytes = await process.stderr.read()
-                stderr_text = stderr_bytes.decode('utf-8', errors='replace')
+                        # Stream thinking blocks
+                        elif isinstance(block, ThinkingBlock):
+                            chunk_data = {
+                                "type": "thinking",
+                                "content": block.thinking
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            self.logger.debug("Streamed thinking block")
 
-                error_msg = f"Alpaca agent subprocess failed with code {process.returncode}: {stderr_text}"
-                self.logger.error(f"[ALPACA AGENT SERVICE] {error_msg}")
+                        # Stream tool use blocks
+                        elif isinstance(block, ToolUseBlock):
+                            chunk_data = {
+                                "type": "tool_use",
+                                "tool_name": block.name,
+                                "tool_input": block.input
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            self.logger.debug(f"Streamed tool use: {block.name}")
 
-                # Yield error chunk
-                error_chunk = {
-                    "type": "error",
-                    "content": error_msg
-                }
-                yield f"data: {json.dumps(error_chunk)}\n\n"
-            else:
-                self.logger.success(f"[ALPACA AGENT SERVICE] Streaming completed, lines={line_count}")
+                # Handle result message
+                elif isinstance(msg, ResultMessage):
+                    self.logger.info(
+                        f"[ALPACA AGENT SERVICE] Completed: "
+                        f"turns={getattr(msg, 'num_turns', 'N/A')}, "
+                        f"cost=${getattr(msg, 'total_cost_usd', 0.0):.4f}"
+                    )
 
-            # Yield final DONE chunk
+            self.logger.success(f"[ALPACA AGENT SERVICE] Streaming completed, chunks={chunk_count}")
             yield "data: [DONE]\n\n"
 
         except asyncio.CancelledError:
             self.logger.warning("Alpaca agent streaming cancelled by client")
-
-            # Kill subprocess if running
-            if process and process.returncode is None:
-                process.kill()
-                await process.wait()
-
-            # Yield cancellation chunk
-            cancel_chunk = {
-                "type": "error",
-                "content": "Stream cancelled"
-            }
+            cancel_chunk = {"type": "error", "content": "Stream cancelled"}
             yield f"data: {json.dumps(cancel_chunk)}\n\n"
             yield "data: [DONE]\n\n"
 
         except Exception as e:
             self.logger.error(f"Failed to stream Alpaca agent response: {e}", exc_info=True)
-
-            # Kill subprocess if running
-            if process and process.returncode is None:
-                try:
-                    process.kill()
-                    await process.wait()
-                except Exception:
-                    pass
-
-            # Yield error chunk
-            error_chunk = {
-                "type": "error",
-                "content": f"Streaming error: {str(e)}"
-            }
+            error_chunk = {"type": "error", "content": f"Streaming error: {str(e)}"}
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
+
+        finally:
+            # Clean up client
+            if client:
+                try:
+                    await client.__aexit__(None, None, None)
+                except Exception as e:
+                    self.logger.warning(f"Error closing client: {e}")
+
+    async def invoke_with_stored_credential(
+        self,
+        credential_id: str,
+        user_id: str,
+        operation: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Invoke Alpaca agent operation using stored encrypted credentials.
+
+        Uses decrypt-on-demand pattern: credentials are decrypted only during
+        the operation and plaintext is discarded when context exits.
+
+        Args:
+            credential_id: UUID of stored credential in user_credentials table
+            user_id: User ID to validate ownership (RLS context)
+            operation: Operation name (e.g., "get_account", "get_positions")
+            params: Optional parameters for the operation
+
+        Returns:
+            Dict containing operation result
+
+        Raises:
+            ValueError: If credential not found, unauthorized, or inactive
+            RuntimeError: If operation fails
+
+        Example:
+            >>> service = AlpacaAgentService(logger, working_dir="/tmp")
+            >>> result = await service.invoke_with_stored_credential(
+            ...     credential_id="550e8400-e29b-41d4-a716-446655440000",
+            ...     user_id="user123",
+            ...     operation="get_account",
+            ...     params={}
+            ... )
+            >>> print(result["cash"])
+
+        Security:
+            - Credentials decrypted only within context manager scope
+            - Plaintext never stored as instance attribute
+            - RLS enforces credential ownership validation
+            - Plaintext automatically discarded on context exit
+        """
+        params = params or {}
+
+        self.logger.info(
+            f"Invoking Alpaca operation with stored credential: "
+            f"operation={operation}, credential_id={credential_id}"
+        )
+
+        try:
+            # Get RLS-aware database connection
+            async with get_connection_with_rls(user_id) as conn:
+                # Decrypt credential on-demand (plaintext exists only in this context)
+                async with get_decrypted_alpaca_credential(
+                    conn, credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Create MCP config with decrypted credentials
+                    # Note: Credentials exist only in this block's scope
+                    mcp_config = {
+                        "mcpServers": {
+                            "alpaca": {
+                                "command": "uvx",
+                                "args": ["alpaca-mcp-server", "serve"],
+                                "env": {
+                                    "ALPACA_API_KEY": api_key,
+                                    "ALPACA_SECRET_KEY": secret_key,
+                                    "ALPACA_PAPER_TRADE": "true",  # Default to paper
+                                },
+                            }
+                        }
+                    }
+
+                    # Build agent options with temporary credentials
+                    options_dict = {
+                        "system_prompt": ALPACA_AGENT_SYSTEM_PROMPT,
+                        "model": "sonnet",
+                        "cwd": str(self.working_dir),
+                        "env": {
+                            "ALPACA_API_KEY": api_key,
+                            "ALPACA_SECRET_KEY": secret_key,
+                            "ALPACA_PAPER_TRADE": "true",
+                        },
+                        "mcp_servers": {
+                            "alpaca": {
+                                "type": "stdio",
+                                "command": "uvx",
+                                "args": ["alpaca-mcp-server", "serve"],
+                                "env": {
+                                    "ALPACA_API_KEY": api_key,
+                                    "ALPACA_SECRET_KEY": secret_key,
+                                    "ALPACA_PAPER_TRADE": "true",
+                                },
+                            }
+                        },
+                    }
+
+                    # Create Claude Agent SDK client
+                    options = ClaudeAgentOptions(**options_dict)
+
+                    # Execute operation via agent
+                    async with ClaudeSDKClient(options=options) as client:
+                        # Build natural language prompt for operation
+                        prompt = f"Execute {operation}"
+                        if params:
+                            prompt += f" with params: {params}"
+
+                        await client.query(prompt)
+
+                        # Collect response
+                        response_text = ""
+                        async for msg in client.receive_response():
+                            if isinstance(msg, AssistantMessage):
+                                for block in msg.content:
+                                    if isinstance(block, TextBlock):
+                                        response_text += block.text
+
+                        self.logger.success(
+                            f"Operation {operation} completed successfully"
+                        )
+
+                        return {"result": response_text, "operation": operation}
+
+                # Credentials automatically discarded here when context exits
+
+        except ValueError as e:
+            # Credential validation errors (not found, unauthorized, inactive)
+            self.logger.error(f"Credential validation failed: {e}")
+            raise
+
+        except Exception as e:
+            # Other errors (network, API, etc.)
+            self.logger.error(
+                f"Failed to invoke operation {operation}: {e}", exc_info=True
+            )
+            raise RuntimeError(f"Operation {operation} failed: {e}") from e
