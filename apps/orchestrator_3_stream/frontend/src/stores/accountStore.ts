@@ -11,7 +11,8 @@ import type {
   UserAccountResponse,
   CredentialResponse,
   CredentialInput,
-  CredentialUpdate
+  CredentialUpdate,
+  AccountDataResponse
 } from '@/types/account'
 import credentialService from '@/services/credentialService'
 
@@ -38,6 +39,12 @@ export const useAccountStore = defineStore('account', () => {
   /** Prevents duplicate initialization */
   const isInitialized = ref<boolean>(false)
 
+  /** Real-time account data from Alpaca */
+  const accountData = ref<AccountDataResponse | null>(null)
+
+  /** Loading state for account data fetch */
+  const accountDataLoading = ref<boolean>(false)
+
   // ═══════════════════════════════════════════════════════════
   // GETTERS
   // ═══════════════════════════════════════════════════════════
@@ -55,6 +62,9 @@ export const useAccountStore = defineStore('account', () => {
   const alpacaCredentials = computed(() =>
     credentials.value.filter(c => c.credential_type === 'alpaca')
   )
+
+  /** Whether account data is available */
+  const hasAccountData = computed(() => accountData.value !== null)
 
   // ═══════════════════════════════════════════════════════════
   // ACTIONS
@@ -117,6 +127,8 @@ export const useAccountStore = defineStore('account', () => {
     userAccount.value = null
     credentials.value = []
     activeCredentialId.value = null
+    accountData.value = null
+    accountDataLoading.value = false
     error.value = null
     isInitialized.value = false
 
@@ -258,6 +270,9 @@ export const useAccountStore = defineStore('account', () => {
           console.warn('[AccountStore] Failed to clear activeCredentialId from localStorage:', err)
         }
         console.log('[AccountStore] Cleared active credential (was deleted)')
+
+        // Also clear account data
+        clearAccountData()
       }
     } catch (err) {
       console.error('[AccountStore] Failed to remove credential:', err)
@@ -284,6 +299,9 @@ export const useAccountStore = defineStore('account', () => {
     } catch (err) {
       console.warn('[AccountStore] Failed to save activeCredentialId to localStorage:', err)
     }
+
+    // Fetch account data for new credential
+    fetchAccountData(credentialId)
   }
 
   /**
@@ -309,6 +327,39 @@ export const useAccountStore = defineStore('account', () => {
     }
   }
 
+  /**
+   * Fetch account data for a credential.
+   * Called automatically when active credential changes.
+   *
+   * @param credentialId - Credential ID to fetch data for
+   */
+  async function fetchAccountData(credentialId: string): Promise<void> {
+    try {
+      accountDataLoading.value = true
+      // Clear old data while loading
+      accountData.value = null
+
+      console.log('[AccountStore] Fetching account data for credential:', credentialId)
+      accountData.value = await credentialService.getAccountData(credentialId)
+      console.log('[AccountStore] Account data loaded:', accountData.value.account_type)
+    } catch (err) {
+      console.error('[AccountStore] Failed to fetch account data:', err)
+      accountData.value = null
+      // Don't throw - account data is supplementary, not critical
+    } finally {
+      accountDataLoading.value = false
+    }
+  }
+
+  /**
+   * Clear account data.
+   * Called when credential is deleted or deselected.
+   */
+  function clearAccountData(): void {
+    accountData.value = null
+    accountDataLoading.value = false
+  }
+
   // ═══════════════════════════════════════════════════════════
   // RETURN PUBLIC API
   // ═══════════════════════════════════════════════════════════
@@ -321,11 +372,14 @@ export const useAccountStore = defineStore('account', () => {
     isLoading,
     error,
     isInitialized,
+    accountData,
+    accountDataLoading,
 
     // Getters
     activeCredential,
     hasCredentials,
     alpacaCredentials,
+    hasAccountData,
 
     // Actions
     initialize,
@@ -335,6 +389,8 @@ export const useAccountStore = defineStore('account', () => {
     updateCredential,
     removeCredential,
     setActiveCredential,
-    loadActiveCredential
+    loadActiveCredential,
+    fetchAccountData,
+    clearAccountData
   }
 })
