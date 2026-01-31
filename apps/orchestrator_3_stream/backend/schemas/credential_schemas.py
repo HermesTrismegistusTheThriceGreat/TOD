@@ -56,6 +56,10 @@ class StoreCredentialRequest(BaseModel):
         ...,
         description="Secret key (masked in logs and errors)"
     )
+    nickname: Optional[str] = Field(
+        None,
+        description="User-friendly label (e.g., 'Paper Account 1'). Defaults to credential_type if not provided."
+    )
 
 
 class UpdateCredentialRequest(BaseModel):
@@ -83,6 +87,10 @@ class UpdateCredentialRequest(BaseModel):
     is_active: Optional[bool] = Field(
         None,
         description="Whether the credential is active"
+    )
+    nickname: Optional[str] = Field(
+        None,
+        description="User-friendly label for the credential"
     )
 
 
@@ -112,6 +120,7 @@ class CredentialResponse(BaseModel):
     id: str = Field(..., description="Credential ID (UUID)")
     account_id: str = Field(..., description="User account ID (UUID)")
     credential_type: str = Field(..., description="Credential type (alpaca/polygon)")
+    nickname: Optional[str] = Field(None, description="User-friendly label")
     is_active: bool = Field(..., description="Whether credential is active")
     created_at: str = Field(..., description="Creation timestamp (ISO 8601)")
     updated_at: str = Field(..., description="Last update timestamp (ISO 8601)")
