@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 5 of 8 (Account Display)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-31 — Completed 05-01-PLAN.md (Backend Endpoint)
+Last activity: 2026-01-31 — Completed 05-02-PLAN.md (Service Layer)
 
-Progress: [████████████░] 87% Phase 5 (13/15 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 1/3)
+Progress: [████████████░] 93% Phase 5 (14/15 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 2/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 5.6min
-- Total execution time: 1.54 hours
+- Total plans completed: 14
+- Average duration: 5.3min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [████████████░] 87% Phase 5 (13/15 plans tot
 | 02-database-schema | 3 | 7.3min | 2.4min |
 | 03-credential-management | 3 | 11.4min | 3.8min |
 | 04-account-management-ui | 3 | 12.5min | 4.2min |
-| 05-account-display | 1 | 1.8min | 1.8min |
+| 05-account-display | 2 | 4.0min | 2.0min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (2min), 04-02 (2.5min), 04-03 (8min), 05-01 (1.8min)
-- Trend: Backend API plans fastest (simple CRUD patterns)
+- Last 5 plans: 04-02 (2.5min), 04-03 (8min), 05-01 (1.8min), 05-02 (2.2min)
+- Trend: Backend API and service layer plans extremely fast (simple CRUD and state patterns)
 
 *Updated after each plan completion*
 
@@ -99,6 +99,10 @@ Recent decisions affecting current work:
 - [05-01]: Use string types for balance/equity/buying_power in AccountDataResponse to preserve precision
 - [05-01]: Determine paper vs live from credential_type stored in database (single source of truth)
 - [05-01]: Wrap synchronous TradingClient.get_account() in async function for codebase consistency
+- [05-02]: Use snake_case in TypeScript interfaces to match backend Pydantic schemas
+- [05-02]: Auto-trigger fetchAccountData when setActiveCredential called for immediate data availability
+- [05-02]: Don't throw errors from fetchAccountData - account data is supplementary, not critical
+- [05-02]: Clear account data when active credential is deleted
 
 ### Pending Todos
 
@@ -111,15 +115,15 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 17:02:00 UTC
-Stopped at: Completed 05-01-PLAN.md (Backend Endpoint)
+Last session: 2026-01-31 17:07:02 UTC
+Stopped at: Completed 05-02-PLAN.md (Service Layer)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
 **Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
-**Phase 5 In Progress:** Account data endpoint created with GET /api/credentials/{id}/account-data returning real-time Alpaca metrics.
+**Phase 5 In Progress:** Account data endpoint and service layer complete. Backend fetches real-time Alpaca metrics; frontend credentialService and accountStore provide reactive access to balance, equity, and buying power data.
 
 ---
 *State initialized: 2026-01-29*
