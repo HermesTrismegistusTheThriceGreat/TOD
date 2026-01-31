@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Friends can log in, add their own Alpaca accounts, and trade via chat — each person controls their own money.
-**Current focus:** Phase 3 - Credential Management
+**Current focus:** Phase 4 - Account Management UI
 
 ## Current Position
 
-Phase: 3 of 8 (Credential Management)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-31 — Completed 03-03-PLAN.md (Alpaca Integration & Testing)
+Phase: 4 of 8 (Account Management UI)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-31 — Completed 04-01-PLAN.md (Backend Account API)
 
-Progress: [█████████░] 90% (9/10 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3)
+Progress: [█████████░] 83% (10/12 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 1/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 7.3min
-- Total execution time: 1.15 hours
+- Total plans completed: 10
+- Average duration: 6.8min
+- Total execution time: 1.25 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [█████████░] 90% (9/10 plans total: Phase 1: 3/3, 
 | 01-security-foundation | 3 | 49.5min | 16.5min |
 | 02-database-schema | 3 | 7.3min | 2.4min |
 | 03-credential-management | 3 | 11.4min | 3.8min |
+| 04-account-management-ui | 1 | 2.0min | 2.0min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (3.3min), 03-01 (3min), 03-02 (3min), 03-03 (5.4min)
-- Trend: Integration/testing plans take longer (~5min), API/schema plans faster (~2-3min)
+- Last 5 plans: 03-01 (3min), 03-02 (3min), 03-03 (5.4min), 04-01 (2min)
+- Trend: Backend API plans are consistently fast (~2-3min), integration plans slower (~5min)
 
 *Updated after each plan completion*
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [03-03]: Real Alpaca tests use UNIQUE env var names (ALPACA_PAPER1_*) to avoid duplicate key issue
 - [03-03]: Real integration tests use 10-second timeout for API calls to prevent hangs
 - [03-03]: RLS isolation test creates temporary user and cleans up after (ephemeral testing)
+- [04-01]: Get-or-create endpoint pattern for idempotent account initialization
+- [04-01]: One account per user enforced by database unique constraint on user_id
+- [04-01]: All account endpoints use get_connection_with_rls for RLS enforcement
 
 ### Pending Todos
 
@@ -95,13 +99,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 14:19:17 UTC
-Stopped at: Completed 03-03-PLAN.md (Alpaca Integration & Testing)
+Last session: 2026-01-31 15:27:00 UTC
+Stopped at: Completed 04-01-PLAN.md (Backend Account API)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
+**Phase 4 In Progress (1/3 complete):** Backend account API with GET /api/accounts, POST /api/accounts, POST /api/accounts/get-or-create endpoints.
 
 ---
 *State initialized: 2026-01-29*
