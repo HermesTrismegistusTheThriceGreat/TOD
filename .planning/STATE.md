@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Friends can log in, add their own Alpaca accounts, and trade via chat — each person controls their own money.
-**Current focus:** Phase 4 - Account Management UI
+**Current focus:** Phase 5 - Account Display
 
 ## Current Position
 
-Phase: 4 of 8 (Account Management UI)
-Plan: 2 of 3 in current phase
+Phase: 5 of 8 (Account Display)
+Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-31 — Completed 04-02-PLAN.md (Frontend Service Layer)
+Last activity: 2026-01-31 — Completed 05-01-PLAN.md (Backend Endpoint)
 
-Progress: [█████████░] 92% (11/12 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 2/3)
+Progress: [████████████░] 87% Phase 5 (13/15 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 1/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 6.3min
-- Total execution time: 1.33 hours
+- Total plans completed: 13
+- Average duration: 5.6min
+- Total execution time: 1.54 hours
 
 **By Phase:**
 
@@ -30,11 +30,12 @@ Progress: [█████████░] 92% (11/12 plans total: Phase 1: 3/3,
 | 01-security-foundation | 3 | 49.5min | 16.5min |
 | 02-database-schema | 3 | 7.3min | 2.4min |
 | 03-credential-management | 3 | 11.4min | 3.8min |
-| 04-account-management-ui | 2 | 4.5min | 2.25min |
+| 04-account-management-ui | 3 | 12.5min | 4.2min |
+| 05-account-display | 1 | 1.8min | 1.8min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (3min), 03-03 (5.4min), 04-01 (2min), 04-02 (2.5min)
-- Trend: Frontend service layer plans very fast (~2-2.5min), similar to backend API plans
+- Last 5 plans: 04-01 (2min), 04-02 (2.5min), 04-03 (8min), 05-01 (1.8min)
+- Trend: Backend API plans fastest (simple CRUD patterns)
 
 *Updated after each plan completion*
 
@@ -91,6 +92,13 @@ Recent decisions affecting current work:
 - [04-02]: Service layer returns unwrapped data (not full response objects)
 - [04-02]: Store initialization guard prevents duplicate calls with isInitialized ref
 - [04-02]: activeCredentialId persisted to localStorage for session continuity
+- [04-03]: Auth-guarded initialization via watcher on authStore.isAuthenticated with immediate:true
+- [04-03]: AccountSelector hidden when not authenticated (v-if on authStore.isAuthenticated)
+- [04-03]: /accounts added to fullPageRoutes array for proper layout handling
+- [04-03]: Password-type inputs for API key and secret fields (security)
+- [05-01]: Use string types for balance/equity/buying_power in AccountDataResponse to preserve precision
+- [05-01]: Determine paper vs live from credential_type stored in database (single source of truth)
+- [05-01]: Wrap synchronous TradingClient.get_account() in async function for codebase consistency
 
 ### Pending Todos
 
@@ -103,14 +111,15 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 15:32:00 UTC
-Stopped at: Completed 04-02-PLAN.md (Frontend Service Layer)
+Last session: 2026-01-31 17:02:00 UTC
+Stopped at: Completed 05-01-PLAN.md (Backend Endpoint)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
-**Phase 4 In Progress (2/3 complete):** Backend account API + Frontend service layer (TypeScript types, HTTP service, Pinia store with localStorage persistence).
+**Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
+**Phase 5 In Progress:** Account data endpoint created with GET /api/credentials/{id}/account-data returning real-time Alpaca metrics.
 
 ---
 *State initialized: 2026-01-29*
