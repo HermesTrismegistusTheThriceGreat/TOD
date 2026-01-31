@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 5.1 of 8 (Multiple Credentials Support)
-Plan: 1 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: In Progress
-Last activity: 2026-01-31 - Completed 05.1-01-PLAN.md (Database Schema)
+Last activity: 2026-01-31 - Completed 05.1-03-PLAN.md (Frontend Nickname Support)
 
-Progress: [█████████████░░] 88% (16/18 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 1/3)
+Progress: [██████████████░] 94% (17/18 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 2/3)
 
 ### Pending Todos
 
@@ -36,10 +36,10 @@ Progress: [█████████████░░] 88% (16/18 plans total
 | 03-credential-management | 3 | 11.4min | 3.8min |
 | 04-account-management-ui | 3 | 12.5min | 4.2min |
 | 05-account-display | 3 | 6.0min | 2.0min |
-| 05.1-multiple-credentials-support | 1 | 1.0min | 1.0min |
+| 05.1-multiple-credentials-support | 2 | 3.0min | 1.5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (8min), 05-01 (1.8min), 05-02 (2.2min), 05-03 (2.0min), 05.1-01 (1.0min)
+- Last 5 plans: 05-01 (1.8min), 05-02 (2.2min), 05-03 (2.0min), 05.1-01 (1.0min), 05.1-03 (2.0min)
 - Trend: Database and model update plans extremely fast (schema changes only)
 
 *Updated after each plan completion*
@@ -111,6 +111,8 @@ Recent decisions affecting current work:
 - [05.1-01]: Drop unique constraint on (user_account_id, credential_type) to allow multiple credentials of same type
 - [05.1-01]: Backfill nickname with credential_type for existing credentials
 - [05.1-01]: Add index on (user_account_id, nickname) for efficient lookups (not unique constraint)
+- [05.1-03]: Use nickname || credential_type fallback pattern in display helper
+- [05.1-03]: Show date-based fallback when nickname matches credential_type
 
 ### Pending Todos
 
@@ -127,8 +129,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 19:35:48 UTC
-Stopped at: Completed 05.1-01-PLAN.md (Database Schema)
+Last session: 2026-01-31 19:43:00 UTC
+Stopped at: Completed 05.1-03-PLAN.md (Frontend Nickname Support)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
@@ -136,7 +138,7 @@ Resume file: None
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
 **Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
 **Phase 5 Complete:** Account data endpoint, service layer, and AccountDataDisplay component complete. Backend fetches real-time Alpaca metrics; frontend displays balance, equity, and buying power.
-**Phase 5.1 In Progress:** Database schema updated to support multiple credentials per account. Migration 15 drops unique constraint, adds nickname column with backfill.
+**Phase 5.1 In Progress:** Database schema updated and frontend support added for multiple credentials. Migration 15 drops unique constraint, adds nickname column. TypeScript types and Vue components updated for nickname field.
 
 ---
 *State initialized: 2026-01-29*
