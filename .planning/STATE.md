@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 3 of 8 (Credential Management)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-31 — Completed 03-02-PLAN.md (Credential API Endpoints)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-31 — Completed 03-03-PLAN.md (Alpaca Integration & Testing)
 
-Progress: [████████░░] 80% (8/10 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 2/3)
+Progress: [█████████░] 90% (9/10 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 7.9min
-- Total execution time: 1.05 hours
+- Total plans completed: 9
+- Average duration: 7.3min
+- Total execution time: 1.15 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████████░░] 80% (8/10 plans total: Phase 1: 3/3, 
 |-------|-------|-------|----------|
 | 01-security-foundation | 3 | 49.5min | 16.5min |
 | 02-database-schema | 3 | 7.3min | 2.4min |
-| 03-credential-management | 2 | 6min | 3min |
+| 03-credential-management | 3 | 11.4min | 3.8min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (2min), 02-03 (3.3min), 03-01 (3min), 03-02 (3min)
-- Trend: Consistent velocity on API/schema plans (~2-3min)
+- Last 5 plans: 02-03 (3.3min), 03-01 (3min), 03-02 (3min), 03-03 (5.4min)
+- Trend: Integration/testing plans take longer (~5min), API/schema plans faster (~2-3min)
 
 *Updated after each plan completion*
 
@@ -78,6 +78,11 @@ Recent decisions affecting current work:
 - [03-02]: All credential endpoints use get_current_user dependency for authentication enforcement
 - [03-02]: Update endpoint only modifies provided fields (partial update pattern)
 - [03-02]: Delete endpoint uses hard delete (not soft delete) per plan specification
+- [03-03]: Use invoke_with_stored_credential for credential-aware Alpaca API invocations
+- [03-03]: Create three test files: endpoints, lifecycle, real integration (separation of concerns)
+- [03-03]: Real Alpaca tests use UNIQUE env var names (ALPACA_PAPER1_*) to avoid duplicate key issue
+- [03-03]: Real integration tests use 10-second timeout for API calls to prevent hangs
+- [03-03]: RLS isolation test creates temporary user and cleans up after (ephemeral testing)
 
 ### Pending Todos
 
@@ -90,13 +95,13 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 14:09:14 UTC
-Stopped at: Completed 03-02-PLAN.md (Credential API Endpoints)
+Last session: 2026-01-31 14:19:17 UTC
+Stopped at: Completed 03-03-PLAN.md (Alpaca Integration & Testing)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
-**Phase 3 In Progress:** Credential management API layer - schemas, service, and REST endpoints with RLS enforcement complete (2/3 plans).
+**Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
 
 ---
 *State initialized: 2026-01-29*
