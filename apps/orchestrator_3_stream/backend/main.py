@@ -59,6 +59,7 @@ from modules.alpaca_models import (
 )
 from modules.alpaca_agent_service import AlpacaAgentService
 from modules.alpaca_agent_models import AlpacaAgentChatRequest, AlpacaAgentChatResponse
+from routers.credentials import router as credentials_router
 
 logger = get_logger()
 ws_manager = get_websocket_manager()
@@ -285,6 +286,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(credentials_router)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1596,14 +1600,14 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
         alpaca_agent_service: AlpacaAgentService = request.app.state.alpaca_agent_service
         logger.debug(f"[ALPACA AGENT] Service retrieved, working_dir={alpaca_agent_service.working_dir}")
 
-        # Check if Claude CLI is available
+        # Check if Claude SDK is available (claude_path is set to "sdk" when using SDK)
         if not alpaca_agent_service.claude_path:
-            logger.error("[ALPACA AGENT] Claude CLI not found")
+            logger.error("[ALPACA AGENT] Claude SDK not available")
             return JSONResponse(
                 status_code=503,
                 content={
                     "status": "error",
-                    "error": "Claude CLI not available. Please install with: npm install -g @anthropic-ai/claude-cli"
+                    "error": "Claude Agent SDK not available. Check that claude-agent-sdk is installed."
                 }
             )
 
