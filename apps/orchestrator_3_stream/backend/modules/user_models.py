@@ -213,6 +213,7 @@ class UserCredentialORM(Base):
     credential_type = Column(String(50), nullable=False)  # "alpaca", "polygon"
     api_key = Column(EncryptedString(500), nullable=False)  # Auto-encrypted
     secret_key = Column(EncryptedString(500), nullable=False)  # Auto-encrypted
+    nickname = Column(String(255), nullable=True)  # User-friendly label
     is_active = Column(Boolean, default=True)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

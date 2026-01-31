@@ -23,12 +23,10 @@ from uuid import UUID
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, select, update
-from sqlalchemy.exc import IntegrityError, NoResultFound
+from asyncpg.exceptions import UniqueViolationError
 
 from modules.auth_middleware import get_current_user, AuthUser
 from modules.database import get_connection_with_rls
-from modules.user_models import UserCredentialORM, UserAccountORM
 from modules.credential_service import (
     get_decrypted_alpaca_credential,
     validate_alpaca_credentials,
@@ -87,29 +85,35 @@ async def store_credential_endpoint(
                 credential_type=request.credential_type,
                 api_key=request.api_key.get_secret_value(),
                 secret_key=request.secret_key.get_secret_value(),
+                nickname=request.nickname,
             )
 
-            # Fetch created credential to return metadata
-            result = await conn.execute(
-                select(UserCredentialORM).where(UserCredentialORM.id == credential_id)
+            # Fetch created credential to return metadata (using raw SQL for asyncpg)
+            result = await conn.fetchrow(
+                """
+                SELECT id, user_account_id, credential_type, nickname, is_active, created_at, updated_at
+                FROM user_credentials
+                WHERE id = $1
+                """,
+                credential_id,
             )
-            credential = result.scalar_one()
 
             logger.info(f"Credential stored: {credential_id}")
 
             return CredentialResponse(
-                id=str(credential.id),
-                account_id=str(credential.user_account_id),
-                credential_type=credential.credential_type,
-                is_active=credential.is_active,
-                created_at=credential.created_at.isoformat(),
-                updated_at=credential.updated_at.isoformat(),
+                id=str(result["id"]),
+                account_id=str(result["user_account_id"]),
+                credential_type=result["credential_type"],
+                nickname=result["nickname"],
+                is_active=result["is_active"],
+                created_at=result["created_at"].isoformat(),
+                updated_at=result["updated_at"].isoformat(),
             )
 
     except ValueError as e:
         logger.warning(f"Credential storage failed: {e}")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except IntegrityError:
+    except UniqueViolationError:
         logger.warning(f"Duplicate credential: account={request.account_id}, type={request.credential_type}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -144,7 +148,7 @@ async def list_credentials_endpoint(
             # Query credentials using raw SQL (RLS filters to user's rows)
             result = await conn.fetch(
                 """
-                SELECT id, user_account_id, credential_type, is_active, created_at, updated_at
+                SELECT id, user_account_id, credential_type, nickname, is_active, created_at, updated_at
                 FROM user_credentials
                 WHERE user_account_id = $1
                 ORDER BY created_at DESC
@@ -157,6 +161,7 @@ async def list_credentials_endpoint(
                     id=str(row["id"]),
                     account_id=str(row["user_account_id"]),
                     credential_type=row["credential_type"],
+                    nickname=row["nickname"],
                     is_active=row["is_active"],
                     created_at=row["created_at"].isoformat(),
                     updated_at=row["updated_at"].isoformat(),
@@ -360,6 +365,8 @@ async def update_credential_endpoint(
                 update_values["secret_key"] = request.secret_key.get_secret_value()
             if request.is_active is not None:
                 update_values["is_active"] = request.is_active
+            if request.nickname is not None:
+                update_values["nickname"] = request.nickname
 
             if not update_values:
                 raise HTTPException(
@@ -367,16 +374,37 @@ async def update_credential_endpoint(
                     detail="No fields provided for update",
                 )
 
-            # Update credential (RLS ensures user owns it)
-            result = await conn.execute(
-                update(UserCredentialORM)
-                .where(UserCredentialORM.id == UUID(credential_id))
-                .values(**update_values)
-                .returning(UserCredentialORM)
-            )
-            credential = result.scalar_one_or_none()
+            # Update credential using raw SQL (RLS ensures user owns it)
+            # Encrypt api_key/secret_key if provided
+            if "api_key" in update_values:
+                from modules.encryption_service import get_encryption_service
+                encryption = get_encryption_service()
+                update_values["api_key"] = encryption.encrypt(update_values["api_key"])
+            if "secret_key" in update_values:
+                from modules.encryption_service import get_encryption_service
+                encryption = get_encryption_service()
+                update_values["secret_key"] = encryption.encrypt(update_values["secret_key"])
 
-            if credential is None:
+            # Build SET clause dynamically
+            set_clauses = []
+            params = [UUID(credential_id)]
+            param_idx = 2
+            for key, value in update_values.items():
+                set_clauses.append(f"{key} = ${param_idx}")
+                params.append(value)
+                param_idx += 1
+            set_clauses.append("updated_at = NOW()")
+
+            query = f"""
+                UPDATE user_credentials
+                SET {', '.join(set_clauses)}
+                WHERE id = $1
+                RETURNING id, user_account_id, credential_type, nickname, is_active, created_at, updated_at
+            """
+
+            result = await conn.fetchrow(query, *params)
+
+            if result is None:
                 logger.warning(f"Credential {credential_id} not found or unauthorized")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -386,12 +414,13 @@ async def update_credential_endpoint(
             logger.info(f"Credential {credential_id} updated successfully")
 
             return CredentialResponse(
-                id=str(credential.id),
-                account_id=str(credential.user_account_id),
-                credential_type=credential.credential_type,
-                is_active=credential.is_active,
-                created_at=credential.created_at.isoformat(),
-                updated_at=credential.updated_at.isoformat(),
+                id=str(result["id"]),
+                account_id=str(result["user_account_id"]),
+                credential_type=result["credential_type"],
+                nickname=result["nickname"],
+                is_active=result["is_active"],
+                created_at=result["created_at"].isoformat(),
+                updated_at=result["updated_at"].isoformat(),
             )
 
     except HTTPException:
@@ -425,12 +454,18 @@ async def delete_credential_endpoint(
         logger.info(f"Deleting credential {credential_id} for user {user.id}")
 
         async with get_connection_with_rls(user.id) as conn:
-            # Delete credential (RLS ensures user owns it)
+            # Delete credential using raw SQL (RLS ensures user owns it)
             result = await conn.execute(
-                delete(UserCredentialORM).where(UserCredentialORM.id == UUID(credential_id))
+                """
+                DELETE FROM user_credentials
+                WHERE id = $1
+                """,
+                UUID(credential_id),
             )
 
-            if result.rowcount == 0:
+            # asyncpg returns "DELETE N" where N is row count
+            row_count = int(result.split()[1]) if result else 0
+            if row_count == 0:
                 logger.warning(f"Credential {credential_id} not found or unauthorized")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

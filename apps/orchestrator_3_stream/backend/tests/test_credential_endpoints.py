@@ -13,6 +13,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 from unittest.mock import AsyncMock, patch
 from cryptography.fernet import Fernet
+from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -38,7 +39,14 @@ def test_encryption_key(monkeypatch):
 @pytest.fixture
 def mock_user():
     """Create mock authenticated user for dependency override"""
-    return AuthUser(id="test-user-123", email="test@example.com", name="Test User")
+    now = datetime.now(timezone.utc)
+    return AuthUser(
+        id="test-user-123",
+        email="test@example.com",
+        name="Test User",
+        created_at=now,
+        updated_at=now
+    )
 
 
 @pytest.fixture
@@ -76,7 +84,7 @@ def client(test_app):
 # ═══════════════════════════════════════════════════════════
 
 
-@patch("routers.credentials.store_credential")
+@patch("routers.credentials.store_credential", new_callable=AsyncMock)
 @patch("routers.credentials.get_connection_with_rls")
 def test_store_credential_success(
     mock_get_conn,
@@ -88,30 +96,26 @@ def test_store_credential_success(
     mock_user,
 ):
     """Test successful credential storage"""
-    from modules.user_models import UserCredentialORM
     from datetime import datetime
 
-    # Mock database operations
+    # Mock database operations (async function)
     mock_store_cred.return_value = UUID(test_credential_id)
 
-    # Mock credential object
-    mock_cred = UserCredentialORM(
-        id=UUID(test_credential_id),
-        user_account_id=UUID(test_account_id),
-        user_id=mock_user.id,
-        credential_type="alpaca_paper",
-        api_key="encrypted_api_key",
-        secret_key="encrypted_secret_key",
-        is_active=True,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-    )
+    now = datetime.now()
+    # Mock asyncpg row result (dict-like with proper fields)
+    mock_row = {
+        "id": UUID(test_credential_id),
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca_paper",
+        "nickname": "alpaca_paper",
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
 
-    # Mock connection and query execution
+    # Mock connection with fetchrow for raw asyncpg queries
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.scalar_one.return_value = mock_cred
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    mock_conn.fetchrow = AsyncMock(return_value=mock_row)
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     # Make request
@@ -136,40 +140,128 @@ def test_store_credential_success(
     assert "secret_key" not in data  # Plaintext not in response
 
 
-@patch("routers.credentials.store_credential")
+@patch("routers.credentials.store_credential", new_callable=AsyncMock)
 @patch("routers.credentials.get_connection_with_rls")
-def test_store_credential_duplicate(
-    mock_get_conn, mock_store_cred, client, test_encryption_key, test_account_id
+def test_store_multiple_credentials_same_type(
+    mock_get_conn, mock_store_cred, client, test_encryption_key, test_account_id, mock_user
 ):
-    """Test duplicate credential returns 409"""
-    from sqlalchemy.exc import IntegrityError
+    """Test multiple credentials of same type are allowed (no 409 conflict)"""
+    from datetime import datetime
 
-    # Mock IntegrityError for duplicate
-    mock_store_cred.side_effect = IntegrityError("", "", "")
+    now = datetime.now()
+
+    # First credential
+    first_cred_id = uuid4()
+    mock_store_cred.return_value = first_cred_id
+
+    mock_row_1 = {
+        "id": first_cred_id,
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca_paper",
+        "nickname": "Paper Account 1",
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+
     mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(return_value=mock_row_1)
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
-    response = client.post(
+    # Store first credential
+    response1 = client.post(
         "/api/credentials/store",
         json={
             "account_id": test_account_id,
             "credential_type": "alpaca_paper",
             "api_key": "PKTEST123456",
             "secret_key": "spABCDEF123456",
+            "nickname": "Paper Account 1",
+        },
+    )
+    assert response1.status_code == 201
+
+    # Second credential of same type (should also succeed)
+    second_cred_id = uuid4()
+    mock_store_cred.return_value = second_cred_id
+
+    mock_row_2 = {
+        "id": second_cred_id,
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca_paper",
+        "nickname": "Paper Account 2",
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    mock_conn.fetchrow = AsyncMock(return_value=mock_row_2)
+
+    response2 = client.post(
+        "/api/credentials/store",
+        json={
+            "account_id": test_account_id,
+            "credential_type": "alpaca_paper",
+            "api_key": "PKTEST789012",
+            "secret_key": "spXYZ789012",
+            "nickname": "Paper Account 2",
         },
     )
 
-    assert response.status_code == 409
-    assert "already exists" in response.json()["detail"]
+    # Both should succeed (no 409 conflict)
+    assert response2.status_code == 201
+    assert response1.json()["id"] != response2.json()["id"]
 
 
-@patch("routers.credentials.store_credential")
+@patch("routers.credentials.store_credential", new_callable=AsyncMock)
+@patch("routers.credentials.get_connection_with_rls")
+def test_store_credential_with_nickname(
+    mock_get_conn, mock_store_cred, client, test_encryption_key, test_account_id, mock_user
+):
+    """Test storing credential with custom nickname"""
+    from datetime import datetime
+
+    cred_id = uuid4()
+    mock_store_cred.return_value = cred_id
+
+    now = datetime.now()
+    mock_row = {
+        "id": cred_id,
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca",
+        "nickname": "My Trading Account",
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(return_value=mock_row)
+    mock_get_conn.return_value.__aenter__.return_value = mock_conn
+
+    response = client.post(
+        "/api/credentials/store",
+        json={
+            "account_id": test_account_id,
+            "credential_type": "alpaca",
+            "api_key": "PKTEST123",
+            "secret_key": "sptest123",
+            "nickname": "My Trading Account",
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["nickname"] == "My Trading Account"
+
+
+@patch("routers.credentials.store_credential", new_callable=AsyncMock)
 @patch("routers.credentials.get_connection_with_rls")
 def test_store_credential_unauthorized(
     mock_get_conn, mock_store_cred, client, test_encryption_key, test_account_id
 ):
     """Test unauthorized account access returns 403"""
-    # Mock ValueError for unauthorized access
+    # Mock ValueError for unauthorized access (async function)
     mock_store_cred.side_effect = ValueError("Account does not belong to user")
     mock_conn = AsyncMock()
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
@@ -211,40 +303,34 @@ def test_list_credentials_success(
     mock_get_conn, client, test_encryption_key, test_account_id, mock_user
 ):
     """Test successful credential listing"""
-    from modules.user_models import UserCredentialORM
     from datetime import datetime
 
-    # Mock credentials
-    mock_creds = [
-        UserCredentialORM(
-            id=uuid4(),
-            user_account_id=UUID(test_account_id),
-            user_id=mock_user.id,
-            credential_type="alpaca_paper",
-            api_key="encrypted_key_1",
-            secret_key="encrypted_secret_1",
-            is_active=True,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-        ),
-        UserCredentialORM(
-            id=uuid4(),
-            user_account_id=UUID(test_account_id),
-            user_id=mock_user.id,
-            credential_type="polygon",
-            api_key="encrypted_key_2",
-            secret_key="encrypted_secret_2",
-            is_active=True,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-        ),
+    now = datetime.now()
+    # Mock asyncpg rows (list of dict-like objects)
+    mock_rows = [
+        {
+            "id": uuid4(),
+            "user_account_id": UUID(test_account_id),
+            "credential_type": "alpaca_paper",
+            "nickname": "Paper Account",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now,
+        },
+        {
+            "id": uuid4(),
+            "user_account_id": UUID(test_account_id),
+            "credential_type": "polygon",
+            "nickname": "Polygon Data",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now,
+        },
     ]
 
-    # Mock connection and query
+    # Mock connection with fetch for raw asyncpg queries
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.scalars.return_value.all.return_value = mock_creds
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    mock_conn.fetch = AsyncMock(return_value=mock_rows)
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.get(f"/api/credentials?account_id={test_account_id}")
@@ -261,25 +347,21 @@ def test_list_credentials_no_plaintext(
     mock_get_conn, client, test_encryption_key, test_account_id, mock_user
 ):
     """Test that response does NOT contain plaintext credentials"""
-    from modules.user_models import UserCredentialORM
     from datetime import datetime
 
-    mock_cred = UserCredentialORM(
-        id=uuid4(),
-        user_account_id=UUID(test_account_id),
-        user_id=mock_user.id,
-        credential_type="alpaca_paper",
-        api_key="encrypted_api_key",
-        secret_key="encrypted_secret_key",
-        is_active=True,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-    )
+    now = datetime.now()
+    mock_row = {
+        "id": uuid4(),
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca_paper",
+        "nickname": "Paper Account",
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
 
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.scalars.return_value.all.return_value = [mock_cred]
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    mock_conn.fetch = AsyncMock(return_value=[mock_row])
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.get(f"/api/credentials?account_id={test_account_id}")
@@ -298,7 +380,7 @@ def test_list_credentials_no_plaintext(
 # ═══════════════════════════════════════════════════════════
 
 
-@patch("routers.credentials.validate_alpaca_credentials")
+@patch("routers.credentials.validate_alpaca_credentials", new_callable=AsyncMock)
 @patch("routers.credentials.get_decrypted_alpaca_credential")
 @patch("routers.credentials.get_connection_with_rls")
 def test_validate_credential_success(
@@ -316,7 +398,7 @@ def test_validate_credential_success(
         "spABCDEF123456",
     )
 
-    # Mock Alpaca API validation
+    # Mock Alpaca API validation (async function)
     mock_validate.return_value = (True, "paper")
 
     mock_conn = AsyncMock()
@@ -408,25 +490,21 @@ def test_update_credential_success(
     mock_get_conn, client, test_encryption_key, test_credential_id, test_account_id
 ):
     """Test successful credential update"""
-    from modules.user_models import UserCredentialORM
     from datetime import datetime
 
-    mock_cred = UserCredentialORM(
-        id=UUID(test_credential_id),
-        user_account_id=UUID(test_account_id),
-        user_id="test-user-123",
-        credential_type="alpaca_paper",
-        api_key="new_encrypted_key",
-        secret_key="encrypted_secret",
-        is_active=True,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-    )
+    now = datetime.now()
+    mock_row = {
+        "id": UUID(test_credential_id),
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca_paper",
+        "nickname": "Paper Account",
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
 
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.scalar_one_or_none.return_value = mock_cred
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    mock_conn.fetchrow = AsyncMock(return_value=mock_row)
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.put(
@@ -445,25 +523,21 @@ def test_update_credential_deactivate(
     mock_get_conn, client, test_encryption_key, test_credential_id, test_account_id
 ):
     """Test credential deactivation"""
-    from modules.user_models import UserCredentialORM
     from datetime import datetime
 
-    mock_cred = UserCredentialORM(
-        id=UUID(test_credential_id),
-        user_account_id=UUID(test_account_id),
-        user_id="test-user-123",
-        credential_type="alpaca_paper",
-        api_key="encrypted_key",
-        secret_key="encrypted_secret",
-        is_active=False,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-    )
+    now = datetime.now()
+    mock_row = {
+        "id": UUID(test_credential_id),
+        "user_account_id": UUID(test_account_id),
+        "credential_type": "alpaca_paper",
+        "nickname": "Paper Account",
+        "is_active": False,
+        "created_at": now,
+        "updated_at": now,
+    }
 
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.scalar_one_or_none.return_value = mock_cred
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    mock_conn.fetchrow = AsyncMock(return_value=mock_row)
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.put(
@@ -482,9 +556,7 @@ def test_update_credential_unauthorized(
 ):
     """Test unauthorized update returns 403"""
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.scalar_one_or_none.return_value = None  # Credential not found
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    mock_conn.fetchrow = AsyncMock(return_value=None)  # Credential not found
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.put(
@@ -506,9 +578,8 @@ def test_delete_credential_success(
 ):
     """Test successful credential deletion"""
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.rowcount = 1  # One row deleted
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    # asyncpg returns string like "DELETE 1"
+    mock_conn.execute = AsyncMock(return_value="DELETE 1")
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.delete(f"/api/credentials/{test_credential_id}")
@@ -522,9 +593,8 @@ def test_delete_credential_unauthorized(
 ):
     """Test unauthorized deletion returns 403"""
     mock_conn = AsyncMock()
-    mock_result = AsyncMock()
-    mock_result.rowcount = 0  # No rows deleted (RLS filtered)
-    mock_conn.execute = AsyncMock(return_value=mock_result)
+    # asyncpg returns string like "DELETE 0" when no rows deleted
+    mock_conn.execute = AsyncMock(return_value="DELETE 0")
     mock_get_conn.return_value.__aenter__.return_value = mock_conn
 
     response = client.delete(f"/api/credentials/{test_credential_id}")
