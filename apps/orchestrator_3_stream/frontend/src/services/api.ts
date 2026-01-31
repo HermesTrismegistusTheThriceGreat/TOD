@@ -8,12 +8,14 @@ import axios from 'axios'
 import type { TradeListResponse, TradeStatsResponse, DetailedTradeListResponse } from '@/types/trades'
 
 // Get base URL from environment variables
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:9403'
+// Use localhost (not 127.0.0.1) to match cookie domain for cross-service auth
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9403'
 
 // Create axios instance
 export const apiClient = axios.create({
   baseURL,
   timeout: 30000,
+  withCredentials: true, // Send cookies for cross-origin requests (Better Auth session)
   headers: {
     'Content-Type': 'application/json'
   }

@@ -138,24 +138,27 @@ async def list_credentials_endpoint(
         logger.info(f"Listing credentials for user {user.id}, account {account_id}")
 
         async with get_connection_with_rls(user.id) as conn:
-            # Query credentials (RLS filters to user's rows)
-            result = await conn.execute(
-                select(UserCredentialORM)
-                .where(UserCredentialORM.user_account_id == UUID(account_id))
-                .order_by(UserCredentialORM.created_at.desc())
+            # Query credentials using raw SQL (RLS filters to user's rows)
+            result = await conn.fetch(
+                """
+                SELECT id, user_account_id, credential_type, is_active, created_at, updated_at
+                FROM user_credentials
+                WHERE user_account_id = $1
+                ORDER BY created_at DESC
+                """,
+                UUID(account_id),
             )
-            credentials = result.scalars().all()
 
             credential_list = [
                 CredentialResponse(
-                    id=str(cred.id),
-                    account_id=str(cred.user_account_id),
-                    credential_type=cred.credential_type,
-                    is_active=cred.is_active,
-                    created_at=cred.created_at.isoformat(),
-                    updated_at=cred.updated_at.isoformat(),
+                    id=str(row["id"]),
+                    account_id=str(row["user_account_id"]),
+                    credential_type=row["credential_type"],
+                    is_active=row["is_active"],
+                    created_at=row["created_at"].isoformat(),
+                    updated_at=row["updated_at"].isoformat(),
                 )
-                for cred in credentials
+                for row in result
             ]
 
             logger.info(f"Found {len(credential_list)} credentials")
