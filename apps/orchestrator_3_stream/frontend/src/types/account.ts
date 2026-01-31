@@ -16,6 +16,8 @@ export interface CredentialResponse {
   account_id: string
   /** Credential type (alpaca/polygon) */
   credential_type: string
+  /** User-friendly label for the credential */
+  nickname?: string | null
   /** Whether credential is active */
   is_active: boolean
   /** Creation timestamp (ISO 8601) */
@@ -61,6 +63,8 @@ export interface CredentialInput {
   api_key: string
   /** Secret key (will be encrypted server-side) */
   secret_key: string
+  /** Optional user-friendly label (defaults to credential_type on backend) */
+  nickname?: string
 }
 
 /**
@@ -144,4 +148,12 @@ export interface AccountDataResponse {
   daytrade_count: number
   /** ISO 8601 timestamp of last update */
   last_updated: string
+}
+
+/**
+ * Get display label for credential.
+ * Uses nickname if available, falls back to credential_type.
+ */
+export function getCredentialDisplayLabel(cred: CredentialResponse): string {
+  return cred.nickname || cred.credential_type || 'Unnamed Credential'
 }
