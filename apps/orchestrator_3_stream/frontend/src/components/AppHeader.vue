@@ -75,7 +75,22 @@
             PROMPT <span class="btn-hint">(Cmd+K)</span>
           </button>
           -->
+          <!-- Account Selector (desktop only, shows when authenticated) -->
+          <AccountSelector v-if="authStore.isAuthenticated" class="desktop-nav" />
           <!-- Desktop navigation buttons (hidden on mobile) -->
+          <button
+            v-if="authStore.isAuthenticated"
+            class="btn-prompt desktop-nav"
+            :class="{ active: route.path === '/accounts' }"
+            @click="router.push('/accounts')"
+            title="Manage Accounts"
+          >
+            <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+            ACCOUNTS
+          </button>
           <button
             class="btn-prompt desktop-nav btn-alpaca"
             :class="{ active: isAlpacaAgentRoute }"
@@ -128,6 +143,18 @@
               </span>
             </button>
             <div v-if="mobileMenuOpen" class="mobile-dropdown">
+              <!-- Account Selector in mobile menu -->
+              <div v-if="authStore.isAuthenticated" class="mobile-account-selector">
+                <AccountSelector />
+              </div>
+              <button
+                v-if="authStore.isAuthenticated"
+                class="mobile-menu-item"
+                :class="{ active: route.path === '/accounts' }"
+                @click="handleMobileNav('/accounts')"
+              >
+                MANAGE ACCOUNTS
+              </button>
               <button
                 class="mobile-menu-item"
                 :class="{ active: isAlpacaAgentRoute }"
@@ -186,6 +213,8 @@ import { useRouter, useRoute } from "vue-router";
 import { useHeaderBar } from "../composables/useHeaderBar";
 import { useOrchestratorStore } from "../stores/orchestratorStore";
 import { useAuthStore } from "../stores/authStore";
+import { useAccountStore } from "../stores/accountStore";
+import AccountSelector from "./AccountSelector.vue";
 import type { ViewMode } from "../types.d";
 
 // Use header bar composable for state management
@@ -196,6 +225,7 @@ const store = useOrchestratorStore();
 
 // Use auth store for authentication state
 const authStore = useAuthStore();
+const accountStore = useAccountStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -227,9 +257,15 @@ function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 }
 
-function handleMobileNav(mode: ViewMode) {
+function handleMobileNav(modeOrPath: ViewMode | string) {
   mobileMenuOpen.value = false;
-  navigateToViewMode(mode);
+  // If it's a route path (starts with /), navigate directly
+  if (typeof modeOrPath === 'string' && modeOrPath.startsWith('/')) {
+    router.push(modeOrPath);
+  } else {
+    // Otherwise treat it as a ViewMode
+    navigateToViewMode(modeOrPath as ViewMode);
+  }
 }
 
 function handleMobileAlpacaNav() {
@@ -247,6 +283,20 @@ watch(
   () => authStore.isAuthenticated,
   (newVal) => {
     console.log("[AppHeader] isAuthenticated changed:", newVal, "user:", authStore.user);
+  },
+  { immediate: true }
+);
+
+// Initialize account store only when authenticated
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuth) => {
+    if (isAuth) {
+      await accountStore.initialize();
+    } else {
+      // User logged out - reset store
+      accountStore.reset();
+    }
   },
   { immediate: true }
 );
@@ -445,9 +495,27 @@ onUnmounted(() => {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
   padding-left: var(--spacing-xl);
   border-left: 1px solid var(--border-color);
+}
+
+/* Account Selector in Header */
+.header-actions > .account-selector {
+  margin-right: var(--spacing-md);
+  padding-right: var(--spacing-md);
+  border-right: 1px solid var(--border-color);
+}
+
+.mobile-account-selector {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-account-selector .account-selector {
+  width: 100%;
+  max-width: 100%;
 }
 
 .stat-item {
@@ -563,6 +631,17 @@ onUnmounted(() => {
 
 .btn-alpaca:hover:not(.active) .alpaca-icon {
   stroke: #3b82f6;
+}
+
+/* Settings Icon for Accounts Button */
+.settings-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.btn-prompt .settings-icon {
+  margin-right: 0.25rem;
 }
 
 /* Mobile Menu */
@@ -698,6 +777,10 @@ onUnmounted(() => {
 /* Mobile responsive - show hamburger, hide desktop nav */
 @media (max-width: 768px) {
   .desktop-nav {
+    display: none;
+  }
+
+  .header-actions > .account-selector.desktop-nav {
     display: none;
   }
 
