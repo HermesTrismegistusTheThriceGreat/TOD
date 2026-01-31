@@ -20,6 +20,7 @@ Security:
 
 from typing import List
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, select, update
@@ -33,6 +34,7 @@ from modules.credential_service import (
     validate_alpaca_credentials,
     store_credential,
 )
+from modules.account_service import fetch_alpaca_account_data
 from modules.logger import get_logger
 from schemas.credential_schemas import (
     StoreCredentialRequest,
@@ -41,6 +43,7 @@ from schemas.credential_schemas import (
     ValidateCredentialResponse,
     ListCredentialsResponse,
 )
+from schemas.account_schemas import AccountDataResponse
 
 # Initialize logger
 logger = get_logger()
@@ -235,6 +238,91 @@ async def validate_credential_endpoint(
         raise
     except Exception as e:
         logger.error(f"Failed to validate credential: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/{credential_id}/account-data", response_model=AccountDataResponse)
+async def get_credential_account_data(
+    credential_id: str,
+    user: AuthUser = Depends(get_current_user),
+):
+    """
+    Fetch real-time account data from Alpaca using stored credential.
+
+    Decrypts credential, calls Alpaca /v2/account API, returns formatted response.
+
+    Args:
+        credential_id: UUID of credential to use for API call
+        user: Current authenticated user
+
+    Returns:
+        AccountDataResponse with account_type, balance, equity, buying_power
+
+    Raises:
+        HTTPException: 403 if unauthorized, 400 if inactive, 500 if API fails
+    """
+    try:
+        logger.info(f"Fetching account data for credential {credential_id}, user {user.id}")
+
+        async with get_connection_with_rls(user.id) as conn:
+            # First, get credential to determine account_type
+            # We need to know if it's paper or live before calling Alpaca
+            result = await conn.fetch(
+                """
+                SELECT credential_type FROM user_credentials WHERE id = $1
+                """,
+                UUID(credential_id),
+            )
+
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Credential {credential_id} not found"
+                )
+
+            credential_type = result[0]["credential_type"]
+
+            # Decrypt credential and fetch account data
+            try:
+                async with get_decrypted_alpaca_credential(conn, credential_id, user.id) as (
+                    api_key,
+                    secret_key,
+                ):
+                    # Use credential_type from database to determine paper vs live
+                    # credential_type is stored during credential validation (Phase 3)
+                    account_type = credential_type.lower()  # "paper" or "live"
+
+                    # Fetch account data from Alpaca
+                    account_data = await fetch_alpaca_account_data(
+                        api_key, secret_key, account_type
+                    )
+
+                    logger.info(f"Account data fetched for credential {credential_id}")
+
+                    return AccountDataResponse(
+                        account_type=account_data["account_type"],
+                        balance=account_data["cash"],
+                        equity=account_data["equity"],
+                        buying_power=account_data["buying_power"],
+                        currency=account_data["currency"],
+                        trading_blocked=account_data["trading_blocked"],
+                        account_blocked=account_data["account_blocked"],
+                        pattern_day_trader=account_data["pattern_day_trader"],
+                        daytrade_count=account_data["daytrade_count"],
+                        last_updated=datetime.utcnow().isoformat() + "Z",
+                    )
+
+            except ValueError as e:
+                logger.warning(f"Account data fetch failed: {e}")
+                if "inactive" in str(e):
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+                else:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch account data: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
