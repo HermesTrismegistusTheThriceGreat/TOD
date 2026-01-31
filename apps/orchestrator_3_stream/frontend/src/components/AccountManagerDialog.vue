@@ -33,6 +33,17 @@
         </el-select>
       </el-form-item>
 
+      <el-form-item label="Nickname" prop="nickname">
+        <el-input
+          v-model="formData.nickname"
+          placeholder="Paper Account 1"
+          maxlength="100"
+        />
+        <template #extra>
+          <span class="input-hint">Optional. Helps identify this account.</span>
+        </template>
+      </el-form-item>
+
       <el-form-item label="API Key" prop="api_key">
         <el-input
           v-model="formData.api_key"
@@ -96,7 +107,8 @@ const formRef = ref<FormInstance>()
 const formData = ref<CredentialInput>({
   credential_type: 'alpaca',
   api_key: '',
-  secret_key: ''
+  secret_key: '',
+  nickname: ''
 })
 
 // Computed
@@ -148,7 +160,8 @@ function resetForm() {
   formData.value = {
     credential_type: 'alpaca',
     api_key: '',
-    secret_key: ''
+    secret_key: '',
+    nickname: ''
   }
   formRef.value?.clearValidate()
 }
@@ -324,5 +337,12 @@ async function handleSubmit() {
 
 :deep(.el-form-item__error) {
   color: var(--status-error);
+}
+
+/* Input hint */
+.input-hint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-top: 4px;
 }
 </style>
