@@ -29,6 +29,7 @@
 import { computed, onMounted } from 'vue'
 import { useAccountStore } from '@/stores/accountStore'
 import type { CredentialResponse } from '@/types/account'
+import { getCredentialDisplayLabel } from '@/types/account'
 
 // Store
 const store = useAccountStore()
@@ -45,6 +46,11 @@ const selectedId = computed({
 
 // Format label for dropdown
 function formatLabel(cred: CredentialResponse): string {
+  // Use nickname if available and different from credential_type
+  if (cred.nickname && cred.nickname !== cred.credential_type) {
+    return cred.nickname
+  }
+  // Fallback to type + date format
   const type = cred.credential_type.charAt(0).toUpperCase() + cred.credential_type.slice(1)
   const date = new Date(cred.created_at)
   const formattedDate = date.toLocaleDateString('en-US', {
