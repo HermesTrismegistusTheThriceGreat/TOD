@@ -60,6 +60,7 @@ from modules.alpaca_models import (
 from modules.alpaca_agent_service import AlpacaAgentService
 from modules.alpaca_agent_models import AlpacaAgentChatRequest, AlpacaAgentChatResponse
 from routers.credentials import router as credentials_router
+from routers.accounts import router as accounts_router
 
 logger = get_logger()
 ws_manager = get_websocket_manager()
@@ -289,6 +290,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(credentials_router)
+app.include_router(accounts_router)
 
 
 # ═══════════════════════════════════════════════════════════
