@@ -77,6 +77,8 @@
           -->
           <!-- Account Selector (desktop only, shows when authenticated) -->
           <AccountSelector v-if="authStore.isAuthenticated" class="desktop-nav" />
+          <!-- Account Data Display (desktop only, shows when authenticated) -->
+          <AccountDataDisplay v-if="authStore.isAuthenticated" class="desktop-nav" />
           <!-- Desktop navigation buttons (hidden on mobile) -->
           <button
             v-if="authStore.isAuthenticated"
@@ -215,6 +217,7 @@ import { useOrchestratorStore } from "../stores/orchestratorStore";
 import { useAuthStore } from "../stores/authStore";
 import { useAccountStore } from "../stores/accountStore";
 import AccountSelector from "./AccountSelector.vue";
+import AccountDataDisplay from "./AccountDataDisplay.vue";
 import type { ViewMode } from "../types.d";
 
 // Use header bar composable for state management
