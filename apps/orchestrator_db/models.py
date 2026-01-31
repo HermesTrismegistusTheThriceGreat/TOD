@@ -694,6 +694,7 @@ class UserCredential(BaseModel):
     user_account_id: UUID
     user_id: str  # Denormalized for RLS
     credential_type: str  # "alpaca", "polygon", etc.
+    nickname: Optional[str] = None  # User-friendly label for credential
     api_key: str  # Note: This is the decrypted value after ORM retrieval
     secret_key: str  # Note: This is the decrypted value after ORM retrieval
     is_active: bool = True
