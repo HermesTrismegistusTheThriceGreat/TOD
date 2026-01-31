@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 4 of 8 (Account Management UI)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-31 — Completed 04-01-PLAN.md (Backend Account API)
+Last activity: 2026-01-31 — Completed 04-02-PLAN.md (Frontend Service Layer)
 
-Progress: [█████████░] 83% (10/12 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 1/3)
+Progress: [█████████░] 92% (11/12 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 2/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 6.8min
-- Total execution time: 1.25 hours
+- Total plans completed: 11
+- Average duration: 6.3min
+- Total execution time: 1.33 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [█████████░] 83% (10/12 plans total: Phase 1: 3/3,
 | 01-security-foundation | 3 | 49.5min | 16.5min |
 | 02-database-schema | 3 | 7.3min | 2.4min |
 | 03-credential-management | 3 | 11.4min | 3.8min |
-| 04-account-management-ui | 1 | 2.0min | 2.0min |
+| 04-account-management-ui | 2 | 4.5min | 2.25min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min), 03-02 (3min), 03-03 (5.4min), 04-01 (2min)
-- Trend: Backend API plans are consistently fast (~2-3min), integration plans slower (~5min)
+- Last 5 plans: 03-02 (3min), 03-03 (5.4min), 04-01 (2min), 04-02 (2.5min)
+- Trend: Frontend service layer plans very fast (~2-2.5min), similar to backend API plans
 
 *Updated after each plan completion*
 
@@ -87,6 +87,10 @@ Recent decisions affecting current work:
 - [04-01]: Get-or-create endpoint pattern for idempotent account initialization
 - [04-01]: One account per user enforced by database unique constraint on user_id
 - [04-01]: All account endpoints use get_connection_with_rls for RLS enforcement
+- [04-02]: TypeScript interfaces use snake_case to match backend Pydantic schemas
+- [04-02]: Service layer returns unwrapped data (not full response objects)
+- [04-02]: Store initialization guard prevents duplicate calls with isInitialized ref
+- [04-02]: activeCredentialId persisted to localStorage for session continuity
 
 ### Pending Todos
 
@@ -99,14 +103,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 15:27:00 UTC
-Stopped at: Completed 04-01-PLAN.md (Backend Account API)
+Last session: 2026-01-31 15:32:00 UTC
+Stopped at: Completed 04-02-PLAN.md (Frontend Service Layer)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
-**Phase 4 In Progress (1/3 complete):** Backend account API with GET /api/accounts, POST /api/accounts, POST /api/accounts/get-or-create endpoints.
+**Phase 4 In Progress (2/3 complete):** Backend account API + Frontend service layer (TypeScript types, HTTP service, Pinia store with localStorage persistence).
 
 ---
 *State initialized: 2026-01-29*
