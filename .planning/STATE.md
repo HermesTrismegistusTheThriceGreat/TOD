@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 3 of 8 (Credential Management)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-31 — Completed 03-01-PLAN.md (Credential Schemas & Service)
+Last activity: 2026-01-31 — Completed 03-02-PLAN.md (Credential API Endpoints)
 
-Progress: [███████░░░] 70% (7/10 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 1/3)
+Progress: [████████░░] 80% (8/10 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 2/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 8.5min
-- Total execution time: 1.0 hours
+- Total plans completed: 8
+- Average duration: 7.9min
+- Total execution time: 1.05 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [███████░░░] 70% (7/10 plans total: Phase 1: 3/3, 
 |-------|-------|-------|----------|
 | 01-security-foundation | 3 | 49.5min | 16.5min |
 | 02-database-schema | 3 | 7.3min | 2.4min |
-| 03-credential-management | 1 | 3min | 3min |
+| 03-credential-management | 2 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2min), 02-02 (2min), 02-03 (3.3min), 03-01 (3min)
+- Last 5 plans: 02-02 (2min), 02-03 (3.3min), 03-01 (3min), 03-02 (3min)
 - Trend: Consistent velocity on API/schema plans (~2-3min)
 
 *Updated after each plan completion*
@@ -73,6 +73,11 @@ Recent decisions affecting current work:
 - [03-01]: get_decrypted_alpaca_credential is async context manager for auto-cleanup
 - [03-01]: validate_alpaca_credentials supports both paper and live Alpaca API endpoints
 - [03-01]: store_credential validates account ownership before inserting
+- [03-02]: set_rls_context uses SET LOCAL for transaction-scoped RLS (auto-cleanup on transaction end)
+- [03-02]: get_connection_with_rls is async context manager for convenient RLS-aware queries
+- [03-02]: All credential endpoints use get_current_user dependency for authentication enforcement
+- [03-02]: Update endpoint only modifies provided fields (partial update pattern)
+- [03-02]: Delete endpoint uses hard delete (not soft delete) per plan specification
 
 ### Pending Todos
 
@@ -85,13 +90,13 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 14:04:05 UTC
-Stopped at: Completed 03-01-PLAN.md (Credential Schemas & Service)
+Last session: 2026-01-31 14:09:14 UTC
+Stopped at: Completed 03-02-PLAN.md (Credential API Endpoints)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
-**Phase 3 In Progress:** Credential management API layer started - schemas and service with decrypt-on-demand pattern complete (1/3 plans).
+**Phase 3 In Progress:** Credential management API layer - schemas, service, and REST endpoints with RLS enforcement complete (2/3 plans).
 
 ---
 *State initialized: 2026-01-29*
