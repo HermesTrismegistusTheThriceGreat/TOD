@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Friends can log in, add their own Alpaca accounts, and trade via chat — each person controls their own money.
-**Current focus:** Phase 2 - Database Schema
+**Current focus:** Phase 3 - Credential Management
 
 ## Current Position
 
-Phase: 2 of 8 (Database Schema)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-30 — Completed 02-03-PLAN.md (ORM Models with Encryption)
+Phase: 3 of 8 (Credential Management)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-31 — Completed 03-01-PLAN.md (Credential Schemas & Service)
 
-Progress: [██████░░░░] 60% (6/10 plans total: Phase 1: 3/3, Phase 2: 3/3)
+Progress: [███████░░░] 70% (7/10 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 1/3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 9.5min
-- Total execution time: 0.95 hours
+- Total plans completed: 7
+- Average duration: 8.5min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██████░░░░] 60% (6/10 plans total: Phase 1: 3/3, 
 |-------|-------|-------|----------|
 | 01-security-foundation | 3 | 49.5min | 16.5min |
 | 02-database-schema | 3 | 7.3min | 2.4min |
+| 03-credential-management | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (45min), 02-01 (2min), 02-02 (2min), 02-03 (3.3min)
-- Trend: Phase 2 complete - database schema plans fast (SQL + ORM models)
+- Last 5 plans: 02-01 (2min), 02-02 (2min), 02-03 (3.3min), 03-01 (3min)
+- Trend: Consistent velocity on API/schema plans (~2-3min)
 
 *Updated after each plan completion*
 
@@ -67,6 +68,11 @@ Recent decisions affecting current work:
 - [02-03]: Use SQLAlchemy TypeDecorator for transparent encryption (separates encryption from business logic)
 - [02-03]: Set EncryptedString cache_ok = True (encryption service is singleton, safe to cache)
 - [02-03]: Use monkeypatch fixture for test encryption keys (test isolation, no shared state)
+- [03-01]: Use SecretStr for api_key and secret_key fields to mask values in logs/errors
+- [03-01]: CredentialResponse never includes plaintext credentials (metadata only)
+- [03-01]: get_decrypted_alpaca_credential is async context manager for auto-cleanup
+- [03-01]: validate_alpaca_credentials supports both paper and live Alpaca API endpoints
+- [03-01]: store_credential validates account ownership before inserting
 
 ### Pending Todos
 
@@ -79,12 +85,13 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 13:26:04 UTC
-Stopped at: Completed 02-03-PLAN.md (ORM Models with Encryption) - Phase 2 complete
+Last session: 2026-01-31 14:04:05 UTC
+Stopped at: Completed 03-01-PLAN.md (Credential Schemas & Service)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
 **Phase 2 Complete:** Database schema with user accounts and credentials tables, RLS policies for user isolation, and SQLAlchemy ORM models with transparent encryption via TypeDecorator pattern.
+**Phase 3 In Progress:** Credential management API layer started - schemas and service with decrypt-on-demand pattern complete (1/3 plans).
 
 ---
 *State initialized: 2026-01-29*
