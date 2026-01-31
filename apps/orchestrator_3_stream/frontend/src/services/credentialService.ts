@@ -13,7 +13,8 @@ import type {
   ValidateCredentialResponse,
   UserAccountResponse,
   ListAccountsResponse,
-  GetOrCreateAccountResponse
+  GetOrCreateAccountResponse,
+  AccountDataResponse
 } from '@/types/account'
 
 /**
@@ -106,6 +107,20 @@ const credentialService = {
   async validateCredential(credentialId: string): Promise<ValidateCredentialResponse> {
     const response = await apiClient.post<ValidateCredentialResponse>(
       `/api/credentials/${credentialId}/validate`
+    )
+    return response.data
+  },
+
+  /**
+   * Fetch real-time account data for a credential.
+   * Returns balance, equity, buying power, and account type from Alpaca API.
+   *
+   * @param credentialId - UUID of the credential
+   * @returns Account data response with metrics
+   */
+  async getAccountData(credentialId: string): Promise<AccountDataResponse> {
+    const response = await apiClient.get<AccountDataResponse>(
+      `/api/credentials/${credentialId}/account-data`
     )
     return response.data
   }
