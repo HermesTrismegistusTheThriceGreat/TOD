@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Security Foundation** - Encrypted credential infrastructure before any user data
 - [x] **Phase 2: Database Schema** - User accounts and credentials tables with RLS
-- [ ] **Phase 3: Credential Management** - Backend services for encrypted storage/retrieval
+- [x] **Phase 3: Credential Management** - Backend services for encrypted storage/retrieval
 - [ ] **Phase 4: Account Management UI** - Frontend for adding, viewing, switching accounts
 - [ ] **Phase 5: Account Display** - Show account type, balance, equity, buying power
 - [ ] **Phase 6: Trading Context** - Chat executes against selected account only
@@ -64,10 +64,12 @@ Plans:
   2. Credentials are decrypted only during Alpaca API calls
   3. Decrypted credentials are never held in session state or cache
   4. Credential update endpoint allows changing existing account credentials
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [x] 03-01-PLAN.md — Create Pydantic schemas and credential service with decrypt-on-demand
+- [x] 03-02-PLAN.md — Create FastAPI credential API endpoints with RLS middleware
+- [x] 03-03-PLAN.md — Integrate decrypt-on-demand into Alpaca agent and create test suite
 
 ### Phase 4: Account Management UI
 **Goal**: Users can add, view, switch, update, and remove their Alpaca accounts
@@ -151,7 +153,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Security Foundation | 3/3 | ✓ Complete | 2026-01-29 |
 | 2. Database Schema | 3/3 | ✓ Complete | 2026-01-30 |
-| 3. Credential Management | 0/TBD | Not started | - |
+| 3. Credential Management | 3/3 | ✓ Complete | 2026-01-31 |
 | 4. Account Management UI | 0/TBD | Not started | - |
 | 5. Account Display | 0/TBD | Not started | - |
 | 6. Trading Context | 0/TBD | Not started | - |
@@ -195,4 +197,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 *Phase 1 executed: 2026-01-29*
 *Phase 2 planned: 2026-01-29*
 *Phase 2 executed: 2026-01-30*
+*Phase 3 planned: 2026-01-30*
+*Phase 3 executed: 2026-01-31*
 *Depth: comprehensive (8 phases)*
