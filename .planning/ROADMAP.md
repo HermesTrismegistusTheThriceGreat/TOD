@@ -15,8 +15,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Security Foundation** - Encrypted credential infrastructure before any user data
 - [x] **Phase 2: Database Schema** - User accounts and credentials tables with RLS
 - [x] **Phase 3: Credential Management** - Backend services for encrypted storage/retrieval
-- [ ] **Phase 4: Account Management UI** - Frontend for adding, viewing, switching accounts
+- [x] **Phase 4: Account Management UI** - Frontend for adding, viewing, switching accounts
 - [ ] **Phase 5: Account Display** - Show account type, balance, equity, buying power
+- [x] **Phase 5.1: Multiple Credentials Support** - Enable multiple Alpaca credentials per account (INSERTED)
 - [ ] **Phase 6: Trading Context** - Chat executes against selected account only
 - [ ] **Phase 7: Data Isolation** - User A cannot see User B's data anywhere
 - [ ] **Phase 8: Mobile Polish** - Touch-friendly account switcher and responsive audit
@@ -84,9 +85,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Backend user_accounts API (router + schemas)
-- [ ] 04-02-PLAN.md — Frontend service layer (types + credentialService + accountStore)
-- [ ] 04-03-PLAN.md — Frontend components (dialog, list, selector, header integration)
+- [x] 04-01-PLAN.md — Backend user_accounts API (router + schemas)
+- [x] 04-02-PLAN.md — Frontend service layer (types + credentialService + accountStore)
+- [x] 04-03-PLAN.md — Frontend components (dialog, list, selector, header integration)
 
 ### Phase 5: Account Display
 **Goal**: Active account shows type (paper/live), balance, equity, and buying power
@@ -103,6 +104,22 @@ Plans:
 - [ ] 05-01-PLAN.md — Backend account-data endpoint with Alpaca API integration
 - [ ] 05-02-PLAN.md — Frontend service layer (types, getAccountData, store state)
 - [ ] 05-03-PLAN.md — AccountDataDisplay component with header integration
+
+### Phase 5.1: Multiple Credentials Support (INSERTED)
+**Goal**: Enable users to add multiple Alpaca credentials per account with nickname/label field and selection UI
+**Depends on**: Phase 5
+**Requirements**: CRED-05 (new)
+**Success Criteria** (what must be TRUE):
+  1. User can add multiple credentials of the same type (e.g., multiple paper accounts)
+  2. Each credential has a distinguishing nickname/label
+  3. User can select which credential to use as active
+  4. No 409 Conflict error when adding second credential
+**Plans**: 3 plans
+
+Plans:
+- [x] 05.1-01-PLAN.md — Database migration (drop unique constraint, add nickname column)
+- [x] 05.1-02-PLAN.md — Backend schemas and service layer (nickname support)
+- [x] 05.1-03-PLAN.md — Frontend types and components (nickname input and display)
 
 ### Phase 6: Trading Context
 **Goal**: Chat and positions/orders display use only the selected account
@@ -150,15 +167,16 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Security Foundation | 3/3 | ✓ Complete | 2026-01-29 |
 | 2. Database Schema | 3/3 | ✓ Complete | 2026-01-30 |
 | 3. Credential Management | 3/3 | ✓ Complete | 2026-01-31 |
-| 4. Account Management UI | 0/3 | Planning complete | - |
+| 4. Account Management UI | 3/3 | ✓ Complete | 2026-01-31 |
 | 5. Account Display | 0/3 | Planning complete | - |
+| 5.1 Multiple Credentials | 3/3 | ✓ Complete (INSERTED) | 2026-01-31 |
 | 6. Trading Context | 0/TBD | Not started | - |
 | 7. Data Isolation | 0/TBD | Not started | - |
 | 8. Mobile Polish | 0/TBD | Not started | - |
@@ -180,6 +198,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | DISP-02 | Phase 5 | Active account shows real-time balance/equity |
 | DISP-03 | Phase 5 | Active account shows buying power |
 | DISP-04 | Phase 5 | Visual indicator distinguishes paper vs live |
+| CRED-05 | Phase 5.1 | User can add multiple credentials per account |
 | TRADE-01 | Phase 6 | Chat executes against selected account only |
 | TRADE-02 | Phase 6 | Account context validated before trade |
 | TRADE-03 | Phase 6 | Positions display shows selected account only |
@@ -192,7 +211,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | MOB-02 | Phase 8 | Account switcher works on touch devices |
 | MOB-03 | Phase 8 | Chat interface usable on mobile |
 
-**Coverage:** 24/24 requirements mapped
+**Coverage:** 25/25 requirements mapped
 
 ---
 *Roadmap created: 2026-01-29*
@@ -202,5 +221,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 *Phase 2 executed: 2026-01-30*
 *Phase 3 planned: 2026-01-30*
 *Phase 3 executed: 2026-01-31*
+*Phase 4 executed: 2026-01-31*
 *Phase 5 planned: 2026-01-31*
-*Depth: comprehensive (8 phases)*
+*Phase 5.1 inserted: 2026-01-31 (urgent - 409 conflict fix)*
+*Phase 5.1 executed: 2026-01-31*
+*Depth: comprehensive (8 phases + 1 insertion)*

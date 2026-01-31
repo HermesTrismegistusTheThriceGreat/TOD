@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Friends can log in, add their own Alpaca accounts, and trade via chat — each person controls their own money.
-**Current focus:** Phase 5.1 - Multiple Credentials Support
+**Current focus:** Phase 6 - Trading Context
 
 ## Current Position
 
-Phase: 5.1 of 8 (Multiple Credentials Support)
-Plan: 3 of 3 in current phase
-Status: In Progress
-Last activity: 2026-01-31 - Completed 05.1-03-PLAN.md (Frontend Nickname Support)
+Phase: 6 of 8 (Trading Context) - NOT STARTED
+Plan: 0 of TBD in current phase
+Status: Planning needed
+Last activity: 2026-01-31 — Completed Phase 5.1 (Multiple Credentials Support)
 
-Progress: [██████████████░] 94% (17/18 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 2/3)
+Progress: [████████████████] 100% Phase 5.1 (18/18 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3)
 
 ### Pending Todos
 
@@ -23,9 +23,9 @@ Progress: [██████████████░] 94% (17/18 plans total
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 4.8min
-- Total execution time: 1.7 hours
+- Total plans completed: 18
+- Average duration: 5.4min
+- Total execution time: 1.8 hours
 
 **By Phase:**
 
@@ -36,7 +36,7 @@ Progress: [██████████████░] 94% (17/18 plans total
 | 03-credential-management | 3 | 11.4min | 3.8min |
 | 04-account-management-ui | 3 | 12.5min | 4.2min |
 | 05-account-display | 3 | 6.0min | 2.0min |
-| 05.1-multiple-credentials-support | 2 | 3.0min | 1.5min |
+| 05.1-multiple-credentials-support | 3 | 11.0min | 3.7min |
 
 **Recent Trend:**
 - Last 5 plans: 05-01 (1.8min), 05-02 (2.2min), 05-03 (2.0min), 05.1-01 (1.0min), 05.1-03 (2.0min)
@@ -132,8 +132,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31 19:43:00 UTC
-Stopped at: Completed 05.1-03-PLAN.md (Frontend Nickname Support)
+Last session: 2026-01-31 19:50:00 UTC
+Stopped at: Completed Phase 5.1 execution
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
@@ -141,7 +141,7 @@ Resume file: None
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
 **Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
 **Phase 5 Complete:** Account data endpoint, service layer, and AccountDataDisplay component complete. Backend fetches real-time Alpaca metrics; frontend displays balance, equity, and buying power.
-**Phase 5.1 In Progress:** Database schema updated, backend schemas/service/tests updated, and frontend support added for multiple credentials. Migration 15 drops unique constraint, adds nickname column. Backend passes nickname through all layers. TypeScript types and Vue components updated for nickname field.
+**Phase 5.1 Complete:** Multiple credentials per account supported. Migration 16 drops unique constraint, adds nickname column. Backend accepts/returns nickname in all credential operations. Frontend has nickname input in form and displays nicknames in selector. CRED-05 requirement satisfied.
 
 ---
 *State initialized: 2026-01-29*
