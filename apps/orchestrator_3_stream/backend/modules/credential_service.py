@@ -24,10 +24,7 @@ from typing import AsyncGenerator, Optional, Tuple
 from uuid import UUID, uuid4
 
 import httpx
-from sqlalchemy import insert, select
-from sqlalchemy.ext.asyncio import AsyncConnection
 
-from modules.user_models import UserCredentialORM, UserAccountORM
 from modules.logger import OrchestratorLogger
 
 # Initialize logger
@@ -40,7 +37,7 @@ ALPACA_LIVE_BASE_URL = "https://api.alpaca.markets"
 
 @asynccontextmanager
 async def get_decrypted_alpaca_credential(
-    conn: AsyncConnection,
+    conn,
     credential_id: str,
     user_id: str,
 ) -> AsyncGenerator[Tuple[str, str], None]:
@@ -52,7 +49,7 @@ async def get_decrypted_alpaca_credential(
     are automatically discarded when context exits.
 
     Args:
-        conn: SQLAlchemy async connection
+        conn: asyncpg connection (from get_connection_with_rls)
         credential_id: UUID of credential to retrieve
         user_id: User ID to validate ownership
 
@@ -71,39 +68,45 @@ async def get_decrypted_alpaca_credential(
     Security:
         - Validates credential belongs to user_id (prevents unauthorized access)
         - Validates credential is_active (prevents use of deactivated credentials)
-        - TypeDecorator handles decryption transparently
+        - Decrypts using encryption service
         - Plaintext discarded on context exit (try/finally pattern)
     """
     api_key = None
     secret_key = None
 
     try:
-        # Query credential by ID
-        result = await conn.execute(
-            select(UserCredentialORM).where(UserCredentialORM.id == UUID(credential_id))
+        # Query credential by ID using raw SQL
+        result = await conn.fetchrow(
+            """
+            SELECT id, user_id, api_key, secret_key, is_active
+            FROM user_credentials
+            WHERE id = $1
+            """,
+            UUID(credential_id),
         )
-        credential = result.scalar_one_or_none()
 
         # Validate credential exists
-        if credential is None:
+        if result is None:
             logger.error(f"Credential not found: {credential_id}")
             raise ValueError(f"Credential {credential_id} not found")
 
         # Validate credential belongs to user
-        if credential.user_id != user_id:
+        if result["user_id"] != user_id:
             logger.error(
                 f"Credential {credential_id} access denied for user {user_id}"
             )
             raise ValueError(f"Credential {credential_id} does not belong to user {user_id}")
 
         # Validate credential is active
-        if not credential.is_active:
+        if not result["is_active"]:
             logger.error(f"Credential {credential_id} is inactive")
             raise ValueError(f"Credential {credential_id} is inactive")
 
-        # TypeDecorator automatically decrypts when accessing these attributes
-        api_key = credential.api_key
-        secret_key = credential.secret_key
+        # Decrypt credentials using encryption service
+        from modules.encryption_service import get_encryption_service
+        encryption_service = get_encryption_service()
+        api_key = encryption_service.decrypt(result["api_key"])
+        secret_key = encryption_service.decrypt(result["secret_key"])
 
         logger.info(
             f"Credential {credential_id} decrypted for user {user_id}"
@@ -195,26 +198,28 @@ async def validate_alpaca_credentials(
 
 
 async def store_credential(
-    conn: AsyncConnection,
+    conn,
     account_id: UUID,
     user_id: str,
     credential_type: str,
     api_key: str,
     secret_key: str,
+    nickname: Optional[str] = None,
 ) -> UUID:
     """
     Store encrypted credential in database.
 
-    Creates UserCredentialORM instance and inserts into database.
-    TypeDecorator automatically encrypts api_key and secret_key on INSERT.
+    Uses raw SQL with asyncpg connection. Encrypts api_key and secret_key
+    using the encryption service before INSERT.
 
     Args:
-        conn: SQLAlchemy async connection
+        conn: asyncpg connection (from get_connection_with_rls)
         account_id: UUID of user account (user_accounts.id)
         user_id: User ID (denormalized for RLS)
         credential_type: Credential type ("alpaca" or "polygon")
         api_key: Plaintext API key (will be encrypted)
         secret_key: Plaintext secret key (will be encrypted)
+        nickname: User-friendly label (defaults to credential_type if not provided)
 
     Returns:
         UUID: ID of created credential
@@ -230,41 +235,58 @@ async def store_credential(
         )
 
     Security:
-        - TypeDecorator encrypts api_key and secret_key before INSERT
+        - Encrypts api_key and secret_key before INSERT
         - Never logs credential values
         - Validates account exists before inserting
     """
     # Validate account exists and belongs to user
-    result = await conn.execute(
-        select(UserAccountORM).where(
-            UserAccountORM.id == account_id,
-            UserAccountORM.user_id == user_id,
-        )
+    result = await conn.fetchrow(
+        """
+        SELECT id FROM user_accounts
+        WHERE id = $1 AND user_id = $2
+        """,
+        account_id,
+        user_id,
     )
-    account = result.scalar_one_or_none()
 
-    if account is None:
+    if result is None:
         logger.error(f"Account {account_id} not found for user {user_id}")
         raise ValueError(f"Account {account_id} not found or does not belong to user {user_id}")
+
+    # Default nickname to credential_type if not provided
+    if nickname is None or nickname.strip() == "":
+        nickname = credential_type
 
     # Generate credential ID
     credential_id = uuid4()
 
-    # Insert credential (TypeDecorator encrypts api_key and secret_key)
+    # Encrypt credentials using encryption service
+    from modules.encryption_service import get_encryption_service
+    encryption_service = get_encryption_service()
+    encrypted_api_key = encryption_service.encrypt(api_key)
+    encrypted_secret_key = encryption_service.encrypt(secret_key)
+
+    # Insert credential with encrypted values
     await conn.execute(
-        insert(UserCredentialORM).values(
-            id=credential_id,
-            user_account_id=account_id,
-            user_id=user_id,
-            credential_type=credential_type,
-            api_key=api_key,  # Encrypted by TypeDecorator
-            secret_key=secret_key,  # Encrypted by TypeDecorator
-            is_active=True,
-        )
+        """
+        INSERT INTO user_credentials (
+            id, user_account_id, user_id, credential_type,
+            api_key, secret_key, nickname, is_active, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        """,
+        credential_id,
+        account_id,
+        user_id,
+        credential_type,
+        encrypted_api_key,
+        encrypted_secret_key,
+        nickname,
+        True,
     )
 
     logger.info(
-        f"Credential stored: id={credential_id}, account_id={account_id}, type={credential_type}"
+        f"Credential stored: id={credential_id}, account_id={account_id}, "
+        f"type={credential_type}, nickname={nickname}"
     )
 
     return credential_id
