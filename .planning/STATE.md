@@ -111,6 +111,9 @@ Recent decisions affecting current work:
 - [05.1-01]: Drop unique constraint on (user_account_id, credential_type) to allow multiple credentials of same type
 - [05.1-01]: Backfill nickname with credential_type for existing credentials
 - [05.1-01]: Add index on (user_account_id, nickname) for efficient lookups (not unique constraint)
+- [05.1-02]: Nickname field added to all credential schemas (request and response)
+- [05.1-02]: Default nickname to credential_type when not provided (service layer)
+- [05.1-02]: Tests use raw asyncpg mocking patterns (fetchrow/fetch) not SQLAlchemy ORM
 - [05.1-03]: Use nickname || credential_type fallback pattern in display helper
 - [05.1-03]: Show date-based fallback when nickname matches credential_type
 
@@ -138,7 +141,7 @@ Resume file: None
 **Phase 3 Complete:** Credential management with schemas, service, REST endpoints, Alpaca integration, and comprehensive test suite (32 tests including REAL Alpaca API validation).
 **Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
 **Phase 5 Complete:** Account data endpoint, service layer, and AccountDataDisplay component complete. Backend fetches real-time Alpaca metrics; frontend displays balance, equity, and buying power.
-**Phase 5.1 In Progress:** Database schema updated and frontend support added for multiple credentials. Migration 15 drops unique constraint, adds nickname column. TypeScript types and Vue components updated for nickname field.
+**Phase 5.1 In Progress:** Database schema updated, backend schemas/service/tests updated, and frontend support added for multiple credentials. Migration 15 drops unique constraint, adds nickname column. Backend passes nickname through all layers. TypeScript types and Vue components updated for nickname field.
 
 ---
 *State initialized: 2026-01-29*
