@@ -1962,3 +1962,52 @@ async def list_adws(
             )
 
         return [dict(row) for row in rows]
+
+
+# ═══════════════════════════════════════════════════════════
+# CREDENTIAL OPERATIONS
+# ═══════════════════════════════════════════════════════════
+
+
+async def set_rls_context(conn: asyncpg.Connection, user_id: str) -> None:
+    """
+    Set RLS context for the current transaction.
+
+    Sets app.current_user_id session variable which is used by RLS policies
+    to filter rows. Uses SET LOCAL so context is transaction-scoped.
+
+    Args:
+        conn: asyncpg connection
+        user_id: User ID to set in RLS context
+
+    Example:
+        async with get_connection() as conn:
+            await set_rls_context(conn, "user123")
+            # All queries in this transaction now see only user123's rows
+    """
+    await conn.execute(f"SET LOCAL app.current_user_id = '{user_id}'")
+
+
+@asynccontextmanager
+async def get_connection_with_rls(user_id: str):
+    """
+    Async context manager for database connections with RLS context.
+
+    Acquires connection from pool, sets RLS context, then yields connection.
+    This is a convenience wrapper for RLS-aware queries.
+
+    Args:
+        user_id: User ID to set in RLS context
+
+    Yields:
+        asyncpg.Connection: Database connection with RLS context set
+
+    Example:
+        async with get_connection_with_rls("user123") as conn:
+            # Query only sees user123's credentials
+            result = await conn.fetch("SELECT * FROM user_credentials")
+    """
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await set_rls_context(conn, user_id)
+        yield conn
