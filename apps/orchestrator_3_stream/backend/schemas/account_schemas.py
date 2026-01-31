@@ -125,10 +125,56 @@ class GetOrCreateAccountResponse(BaseModel):
     )
 
 
+class AccountDataResponse(BaseModel):
+    """Real-time account data from Alpaca API."""
+
+    account_type: str = Field(
+        ...,
+        description="Account type: 'paper' or 'live'"
+    )
+    balance: str = Field(
+        ...,
+        description="Cash balance (currency units as string)"
+    )
+    equity: str = Field(
+        ...,
+        description="Total equity: cash + positions"
+    )
+    buying_power: str = Field(
+        ...,
+        description="Available buying power"
+    )
+    currency: str = Field(
+        default="USD",
+        description="Account currency"
+    )
+    trading_blocked: bool = Field(
+        default=False,
+        description="Whether trading is blocked"
+    )
+    account_blocked: bool = Field(
+        default=False,
+        description="Whether account activity is prohibited"
+    )
+    pattern_day_trader: bool = Field(
+        default=False,
+        description="Whether flagged as pattern day trader"
+    )
+    daytrade_count: int = Field(
+        default=0,
+        description="Day trades in last 5 trading days"
+    )
+    last_updated: str = Field(
+        ...,
+        description="Timestamp of last fetch (ISO 8601)"
+    )
+
+
 # Export public API
 __all__ = [
     "UserAccountResponse",
     "ListAccountsResponse",
     "CreateAccountRequest",
     "GetOrCreateAccountResponse",
+    "AccountDataResponse",
 ]
