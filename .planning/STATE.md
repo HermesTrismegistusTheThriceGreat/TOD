@@ -9,25 +9,27 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 7 of 8 (Data Isolation) - NOT STARTED
-Plan: 0 of TBD in current phase
-Status: Planning needed
-Last activity: 2026-02-01 — Completed Phase 6 (Trading Context)
+Phase: 7 of 8 (Data Isolation) - IN PROGRESS
+Plan: 1 of 3 in current phase
+Status: Active development
+Last activity: 2026-02-01 — Completed 07-01-PLAN.md (Logging for suspicious access)
 
-Progress: [████████████████████] 100% Phase 6 (21/21 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 3/3)
+Progress: [████████████████████░] 95% Phase 7 (22/23 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 3/3, Phase 7: 1/3)
 
 ### Pending Todos
 
-1 todo(s) pending - see `.planning/todos/pending/`
+0 todo(s) pending - see `.planning/todos/pending/`
 
-- **Chat credentials not updating on account switch** (HIGH, 2026-02-01)
+### Completed Todos (Recent)
+
+- ✅ **Chat credentials not updating on account switch** (HIGH, 2026-02-01) → FIXED: Backend endpoints using `demo-user` instead of authenticated user ID. Added `get_current_user` dependency and `credentials: 'include'` to frontend fetch.
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
-- Average duration: 5.0min
-- Total execution time: 2.0 hours
+- Total plans completed: 22
+- Average duration: 4.8min
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -40,10 +42,11 @@ Progress: [████████████████████] 100% Ph
 | 05-account-display | 3 | 6.0min | 2.0min |
 | 05.1-multiple-credentials-support | 3 | 11.0min | 3.7min |
 | 06-trading-context | 3 | 4.9min | 1.6min |
+| 07-data-isolation | 1 | 2.4min | 2.4min |
 
 **Recent Trend:**
-- Last 5 plans: 05.1-01 (1.0min), 05.1-03 (2.0min), 06-01 (TBD), 06-02 (1.9min), 06-03 (3.0min)
-- Trend: Frontend wiring very fast when patterns established
+- Last 5 plans: 05.1-03 (2.0min), 06-01 (TBD), 06-02 (1.9min), 06-03 (3.0min), 07-01 (2.4min)
+- Trend: Logging and security patterns very fast due to established patterns
 
 *Updated after each plan completion*
 
@@ -128,6 +131,9 @@ Recent decisions affecting current work:
 - [06-03]: Disable send button AND show warning when no credential selected (defense in depth)
 - [06-03]: 403 response clears credential from both store and localStorage (stale credential handling)
 - [06-03]: Positions composable watches activeCredentialId and reloads automatically on change
+- [07-01]: Use logger.warning with extra dict for structured JSON audit logs
+- [07-01]: Create centralized log_suspicious_access helper for consistent security logging
+- [07-01]: Log only metadata (user_id, credential_id, action, reason) - never credential secrets
 
 ### Pending Todos
 
@@ -144,8 +150,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-01 12:55:00 UTC
-Stopped at: Phase 6 verified and complete
+Last session: 2026-02-01 15:24:03 UTC
+Stopped at: Completed 07-01-PLAN.md (Logging for suspicious access)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
