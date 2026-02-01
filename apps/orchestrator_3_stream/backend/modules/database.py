@@ -2011,3 +2011,43 @@ async def get_connection_with_rls(user_id: str):
     async with pool.acquire() as conn:
         await set_rls_context(conn, user_id)
         yield conn
+
+
+def log_suspicious_access(
+    user_id: str,
+    credential_id: str,
+    action: str,
+    reason: str
+) -> None:
+    """
+    Log a suspicious access attempt with structured format.
+
+    Called when a user attempts to access a credential they don't own,
+    or when RLS policies prevent access.
+
+    Args:
+        user_id: The authenticated user attempting access
+        credential_id: The credential ID they tried to access
+        action: The action attempted (e.g., "get_positions", "chat")
+        reason: Why access was denied
+
+    Example:
+        log_suspicious_access(
+            user_id="user_123",
+            credential_id="cred_456",
+            action="get_positions",
+            reason="Credential not found"
+        )
+    """
+    from .log_service import get_logger
+    logger = get_logger()
+    logger.warning(
+        f"SUSPICIOUS_ACCESS: {action}",
+        extra={
+            "event_type": "suspicious_access",
+            "user_id": user_id,
+            "credential_id": credential_id,
+            "action": action,
+            "reason": reason
+        }
+    )
