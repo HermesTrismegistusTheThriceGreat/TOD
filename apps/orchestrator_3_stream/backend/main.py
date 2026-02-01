@@ -61,7 +61,7 @@ from modules.alpaca_models import (
 )
 from modules.alpaca_agent_service import AlpacaAgentService
 from modules.alpaca_agent_models import AlpacaAgentChatRequest, AlpacaAgentChatResponse
-from modules.database import get_connection_with_rls
+from modules.database import get_connection_with_rls, log_suspicious_access
 from modules.credential_service import get_decrypted_alpaca_credential
 from routers.credentials import router as credentials_router
 from routers.accounts import router as accounts_router
@@ -1243,7 +1243,8 @@ async def get_adw_summary(adw_id: str):
 @app.get("/api/positions", response_model=GetPositionsResponse, tags=["Alpaca"])
 async def get_positions(
     request: Request,
-    credential_id: str = Query(..., description="UUID of credential to fetch positions for")
+    credential_id: str = Query(..., description="UUID of credential to fetch positions for"),
+    user: AuthUser = Depends(get_current_user)
 ):
     """
     Get all option positions for the selected credential.
@@ -1266,9 +1267,8 @@ async def get_positions(
 
         alpaca_service = get_alpaca_service(request.app)
 
-        # For now, use a placeholder user_id until auth integration
-        # TODO: Replace with actual user from auth middleware
-        user_id = request.headers.get("X-User-ID", "demo-user")
+        # Get user_id from authenticated user
+        user_id = user.id
 
         # Validate credential ownership via RLS and get decrypted credentials
         try:
@@ -1293,6 +1293,8 @@ async def get_positions(
         except ValueError as e:
             # Credential not found or not owned by user
             logger.error(f"Credential validation failed: {e}")
+            # Log suspicious access attempt with structured format
+            log_suspicious_access(user_id, credential_id, "get_positions", str(e))
             return GetPositionsResponse(
                 status="error",
                 message=f"Credential access denied: {str(e)}"
@@ -1356,7 +1358,8 @@ async def get_orders(
     request: Request,
     credential_id: str = Query(..., description="UUID of credential to fetch orders for"),
     status: str = Query("all", description="Order status filter: 'all', 'open', 'closed'"),
-    limit: int = Query(100, description="Maximum number of orders to return", ge=1, le=500)
+    limit: int = Query(100, description="Maximum number of orders to return", ge=1, le=500),
+    user: AuthUser = Depends(get_current_user)
 ):
     """
     Get orders for the selected credential.
@@ -1381,9 +1384,8 @@ async def get_orders(
 
         alpaca_service = get_alpaca_service(request.app)
 
-        # For now, use a placeholder user_id until auth integration
-        # TODO: Replace with actual user from auth middleware
-        user_id = request.headers.get("X-User-ID", "demo-user")
+        # Get user_id from authenticated user
+        user_id = user.id
 
         # Validate credential ownership via RLS and get decrypted credentials
         try:
@@ -1413,6 +1415,8 @@ async def get_orders(
         except ValueError as e:
             # Credential not found or not owned by user
             logger.error(f"Credential validation failed: {e}")
+            # Log suspicious access attempt with structured format
+            log_suspicious_access(user_id, credential_id, "get_orders", str(e))
             return GetOrdersResponse(
                 status="error",
                 message=f"Credential access denied: {str(e)}"
@@ -1677,7 +1681,11 @@ async def close_leg(request: Request, position_id: str, close_request: CloseLegR
 
 
 @app.post("/api/alpaca-agent/chat", tags=["Alpaca Agent"])
-async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatRequest):
+async def alpaca_agent_chat(
+    request: Request,
+    chat_request: AlpacaAgentChatRequest,
+    user: AuthUser = Depends(get_current_user)
+):
     """
     Chat with the Alpaca trading agent using natural language.
 
@@ -1722,12 +1730,10 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
                 }
             )
 
-        # For now, use a placeholder user_id until auth integration
-        # TODO: Replace with actual user from auth middleware: user = Depends(get_current_user)
-        # This is a temporary approach - in production, get user_id from auth
-        user_id = request.headers.get("X-User-ID", "demo-user")
+        # Get user_id from authenticated user
+        user_id = user.id
 
-        logger.info(f"[ALPACA AGENT] Validating credential ownership for user: {user_id}")
+        logger.info(f"[ALPACA AGENT] Validating credential ownership for user: {user_id}, credential_id: {chat_request.credential_id}")
 
         # Validate credential ownership via RLS and get decrypted credentials
         try:
@@ -1736,7 +1742,8 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
                     conn, chat_request.credential_id, user_id
                 ) as (api_key, secret_key):
                     # Credentials validated and decrypted - they exist only in this scope
-                    logger.info("[ALPACA AGENT] Credential validated, starting streaming response")
+                    api_key_fingerprint = api_key[-4:] if len(api_key) >= 4 else "????"
+                    logger.info(f"[ALPACA AGENT] Credential validated, api_key_fingerprint=...{api_key_fingerprint}, starting streaming response")
 
                     # Determine if paper trading based on credential
                     # For now default to True, could be stored in credential metadata
@@ -1776,6 +1783,8 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
         except ValueError as e:
             # Credential not found or not owned by user (RLS rejection)
             logger.error(f"[ALPACA AGENT] Credential validation failed: {e}")
+            # Log suspicious access attempt with structured format
+            log_suspicious_access(user_id, chat_request.credential_id, "chat", str(e))
             return JSONResponse(
                 status_code=403,
                 content={
