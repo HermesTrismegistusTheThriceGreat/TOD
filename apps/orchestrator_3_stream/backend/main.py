@@ -1604,18 +1604,22 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
     """
     Chat with the Alpaca trading agent using natural language.
 
-    Invokes the alpaca-mcp agent via Claude Code subprocess and streams
-    the response back using Server-Sent Events (SSE).
+    Validates credential ownership via RLS, decrypts credentials on-demand,
+    and streams the agent response back using Server-Sent Events (SSE).
 
     Args:
-        chat_request: Request with user message
+        chat_request: Request with user message and credential_id
 
     Returns:
         StreamingResponse with SSE chunks
+
+    Raises:
+        403: If credential not found or not owned by user
+        503: If Alpaca Agent service not initialized
     """
     try:
         logger.http_request("POST", "/api/alpaca-agent/chat")
-        logger.info(f"[ALPACA AGENT] Received chat request: {chat_request.message[:100]}...")
+        logger.info(f"[ALPACA AGENT] Received chat request with credential_id: {chat_request.credential_id}")
 
         # Check if service is available
         if not hasattr(request.app.state, 'alpaca_agent_service') or request.app.state.alpaca_agent_service is None:
@@ -1629,9 +1633,8 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
             )
 
         alpaca_agent_service: AlpacaAgentService = request.app.state.alpaca_agent_service
-        logger.debug(f"[ALPACA AGENT] Service retrieved, working_dir={alpaca_agent_service.working_dir}")
 
-        # Check if Claude SDK is available (claude_path is set to "sdk" when using SDK)
+        # Check if Claude SDK is available
         if not alpaca_agent_service.claude_path:
             logger.error("[ALPACA AGENT] Claude SDK not available")
             return JSONResponse(
@@ -1642,50 +1645,70 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
                 }
             )
 
-        # Verify MCP config exists
-        if not alpaca_agent_service.verify_mcp_config():
-            logger.error("[ALPACA AGENT] MCP config not found")
-            # Return JSON error response (not Pydantic model)
+        # For now, use a placeholder user_id until auth integration
+        # TODO: Replace with actual user from auth middleware: user = Depends(get_current_user)
+        # This is a temporary approach - in production, get user_id from auth
+        user_id = request.headers.get("X-User-ID", "demo-user")
+
+        logger.info(f"[ALPACA AGENT] Validating credential ownership for user: {user_id}")
+
+        # Validate credential ownership via RLS and get decrypted credentials
+        try:
+            async with get_connection_with_rls(user_id) as conn:
+                async with get_decrypted_alpaca_credential(
+                    conn, chat_request.credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Credentials validated and decrypted - they exist only in this scope
+                    logger.info("[ALPACA AGENT] Credential validated, starting streaming response")
+
+                    # Determine if paper trading based on credential
+                    # For now default to True, could be stored in credential metadata
+                    paper_trade = True
+
+                    # Stream response using SSE with provided credentials
+                    async def generate_sse():
+                        try:
+                            logger.debug("[ALPACA AGENT] Starting SSE generator with credential context")
+                            chunk_count = 0
+                            async for chunk in alpaca_agent_service.invoke_agent_streaming_with_credential(
+                                chat_request.message,
+                                api_key=api_key,
+                                secret_key=secret_key,
+                                paper_trade=paper_trade
+                            ):
+                                chunk_count += 1
+                                yield chunk
+                            logger.info(f"[ALPACA AGENT] SSE streaming complete, chunks={chunk_count}")
+                        except Exception as e:
+                            logger.error(f"[ALPACA AGENT] Streaming error: {e}", exc_info=True)
+                            error_chunk = json.dumps({"type": "error", "content": str(e)})
+                            yield f"data: {error_chunk}\n\n"
+                            yield "data: [DONE]\n\n"
+
+                    logger.http_request("POST", "/api/alpaca-agent/chat", 200)
+                    return StreamingResponse(
+                        generate_sse(),
+                        media_type="text/event-stream",
+                        headers={
+                            "Cache-Control": "no-cache",
+                            "Connection": "keep-alive",
+                            "X-Accel-Buffering": "no"
+                        }
+                    )
+
+        except ValueError as e:
+            # Credential not found or not owned by user (RLS rejection)
+            logger.error(f"[ALPACA AGENT] Credential validation failed: {e}")
             return JSONResponse(
-                status_code=400,
+                status_code=403,
                 content={
                     "status": "error",
-                    "error": f"Alpaca MCP configuration not found at {alpaca_agent_service.mcp_config_path}. Ensure .mcp.json.alpaca exists in project root."
+                    "error": f"Credential access denied: {str(e)}"
                 }
             )
 
-        logger.info("[ALPACA AGENT] MCP config verified, starting streaming response")
-
-        # Stream response using SSE
-        async def generate_sse():
-            try:
-                logger.debug("[ALPACA AGENT] Starting SSE generator")
-                chunk_count = 0
-                async for chunk in alpaca_agent_service.invoke_agent_streaming(chat_request.message):
-                    chunk_count += 1
-                    yield chunk
-                logger.info(f"[ALPACA AGENT] SSE streaming complete, chunks={chunk_count}")
-            except Exception as e:
-                logger.error(f"[ALPACA AGENT] Streaming error: {e}", exc_info=True)
-                # Use json.dumps to properly escape the error message
-                error_chunk = json.dumps({"type": "error", "content": str(e)})
-                yield f"data: {error_chunk}\n\n"
-                yield "data: [DONE]\n\n"
-
-        logger.http_request("POST", "/api/alpaca-agent/chat", 200)
-        return StreamingResponse(
-            generate_sse(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
-            }
-        )
-
     except Exception as e:
         logger.error(f"[ALPACA AGENT] Chat endpoint failed: {e}", exc_info=True)
-        # Return JSON error response (not Pydantic model)
         return JSONResponse(
             status_code=500,
             content={
