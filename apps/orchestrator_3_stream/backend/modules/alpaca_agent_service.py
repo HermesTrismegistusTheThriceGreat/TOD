@@ -455,6 +455,188 @@ class AlpacaAgentService:
                 except Exception as e:
                     self.logger.warning(f"Error closing client: {e}")
 
+    async def invoke_agent_streaming_with_credential(
+        self,
+        message: str,
+        api_key: str,
+        secret_key: str,
+        paper_trade: bool = True
+    ) -> AsyncGenerator[str, None]:
+        """
+        Invoke the Alpaca agent with streaming using provided credentials.
+
+        This method is used when credentials come from encrypted storage
+        rather than environment variables. Credentials should only exist
+        in the calling scope and are passed directly here.
+
+        Args:
+            message: Natural language message/command for the agent
+            api_key: Decrypted Alpaca API key
+            secret_key: Decrypted Alpaca secret key
+            paper_trade: Whether to use paper trading (default True)
+
+        Yields:
+            SSE-formatted string chunks
+        """
+        self.logger.info(f"[ALPACA AGENT SERVICE] Invoking agent (streaming) with provided credentials: {message[:100]}...")
+
+        client = None
+
+        try:
+            # Build options with provided credentials (NOT from environment)
+            env_vars = {}
+            if "ANTHROPIC_API_KEY" in os.environ:
+                env_vars["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY"]
+
+            # Use provided credentials
+            env_vars["ALPACA_API_KEY"] = api_key
+            env_vars["ALPACA_SECRET_KEY"] = secret_key
+            env_vars["ALPACA_PAPER_TRADE"] = "true" if paper_trade else "false"
+
+            options_dict = {
+                "system_prompt": ALPACA_AGENT_SYSTEM_PROMPT,
+                "model": "sonnet",
+                "cwd": str(self.working_dir),
+                "env": env_vars,
+                "mcp_servers": {
+                    "alpaca": {
+                        "type": "stdio",
+                        "command": "uvx",
+                        "args": ["alpaca-mcp-server", "serve"],
+                        "env": {
+                            "ALPACA_API_KEY": api_key,
+                            "ALPACA_SECRET_KEY": secret_key,
+                            "ALPACA_PAPER_TRADE": "true" if paper_trade else "false",
+                        }
+                    }
+                },
+            }
+
+            # Add allowed tools (same as existing method)
+            options_dict["allowed_tools"] = [
+                "mcp__alpaca__get_account_info",
+                "mcp__alpaca__get_all_positions",
+                "mcp__alpaca__get_open_position",
+                "mcp__alpaca__get_portfolio_history",
+                "mcp__alpaca__close_position",
+                "mcp__alpaca__close_all_positions",
+                "mcp__alpaca__get_asset",
+                "mcp__alpaca__get_all_assets",
+                "mcp__alpaca__get_calendar",
+                "mcp__alpaca__get_clock",
+                "mcp__alpaca__get_corporate_actions",
+                "mcp__alpaca__get_stock_bars",
+                "mcp__alpaca__get_stock_quotes",
+                "mcp__alpaca__get_stock_trades",
+                "mcp__alpaca__get_stock_latest_bar",
+                "mcp__alpaca__get_stock_latest_quote",
+                "mcp__alpaca__get_stock_latest_trade",
+                "mcp__alpaca__get_stock_snapshot",
+                "mcp__alpaca__get_crypto_bars",
+                "mcp__alpaca__get_crypto_quotes",
+                "mcp__alpaca__get_crypto_trades",
+                "mcp__alpaca__get_crypto_latest_bar",
+                "mcp__alpaca__get_crypto_latest_quote",
+                "mcp__alpaca__get_crypto_latest_trade",
+                "mcp__alpaca__get_crypto_snapshot",
+                "mcp__alpaca__get_crypto_latest_orderbook",
+                "mcp__alpaca__get_option_contracts",
+                "mcp__alpaca__get_option_latest_quote",
+                "mcp__alpaca__get_option_snapshot",
+                "mcp__alpaca__get_option_chain",
+                "mcp__alpaca__place_option_market_order",
+                "mcp__alpaca__exercise_options_position",
+                "mcp__alpaca__place_stock_order",
+                "mcp__alpaca__place_crypto_order",
+                "mcp__alpaca__get_orders",
+                "mcp__alpaca__cancel_order_by_id",
+                "mcp__alpaca__cancel_all_orders",
+                "mcp__alpaca__get_watchlists",
+                "mcp__alpaca__get_watchlist_by_id",
+                "mcp__alpaca__create_watchlist",
+                "mcp__alpaca__update_watchlist_by_id",
+                "mcp__alpaca__add_asset_to_watchlist_by_id",
+                "mcp__alpaca__remove_asset_from_watchlist_by_id",
+                "mcp__alpaca__delete_watchlist_by_id",
+            ]
+
+            options = ClaudeAgentOptions(**options_dict)
+            self.logger.info(f"[ALPACA AGENT SERVICE] Working directory: {self.working_dir}")
+
+            client = ClaudeSDKClient(options=options)
+            await client.__aenter__()
+
+            self.logger.info("[ALPACA AGENT SERVICE] Claude SDK client started with provided credentials")
+
+            # Send user's prompt
+            await client.query(message)
+
+            # Stream responses (same logic as invoke_agent_streaming)
+            chunk_count = 0
+
+            async for msg in client.receive_response():
+                if isinstance(msg, SystemMessage):
+                    subtype = getattr(msg, "subtype", "unknown")
+                    self.logger.debug(f"[ALPACA AGENT SERVICE] SystemMessage: {subtype}")
+                    continue
+
+                if isinstance(msg, AssistantMessage):
+                    for block in msg.content:
+                        if isinstance(block, TextBlock):
+                            chunk_count += 1
+                            chunk_data = {
+                                "type": "text",
+                                "content": block.text
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            self.logger.debug(f"Streamed text chunk {chunk_count}")
+
+                        elif isinstance(block, ThinkingBlock):
+                            chunk_data = {
+                                "type": "thinking",
+                                "content": block.thinking
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            self.logger.debug("Streamed thinking block")
+
+                        elif isinstance(block, ToolUseBlock):
+                            chunk_data = {
+                                "type": "tool_use",
+                                "tool_name": block.name,
+                                "tool_input": block.input
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            self.logger.debug(f"Streamed tool use: {block.name}")
+
+                elif isinstance(msg, ResultMessage):
+                    self.logger.info(
+                        f"[ALPACA AGENT SERVICE] Completed: "
+                        f"turns={getattr(msg, 'num_turns', 'N/A')}, "
+                        f"cost=${getattr(msg, 'total_cost_usd', 0.0):.4f}"
+                    )
+
+            self.logger.success(f"[ALPACA AGENT SERVICE] Streaming completed with provided credentials, chunks={chunk_count}")
+            yield "data: [DONE]\n\n"
+
+        except asyncio.CancelledError:
+            self.logger.warning("Alpaca agent streaming cancelled by client")
+            cancel_chunk = {"type": "error", "content": "Stream cancelled"}
+            yield f"data: {json.dumps(cancel_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            self.logger.error(f"Failed to stream Alpaca agent response: {e}", exc_info=True)
+            error_chunk = {"type": "error", "content": f"Streaming error: {str(e)}"}
+            yield f"data: {json.dumps(error_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        finally:
+            if client:
+                try:
+                    await client.__aexit__(None, None, None)
+                except Exception as e:
+                    self.logger.warning(f"Error closing client: {e}")
+
     async def invoke_with_stored_credential(
         self,
         credential_id: str,
