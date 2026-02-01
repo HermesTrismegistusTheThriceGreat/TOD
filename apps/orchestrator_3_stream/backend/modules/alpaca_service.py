@@ -701,6 +701,92 @@ class AlpacaService:
         )
 
     # ═══════════════════════════════════════════════════════════
+    # ORDERS FETCHING (REST)
+    # ═══════════════════════════════════════════════════════════
+
+    async def get_orders_with_credential(
+        self,
+        api_key: str,
+        secret_key: str,
+        paper: bool = True,
+        status: str = "all",
+        limit: int = 100
+    ) -> List[dict]:
+        """
+        Get orders using provided credentials.
+
+        This method creates a temporary TradingClient with the provided
+        credentials rather than using the service's default credentials.
+        Used when credentials come from encrypted storage per-user.
+
+        Args:
+            api_key: Decrypted Alpaca API key
+            secret_key: Decrypted Alpaca secret key
+            paper: Whether to use paper trading endpoint
+            status: Order status filter ('all', 'open', 'closed')
+            limit: Maximum number of orders to return
+
+        Returns:
+            List of order dictionaries
+
+        Raises:
+            Exception: If API call fails
+        """
+        try:
+            logger.info(f"Fetching orders with provided credentials, status={status}, limit={limit}")
+
+            # Create temporary client with provided credentials
+            temp_client = TradingClient(
+                api_key=api_key,
+                secret_key=secret_key,
+                paper=paper
+            )
+
+            # Build request params
+            from alpaca.trading.requests import GetOrdersRequest
+            from alpaca.trading.enums import QueryOrderStatus
+
+            status_enum = {
+                "all": QueryOrderStatus.ALL,
+                "open": QueryOrderStatus.OPEN,
+                "closed": QueryOrderStatus.CLOSED
+            }.get(status, QueryOrderStatus.ALL)
+
+            request_params = GetOrdersRequest(
+                status=status_enum,
+                limit=limit
+            )
+
+            # Get orders from Alpaca (sync call, run in executor)
+            loop = asyncio.get_running_loop()
+            orders = await loop.run_in_executor(
+                None, lambda: temp_client.get_orders(filter=request_params)
+            )
+
+            # Convert to dict format for JSON serialization
+            orders_list = []
+            for order in orders:
+                orders_list.append({
+                    "id": str(order.id),
+                    "symbol": order.symbol,
+                    "qty": str(order.qty) if order.qty else None,
+                    "filled_qty": str(order.filled_qty) if order.filled_qty else None,
+                    "side": order.side.value if order.side else None,
+                    "type": order.type.value if order.type else None,
+                    "status": order.status.value if order.status else None,
+                    "created_at": order.created_at.isoformat() if order.created_at else None,
+                    "filled_at": order.filled_at.isoformat() if order.filled_at else None,
+                    "filled_avg_price": str(order.filled_avg_price) if order.filled_avg_price else None,
+                })
+
+            logger.info(f"Fetched {len(orders_list)} orders with provided credentials")
+            return orders_list
+
+        except Exception as e:
+            logger.error(f"Failed to get orders with provided credentials: {e}")
+            raise
+
+    # ═══════════════════════════════════════════════════════════
     # LIFECYCLE
     # ═══════════════════════════════════════════════════════════
 
