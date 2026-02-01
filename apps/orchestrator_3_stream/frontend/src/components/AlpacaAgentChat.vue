@@ -134,6 +134,13 @@
 
     <!-- Input Area -->
     <div class="input-area">
+      <!-- Warning when no credential selected -->
+      <div v-if="!accountStore.activeCredentialId" class="no-credential-warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>Select a trading account to start chatting</span>
+      </div>
       <div class="input-wrapper">
         <textarea
           ref="inputRef"
@@ -146,7 +153,7 @@
         <button
           class="send-btn"
           @click="sendMessage"
-          :disabled="!userInput.trim() || isLoading"
+          :disabled="!userInput.trim() || isLoading || !accountStore.activeCredentialId"
           title="Send message (Enter)"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -165,6 +172,13 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { renderMarkdown } from '../utils/markdown'
+import { useAccountStore } from '@/stores/accountStore'
+
+// Get API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:9403'
+
+// Initialize account store for credential context
+const accountStore = useAccountStore()
 
 // Types
 interface ToolUse {
@@ -241,6 +255,25 @@ async function sendMessage() {
   const content = userInput.value.trim()
   if (!content || isLoading.value) return
 
+  // Guard: Require active credential for chat
+  if (!accountStore.activeCredentialId) {
+    connectionStatus.value = 'error'
+    // Add error message to chat
+    const errorMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: 'Please select a trading account before sending messages. Use the account selector in the header.',
+      timestamp: new Date()
+    }
+    messages.value.push(errorMessage)
+    scrollToBottom()
+    // Reset status after showing error
+    setTimeout(() => {
+      connectionStatus.value = 'ready'
+    }, 3000)
+    return
+  }
+
   // Add user message
   const userMessage: ChatMessage = {
     id: crypto.randomUUID(),
@@ -274,16 +307,31 @@ async function sendMessage() {
     currentStreamingMessage.value = assistantMessage
     scrollToBottom()
 
-    // Call the backend API to invoke alpaca-mcp agent
-    const response = await fetch('/api/alpaca-agent/chat', {
+    // Call the backend API to invoke alpaca-mcp agent with credential_id
+    const response = await fetch(`${API_BASE_URL}/api/alpaca-agent/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ message: content })
+      body: JSON.stringify({
+        message: content,
+        credential_id: accountStore.activeCredentialId
+      })
     })
 
     if (!response.ok) {
+      // Handle 403 specifically - may indicate stale credential
+      if (response.status === 403) {
+        // Clear stale credential from store and localStorage
+        accountStore.activeCredentialId = null
+        try {
+          localStorage.removeItem('activeCredentialId')
+        } catch (e) {
+          console.warn('Failed to clear localStorage:', e)
+        }
+        throw new Error('Credential no longer valid. Please select a trading account.')
+      }
+
       // Try to extract error message from response body
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
       try {
@@ -1126,6 +1174,26 @@ onUnmounted(() => {
   border-radius: 4px;
   font-family: inherit;
   font-size: 0.65rem;
+}
+
+/* No Credential Warning */
+.no-credential-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 16px;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 8px;
+  color: rgb(234, 179, 8);
+  font-size: 0.8125rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.no-credential-warning svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 /* Mobile Responsive */
