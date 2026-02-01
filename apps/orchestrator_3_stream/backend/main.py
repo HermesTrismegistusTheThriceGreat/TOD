@@ -45,6 +45,8 @@ from modules.greeks_scheduler import init_greeks_scheduler, shutdown_greeks_sche
 from modules.alpaca_models import (
     GetPositionsResponse,
     GetPositionResponse,
+    Order,
+    GetOrdersResponse,
     SubscribePricesRequest,
     SubscribePricesResponse,
     SubscribeSpotPricesRequest,
@@ -1344,6 +1346,81 @@ async def get_position(request: Request, position_id: str):
     except Exception as e:
         logger.error(f"Failed to get position {position_id}: {e}")
         return GetPositionResponse(
+            status="error",
+            message=str(e)
+        )
+
+
+@app.get("/api/orders", response_model=GetOrdersResponse, tags=["Alpaca"])
+async def get_orders(
+    request: Request,
+    credential_id: str = Query(..., description="UUID of credential to fetch orders for"),
+    status: str = Query("all", description="Order status filter: 'all', 'open', 'closed'"),
+    limit: int = Query(100, description="Maximum number of orders to return", ge=1, le=500)
+):
+    """
+    Get orders for the selected credential.
+
+    Validates credential ownership via RLS, decrypts credentials on-demand,
+    and fetches orders from Alpaca using those credentials.
+
+    Args:
+        credential_id: UUID of the credential (required query parameter)
+        status: Order status filter ('all', 'open', 'closed')
+        limit: Maximum number of orders to return (1-500)
+
+    Returns:
+        GetOrdersResponse with list of orders
+
+    Raises:
+        403: If credential not found or not owned by user
+    """
+    try:
+        logger.http_request("GET", "/api/orders")
+        logger.info(f"Orders request for credential: {credential_id}, status={status}, limit={limit}")
+
+        alpaca_service = get_alpaca_service(request.app)
+
+        # For now, use a placeholder user_id until auth integration
+        # TODO: Replace with actual user from auth middleware
+        user_id = request.headers.get("X-User-ID", "demo-user")
+
+        # Validate credential ownership via RLS and get decrypted credentials
+        try:
+            async with get_connection_with_rls(user_id) as conn:
+                async with get_decrypted_alpaca_credential(
+                    conn, credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Credentials validated - fetch orders with these credentials
+                    orders_data = await alpaca_service.get_orders_with_credential(
+                        api_key=api_key,
+                        secret_key=secret_key,
+                        paper=True,  # Could be derived from credential_type in future
+                        status=status,
+                        limit=limit
+                    )
+
+                    # Convert dicts to Order models
+                    orders = [Order(**order_dict) for order_dict in orders_data]
+
+                    logger.http_request("GET", "/api/orders", 200)
+                    return GetOrdersResponse(
+                        status="success",
+                        orders=orders,
+                        total_count=len(orders)
+                    )
+
+        except ValueError as e:
+            # Credential not found or not owned by user
+            logger.error(f"Credential validation failed: {e}")
+            return GetOrdersResponse(
+                status="error",
+                message=f"Credential access denied: {str(e)}"
+            )
+
+    except Exception as e:
+        logger.error(f"Failed to get orders: {e}")
+        return GetOrdersResponse(
             status="error",
             message=str(e)
         )
