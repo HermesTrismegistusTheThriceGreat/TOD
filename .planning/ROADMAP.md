@@ -146,10 +146,12 @@ Plans:
   2. User A cannot see User B's positions or orders (verified via integration test)
   3. WebSocket updates are filtered by account ownership
   4. No endpoint leaks data across tenants
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md — Add structured logging for suspicious access attempts
+- [ ] 07-02-PLAN.md — Create RLS isolation integration tests
+- [ ] 07-03-PLAN.md — Browser-based isolation verification with real users
 
 ### Phase 8: Mobile Polish
 **Goal**: Touch-friendly account management and responsive design across all pages
@@ -179,7 +181,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 | 5. Account Display | 0/3 | Planning complete | - |
 | 5.1 Multiple Credentials | 3/3 | ✓ Complete (INSERTED) | 2026-01-31 |
 | 6. Trading Context | 3/3 | ✓ Complete | 2026-02-01 |
-| 7. Data Isolation | 0/TBD | Not started | - |
+| 7. Data Isolation | 0/3 | Planning complete | - |
 | 8. Mobile Polish | 0/TBD | Not started | - |
 
 ## Requirement Coverage
@@ -228,4 +230,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 *Phase 5.1 executed: 2026-01-31*
 *Phase 6 planned: 2026-02-01*
 *Phase 6 executed: 2026-02-01*
+*Phase 7 planned: 2026-02-01*
 *Depth: comprehensive (8 phases + 1 insertion)*
