@@ -130,11 +130,12 @@ Plans:
   2. Account context is validated before any trade execution
   3. Positions page shows only selected account's positions
   4. Order history shows only selected account's orders
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md — Backend chat endpoint with credential context and RLS validation
+- [ ] 06-02-PLAN.md — Backend positions/orders endpoints with credential filtering
+- [ ] 06-03-PLAN.md — Frontend credential context in chat and positions requests
 
 ### Phase 7: Data Isolation
 **Goal**: Complete tenant isolation - users cannot see each other's data
@@ -177,7 +178,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 | 4. Account Management UI | 3/3 | ✓ Complete | 2026-01-31 |
 | 5. Account Display | 0/3 | Planning complete | - |
 | 5.1 Multiple Credentials | 3/3 | ✓ Complete (INSERTED) | 2026-01-31 |
-| 6. Trading Context | 0/TBD | Not started | - |
+| 6. Trading Context | 0/3 | Planning complete | - |
 | 7. Data Isolation | 0/TBD | Not started | - |
 | 8. Mobile Polish | 0/TBD | Not started | - |
 
@@ -225,4 +226,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 *Phase 5 planned: 2026-01-31*
 *Phase 5.1 inserted: 2026-01-31 (urgent - 409 conflict fix)*
 *Phase 5.1 executed: 2026-01-31*
+*Phase 6 planned: 2026-02-01*
 *Depth: comprehensive (8 phases + 1 insertion)*
