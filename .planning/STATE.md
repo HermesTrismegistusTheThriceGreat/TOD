@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 6 of 8 (Trading Context) - IN PROGRESS
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase (06-01, 06-02 complete, 06-03 pending)
 Status: In progress
-Last activity: 2026-02-01 — Completed 06-02-PLAN.md (Credential Context for Positions)
+Last activity: 2026-02-01 — Completed 06-01-PLAN.md (Credential Context for Chat)
 
 Progress: [████████████████████] 95% Phase 6 (20/21 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 2/3)
 
@@ -117,6 +117,9 @@ Recent decisions affecting current work:
 - [05.1-02]: Tests use raw asyncpg mocking patterns (fetchrow/fetch) not SQLAlchemy ORM
 - [05.1-03]: Use nickname || credential_type fallback pattern in display helper
 - [05.1-03]: Show date-based fallback when nickname matches credential_type
+- [06-01]: credential_id is required field (no default) - every chat request MUST specify which credential
+- [06-01]: X-User-ID header for temporary auth - TODO: replace with proper middleware
+- [06-01]: paper_trade defaults to True for safety
 - [06-02]: Use temporary TradingClient per request instead of singleton for credential isolation
 - [06-02]: Run sync Alpaca SDK calls in executor to avoid blocking event loop
 
@@ -135,8 +138,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 12:34:00 UTC
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-02-01 12:35:00 UTC
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
@@ -145,6 +148,7 @@ Resume file: None
 **Phase 4 Complete:** Account management UI with AccountManagerDialog, AccountListView, AccountSelector, AppHeader integration, and /accounts route. All ACCT requirements (01-05) satisfied.
 **Phase 5 Complete:** Account data endpoint, service layer, and AccountDataDisplay component complete. Backend fetches real-time Alpaca metrics; frontend displays balance, equity, and buying power.
 **Phase 5.1 Complete:** Multiple credentials per account supported. Migration 16 drops unique constraint, adds nickname column. Backend accepts/returns nickname in all credential operations. Frontend has nickname input in form and displays nicknames in selector. CRED-05 requirement satisfied.
+**Phase 6 Plan 01 Complete:** Chat endpoint now requires credential_id, validates ownership via RLS, and passes decrypted credentials to agent invocation. Added invoke_agent_streaming_with_credential method.
 **Phase 6 Plan 02 Complete:** Positions endpoint now requires credential_id, validates ownership via RLS, and fetches positions using user-specific Alpaca credentials. Added get_all_positions_with_credential and get_orders_with_credential methods to AlpacaService.
 
 ---
