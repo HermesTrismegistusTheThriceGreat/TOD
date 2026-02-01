@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 6 of 8 (Trading Context) - IN PROGRESS
-Plan: 3 of 3 in current phase (06-01, 06-02 complete, 06-03 pending)
-Status: In progress
-Last activity: 2026-02-01 — Completed 06-01-PLAN.md (Credential Context for Chat)
+Phase: 6 of 8 (Trading Context) - COMPLETE
+Plan: 3 of 3 in current phase (all complete)
+Status: Phase complete
+Last activity: 2026-02-01 — Completed 06-03-PLAN.md (Frontend Credential Wiring)
 
-Progress: [████████████████████] 95% Phase 6 (20/21 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 2/3)
+Progress: [████████████████████] 100% Phase 6 (21/21 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 3/3)
 
 ### Pending Todos
 
@@ -23,9 +23,9 @@ Progress: [████████████████████] 95% Pha
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
-- Average duration: 5.2min
-- Total execution time: 1.9 hours
+- Total plans completed: 21
+- Average duration: 5.0min
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -37,11 +37,11 @@ Progress: [████████████████████] 95% Pha
 | 04-account-management-ui | 3 | 12.5min | 4.2min |
 | 05-account-display | 3 | 6.0min | 2.0min |
 | 05.1-multiple-credentials-support | 3 | 11.0min | 3.7min |
-| 06-trading-context | 2 | 1.9min | 0.95min |
+| 06-trading-context | 3 | 4.9min | 1.6min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (2.0min), 05.1-01 (1.0min), 05.1-03 (2.0min), 06-01 (TBD), 06-02 (1.9min)
-- Trend: Backend service changes very fast when patterns established
+- Last 5 plans: 05.1-01 (1.0min), 05.1-03 (2.0min), 06-01 (TBD), 06-02 (1.9min), 06-03 (3.0min)
+- Trend: Frontend wiring very fast when patterns established
 
 *Updated after each plan completion*
 
@@ -122,6 +122,10 @@ Recent decisions affecting current work:
 - [06-01]: paper_trade defaults to True for safety
 - [06-02]: Use temporary TradingClient per request instead of singleton for credential isolation
 - [06-02]: Run sync Alpaca SDK calls in executor to avoid blocking event loop
+- [06-03]: Pass credential_id in request body for chat (POST) and query params for positions (GET)
+- [06-03]: Disable send button AND show warning when no credential selected (defense in depth)
+- [06-03]: 403 response clears credential from both store and localStorage (stale credential handling)
+- [06-03]: Positions composable watches activeCredentialId and reloads automatically on change
 
 ### Pending Todos
 
@@ -138,8 +142,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 12:35:00 UTC
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-02-01 12:40:53 UTC
+Stopped at: Completed 06-03-PLAN.md (Phase 6 complete)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
@@ -150,6 +154,8 @@ Resume file: None
 **Phase 5.1 Complete:** Multiple credentials per account supported. Migration 16 drops unique constraint, adds nickname column. Backend accepts/returns nickname in all credential operations. Frontend has nickname input in form and displays nicknames in selector. CRED-05 requirement satisfied.
 **Phase 6 Plan 01 Complete:** Chat endpoint now requires credential_id, validates ownership via RLS, and passes decrypted credentials to agent invocation. Added invoke_agent_streaming_with_credential method.
 **Phase 6 Plan 02 Complete:** Positions endpoint now requires credential_id, validates ownership via RLS, and fetches positions using user-specific Alpaca credentials. Added get_all_positions_with_credential and get_orders_with_credential methods to AlpacaService.
+**Phase 6 Plan 03 Complete:** Frontend now passes credential_id to chat and positions endpoints. AlpacaAgentChat includes credential_id in request body, disables send without credential, handles 403 by clearing stale credentials. useAlpacaPositions uses accountStore and reloads on credential change.
+**Phase 6 Complete:** Full credential context chain established from database through backend to frontend. Users must select a trading account before chat or positions functionality works.
 
 ---
 *State initialized: 2026-01-29*
