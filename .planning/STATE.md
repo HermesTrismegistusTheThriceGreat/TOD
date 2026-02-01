@@ -18,7 +18,9 @@ Progress: [████████████████████] 100% Ph
 
 ### Pending Todos
 
-0 todo(s) pending - see `.planning/todos/pending/`
+1 todo(s) pending - see `.planning/todos/pending/`
+
+- **Chat credentials not updating on account switch** (HIGH, 2026-02-01)
 
 ## Performance Metrics
 
@@ -129,7 +131,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- **Chat credentials not updating on account switch** (HIGH) - When user switches active account, chat agent still uses old credentials. MCP server subprocess may need lifecycle management.
 
 ### Roadmap Evolution
 
