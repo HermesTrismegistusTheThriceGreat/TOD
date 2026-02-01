@@ -47,17 +47,22 @@ function transformCircuitStatus(raw: RawCircuitStatus): CircuitStatus {
 
 /**
  * Fetch all open positions from Alpaca.
+ * @param credentialId - Optional credential ID for user-specific positions
  */
-export async function getPositions(): Promise<GetPositionsResponse> {
-  const response = await apiClient.get<RawGetPositionsResponse>('/api/positions')
+export async function getPositions(credentialId?: string): Promise<GetPositionsResponse> {
+  const params = credentialId ? { credential_id: credentialId } : {}
+  const response = await apiClient.get<RawGetPositionsResponse>('/api/positions', { params })
   return transformPositionsResponse(response.data)
 }
 
 /**
  * Fetch a specific position by ID.
+ * @param positionId - The position ID to fetch
+ * @param credentialId - Optional credential ID for user-specific positions
  */
-export async function getPositionById(positionId: string): Promise<GetPositionResponse> {
-  const response = await apiClient.get<RawGetPositionResponse>(`/api/positions/${positionId}`)
+export async function getPositionById(positionId: string, credentialId?: string): Promise<GetPositionResponse> {
+  const params = credentialId ? { credential_id: credentialId } : {}
+  const response = await apiClient.get<RawGetPositionResponse>(`/api/positions/${positionId}`, { params })
   return transformPositionResponse(response.data)
 }
 
