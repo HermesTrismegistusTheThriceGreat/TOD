@@ -250,6 +250,64 @@ class AlpacaService:
             logger.error(f"Failed to fetch positions: {e}")
             raise
 
+    async def get_all_positions_with_credential(
+        self,
+        api_key: str,
+        secret_key: str,
+        paper: bool = True
+    ) -> List[OptionsPosition]:
+        """
+        Get all option positions using provided credentials.
+
+        This method creates a temporary TradingClient with the provided
+        credentials rather than using the service's default credentials.
+        Used when credentials come from encrypted storage per-user.
+
+        Args:
+            api_key: Decrypted Alpaca API key
+            secret_key: Decrypted Alpaca secret key
+            paper: Whether to use paper trading endpoint (default True)
+
+        Returns:
+            List of OptionsPosition objects
+
+        Raises:
+            Exception: If API call fails
+        """
+        try:
+            logger.info("Fetching positions with provided credentials")
+
+            # Create temporary client with provided credentials
+            temp_client = TradingClient(
+                api_key=api_key,
+                secret_key=secret_key,
+                paper=paper
+            )
+
+            # Get all positions (sync call, run in executor)
+            loop = asyncio.get_running_loop()
+            positions = await loop.run_in_executor(
+                None, temp_client.get_all_positions
+            )
+
+            # Filter for options only
+            option_positions = [
+                p for p in positions
+                if hasattr(p, 'asset_class') and p.asset_class == AssetClass.US_OPTION
+            ]
+
+            logger.info(f"Fetched {len(option_positions)} option positions with provided credentials")
+
+            # Group by ticker using existing logic
+            ticker_positions = self._group_by_ticker(option_positions)
+
+            logger.info(f"Grouped into {len(ticker_positions)} options positions with provided credentials")
+            return ticker_positions
+
+        except Exception as e:
+            logger.error(f"Failed to get positions with provided credentials: {e}")
+            raise
+
     async def get_position_by_id(self, position_id: str) -> Optional[OptionsPosition]:
         """Get a specific options position by ID"""
         # Check cache first
