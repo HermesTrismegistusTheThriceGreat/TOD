@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Account Display** - Show account type, balance, equity, buying power
 - [x] **Phase 5.1: Multiple Credentials Support** - Enable multiple Alpaca credentials per account (INSERTED)
 - [x] **Phase 6: Trading Context** - Chat executes against selected account only
-- [ ] **Phase 7: Data Isolation** - User A cannot see User B's data anywhere
+- [x] **Phase 7: Data Isolation** - User A cannot see User B's data anywhere
 - [ ] **Phase 8: Mobile Polish** - Touch-friendly account switcher and responsive audit
 
 ## Phase Details
@@ -140,23 +140,22 @@ Plans:
 ### Phase 7: Data Isolation
 **Goal**: Complete tenant isolation - users cannot see each other's data
 **Depends on**: Phase 2, Phase 6
-**Requirements**: ISO-01, ISO-02, ISO-03
+**Requirements**: ISO-01, ISO-02 (ISO-03 deferred to Phase 8)
 **Success Criteria** (what must be TRUE):
   1. User A cannot see User B's accounts (verified via integration test)
   2. User A cannot see User B's positions or orders (verified via integration test)
-  3. WebSocket updates are filtered by account ownership
-  4. No endpoint leaks data across tenants
+  3. No endpoint leaks data across tenants
 **Plans**: 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Add structured logging for suspicious access attempts
-- [ ] 07-02-PLAN.md — Create RLS isolation integration tests
-- [ ] 07-03-PLAN.md — Browser-based isolation verification with real users
+- [x] 07-01-PLAN.md — Add structured logging for suspicious access attempts
+- [x] 07-02-PLAN.md — Create RLS isolation integration tests
+- [x] 07-03-PLAN.md — Browser-based isolation verification with real users
 
 ### Phase 8: Mobile Polish
 **Goal**: Touch-friendly account management and responsive design across all pages
 **Depends on**: Phase 4, Phase 5, Phase 6
-**Requirements**: ACCT-06, MOB-01, MOB-02, MOB-03
+**Requirements**: ACCT-06, MOB-01, MOB-02, MOB-03, ISO-03
 **Success Criteria** (what must be TRUE):
   1. Account selector is touch-friendly on mobile
   2. All pages tested and functional on mobile viewport
@@ -181,7 +180,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 | 5. Account Display | 0/3 | Planning complete | - |
 | 5.1 Multiple Credentials | 3/3 | ✓ Complete (INSERTED) | 2026-01-31 |
 | 6. Trading Context | 3/3 | ✓ Complete | 2026-02-01 |
-| 7. Data Isolation | 0/3 | Planning complete | - |
+| 7. Data Isolation | 3/3 | ✓ Complete | 2026-02-01 |
 | 8. Mobile Polish | 0/TBD | Not started | - |
 
 ## Requirement Coverage
@@ -231,4 +230,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 *Phase 6 planned: 2026-02-01*
 *Phase 6 executed: 2026-02-01*
 *Phase 7 planned: 2026-02-01*
+*Phase 7 executed: 2026-02-01*
 *Depth: comprehensive (8 phases + 1 insertion)*
