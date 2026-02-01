@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Database Schema** - User accounts and credentials tables with RLS
 - [x] **Phase 3: Credential Management** - Backend services for encrypted storage/retrieval
 - [x] **Phase 4: Account Management UI** - Frontend for adding, viewing, switching accounts
-- [ ] **Phase 5: Account Display** - Show account type, balance, equity, buying power
+- [x] **Phase 5: Account Display** - Show account type, balance, equity, buying power
 - [x] **Phase 5.1: Multiple Credentials Support** - Enable multiple Alpaca credentials per account (INSERTED)
 - [x] **Phase 6: Trading Context** - Chat executes against selected account only
 - [x] **Phase 7: Data Isolation** - User A cannot see User B's data anywhere
@@ -101,9 +101,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Backend account-data endpoint with Alpaca API integration
-- [ ] 05-02-PLAN.md — Frontend service layer (types, getAccountData, store state)
-- [ ] 05-03-PLAN.md — AccountDataDisplay component with header integration
+- [x] 05-01-PLAN.md — Backend account-data endpoint with Alpaca API integration
+- [x] 05-02-PLAN.md — Frontend service layer (types, getAccountData, store state)
+- [x] 05-03-PLAN.md — AccountDataDisplay component with header integration
 
 ### Phase 5.1: Multiple Credentials Support (INSERTED)
 **Goal**: Enable users to add multiple Alpaca credentials per account with nickname/label field and selection UI
@@ -177,7 +177,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 | 2. Database Schema | 3/3 | ✓ Complete | 2026-01-30 |
 | 3. Credential Management | 3/3 | ✓ Complete | 2026-01-31 |
 | 4. Account Management UI | 3/3 | ✓ Complete | 2026-01-31 |
-| 5. Account Display | 0/3 | Planning complete | - |
+| 5. Account Display | 3/3 | ✓ Complete | 2026-01-31 |
 | 5.1 Multiple Credentials | 3/3 | ✓ Complete (INSERTED) | 2026-01-31 |
 | 6. Trading Context | 3/3 | ✓ Complete | 2026-02-01 |
 | 7. Data Isolation | 3/3 | ✓ Complete | 2026-02-01 |
