@@ -10,7 +10,7 @@ import os
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -59,6 +59,8 @@ from modules.alpaca_models import (
 )
 from modules.alpaca_agent_service import AlpacaAgentService
 from modules.alpaca_agent_models import AlpacaAgentChatRequest, AlpacaAgentChatResponse
+from modules.database import get_connection_with_rls
+from modules.credential_service import get_decrypted_alpaca_credential
 from routers.credentials import router as credentials_router
 from routers.accounts import router as accounts_router
 
@@ -1237,35 +1239,62 @@ async def get_adw_summary(adw_id: str):
 
 
 @app.get("/api/positions", response_model=GetPositionsResponse, tags=["Alpaca"])
-async def get_positions(request: Request):
+async def get_positions(
+    request: Request,
+    credential_id: str = Query(..., description="UUID of credential to fetch positions for")
+):
     """
-    Get all iron condor positions from Alpaca.
+    Get all option positions for the selected credential.
 
-    Returns grouped iron condor positions with all leg details.
-    Positions are cached and circuit breaker protects against API failures.
+    Validates credential ownership via RLS, decrypts credentials on-demand,
+    and fetches positions from Alpaca using those credentials.
+
+    Args:
+        credential_id: UUID of the credential (required query parameter)
 
     Returns:
-        GetPositionsResponse with list of iron condor positions
+        GetPositionsResponse with list of option positions
+
+    Raises:
+        403: If credential not found or not owned by user
     """
     try:
         logger.http_request("GET", "/api/positions")
+        logger.info(f"Positions request for credential: {credential_id}")
+
         alpaca_service = get_alpaca_service(request.app)
 
-        if not alpaca_service.is_configured:
-            logger.http_request("GET", "/api/positions", 200)
+        # For now, use a placeholder user_id until auth integration
+        # TODO: Replace with actual user from auth middleware
+        user_id = request.headers.get("X-User-ID", "demo-user")
+
+        # Validate credential ownership via RLS and get decrypted credentials
+        try:
+            async with get_connection_with_rls(user_id) as conn:
+                async with get_decrypted_alpaca_credential(
+                    conn, credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Credentials validated - fetch positions with these credentials
+                    positions = await alpaca_service.get_all_positions_with_credential(
+                        api_key=api_key,
+                        secret_key=secret_key,
+                        paper=True  # Could be derived from credential_type in future
+                    )
+
+                    logger.http_request("GET", "/api/positions", 200)
+                    return GetPositionsResponse(
+                        status="success",
+                        positions=positions,
+                        total_count=len(positions)
+                    )
+
+        except ValueError as e:
+            # Credential not found or not owned by user
+            logger.error(f"Credential validation failed: {e}")
             return GetPositionsResponse(
                 status="error",
-                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file with your real API keys from https://alpaca.markets/"
+                message=f"Credential access denied: {str(e)}"
             )
-
-        positions = await alpaca_service.get_all_positions()
-
-        logger.http_request("GET", "/api/positions", 200)
-        return GetPositionsResponse(
-            status="success",
-            positions=positions,
-            total_count=len(positions)
-        )
 
     except Exception as e:
         logger.error(f"Failed to get positions: {e}")
