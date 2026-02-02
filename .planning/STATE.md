@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Friends can log in, add their own Alpaca accounts, and trade via chat — each person controls their own money.
-**Current focus:** Phase 7 - Data Isolation
+**Current focus:** Phase 8 - Mobile Polish (COMPLETE)
 
 ## Current Position
 
-Phase: 8 of 8 (Mobile Polish) - IN PROGRESS
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-02 — Completed 08-02-PLAN.md (Mobile chat optimizations)
+Phase: 8 of 8 (Mobile Polish) - COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-02 — Completed 08-03-PLAN.md (Mobile verification + ISO-03 analysis)
 
-Progress: [█████████████████████████░] 96% Phase 8 (26/27 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 3/3, Phase 7: 3/3, Phase 8: 2/3)
+Progress: [██████████████████████████] 100% Phase 8 (27/27 plans total: Phase 1: 3/3, Phase 2: 3/3, Phase 3: 3/3, Phase 4: 3/3, Phase 5: 3/3, Phase 5.1: 3/3, Phase 6: 3/3, Phase 7: 3/3, Phase 8: 3/3)
 
 ### Pending Todos
 
@@ -30,9 +30,9 @@ Progress: [███████████████████████
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
-- Average duration: 5.0min
-- Total execution time: 2.8 hours
+- Total plans completed: 27
+- Average duration: 4.9min
+- Total execution time: 2.9 hours
 
 **By Phase:**
 
@@ -46,11 +46,11 @@ Progress: [███████████████████████
 | 05.1-multiple-credentials-support | 3 | 11.0min | 3.7min |
 | 06-trading-context | 3 | 4.9min | 1.6min |
 | 07-data-isolation | 3 | 40.4min | 13.5min |
-| 08-mobile-polish | 2 | 3.0min | 1.5min |
+| 08-mobile-polish | 3 | 6.0min | 2.0min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (2.4min), 07-02 (15.0min), 07-03 (23.0min), 08-01 (1.0min), 08-02 (2.0min)
-- Trend: Mobile polish tasks are fast (CSS-only, no backend changes)
+- Last 5 plans: 07-02 (15.0min), 07-03 (23.0min), 08-01 (1.0min), 08-02 (2.0min), 08-03 (3.0min)
+- Trend: Mobile polish tasks are fast (CSS-only, verification-focused)
 
 *Updated after each plan completion*
 
@@ -149,6 +149,7 @@ Recent decisions affecting current work:
 - [08-01]: Use 650px breakpoint for mobile account components (narrower than 768px layout breakpoint)
 - [08-01]: Enforce 44px minimum touch targets across all interactive mobile elements
 - [08-01]: Use calc(100vw - 2rem) pattern for viewport-safe dropdowns on mobile
+- [08-03]: Document ISO-03 WebSocket filtering gap as post-phase work (REST API is secured)
 
 ### Pending Todos
 
@@ -161,13 +162,14 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 - 🚨 **[07-02 - CRITICAL]:** Database role has BYPASSRLS privilege - RLS not enforcing user data isolation. MUST create application role without BYPASSRLS before production deployment. This is a showstopper security issue.
+- **[08-03 - MEDIUM]:** WebSocket broadcasts go to all clients without user filtering. REST API is secured; this is supplementary. Track for post-Phase 8 implementation.
 - [Research]: Alpaca token lifecycle not well documented - may need to contact support
 - [Research]: PostgreSQL RLS performance unverified at scale - recommend load testing Phase 2 (BLOCKED until BYPASSRLS issue resolved)
 
 ## Session Continuity
 
-Last session: 2026-02-02 01:37:17 UTC
-Stopped at: Completed 08-02-PLAN.md (Mobile chat optimizations - Phase 8 in progress)
+Last session: 2026-02-02 02:00:00 UTC
+Stopped at: Completed 08-03-PLAN.md (Mobile verification + ISO-03 analysis - Phase 8 COMPLETE)
 Resume file: None
 
 **Phase 1 Complete:** Security foundation established with encryption service, log redaction, pre-commit hooks, and comprehensive test suite.
@@ -178,7 +180,13 @@ Resume file: None
 **Phase 5.1 Complete:** Multiple credentials per account supported. Migration 16 drops unique constraint, adds nickname column. Backend accepts/returns nickname in all credential operations. Frontend has nickname input in form and displays nicknames in selector. CRED-05 requirement satisfied.
 **Phase 6 Complete:** Full credential context chain established from database through backend to frontend. Users must select a trading account before chat or positions functionality works.
 **Phase 7 Complete:** Data isolation verified at all levels - security logging, RLS policies (with BYPASSRLS caveat), and browser-tested E2E isolation. Account switching and cross-user isolation working correctly.
-**Phase 8 In Progress:** Mobile polish started (2/3 plans). Menu enhancements (08-01) and chat optimizations (08-02) complete with touch-friendly targets and iOS zoom prevention.
+**Phase 8 Complete:** Mobile polish finished (3/3 plans). Touch-friendly account components (08-01), mobile chat optimizations (08-02), and verification + ISO-03 analysis (08-03). All mobile tests passed at 375px viewport. ISO-03 WebSocket gap documented for post-phase work.
+
+## PROJECT COMPLETE
+
+All 8 planned phases completed (27 plans total). Remaining work items:
+1. **CRITICAL:** Fix BYPASSRLS privilege on database role (production blocker)
+2. **MEDIUM:** Implement WebSocket user filtering (ISO-03 gap)
 
 ---
 *State initialized: 2026-01-29*
