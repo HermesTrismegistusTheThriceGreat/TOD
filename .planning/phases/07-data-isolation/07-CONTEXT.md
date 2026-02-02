@@ -22,15 +22,16 @@ Complete tenant isolation — users cannot see each other's data anywhere in the
   2. **Cross-user isolation:** Logout, login as muzz@gmail.com (password123) — this user has no Alpaca accounts, Open Positions page should be empty, no data from previous user
 - Any test failure blocks progress — fix immediately before continuing
 
-### Backend Fix (Positions)
-- Positions endpoint is currently hardcoded to one account for all users — this is the core bug
-- Fix: Use credential_id from request (Phase 6 pattern already implemented for chat)
-- Chat endpoint is working correctly with credential switching — positions needs same treatment
+### Backend Status (Verified Phase 6 Completion)
+- ✅ Positions endpoint now uses credential_id from request (fixed in Phase 6)
+- ✅ Orders endpoint uses credential_id correctly (fixed in Phase 6)
+- ✅ Chat endpoint working correctly with credential switching
+- All three endpoints use `get_connection_with_rls()` and `get_decrypted_alpaca_credential()`
 
-### Endpoint Audit Scope
-- **Priority 1:** GET /api/positions — known broken, uses global account
-- **Priority 2:** GET /api/orders — verify uses credential_id correctly
-- Chat endpoint verified working — no changes needed
+### Phase 7 Focus
+- Verification testing (browser-based)
+- Integration tests for RLS policies
+- Logging for suspicious access attempts
 
 ### Failure Handling
 - Test failures block and fix immediately (isolation is critical)

@@ -161,10 +161,12 @@ Plans:
   2. All pages tested and functional on mobile viewport
   3. Account switcher works well on touch devices
   4. Chat interface is usable on mobile
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md — Touch-friendly Account Selector and header components
+- [ ] 08-02-PLAN.md — Chat interface mobile polish
+- [ ] 08-03-PLAN.md — Mobile verification and WebSocket filtering check
 
 ## Progress
 
@@ -181,7 +183,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7 -> 8
 | 5.1 Multiple Credentials | 3/3 | ✓ Complete (INSERTED) | 2026-01-31 |
 | 6. Trading Context | 3/3 | ✓ Complete | 2026-02-01 |
 | 7. Data Isolation | 3/3 | ✓ Complete | 2026-02-01 |
-| 8. Mobile Polish | 0/TBD | Not started | - |
+| 8. Mobile Polish | 0/3 | Not started | - |
 
 ## Requirement Coverage
 

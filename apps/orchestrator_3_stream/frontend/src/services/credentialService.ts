@@ -60,7 +60,7 @@ const credentialService = {
   /**
    * Store a new credential for an account.
    *
-   * @param data - Credential data including account_id, credential_type, api_key, secret_key
+   * @param data - Credential data including account_id, credential_type, api_key, secret_key, nickname
    * @returns Newly created credential metadata
    */
   async storeCredential(data: {
@@ -68,6 +68,7 @@ const credentialService = {
     credential_type: string
     api_key: string
     secret_key: string
+    nickname?: string
   }): Promise<CredentialResponse> {
     const response = await apiClient.post<CredentialResponse>('/api/credentials/store', data)
     return response.data

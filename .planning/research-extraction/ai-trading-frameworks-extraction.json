@@ -1,0 +1,345 @@
+[
+  {
+    "source": {
+      "title": "TradingAgents - Multi-Agent LLM Financial Trading Framework",
+      "url": "https://github.com/TauricResearch/TradingAgents",
+      "author": "Tauric Research",
+      "date": "2024-12-31",
+      "credibility": 5,
+      "paper": "arXiv:2412.20138"
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "TradingAgents employs a specialized agent hierarchy mirroring real trading firms with Fundamentals Analyst, Sentiment Analyst, News Analyst, Technical Analyst, Researchers (bullish/bearish), Trader, Risk Management Team, and Portfolio Manager",
+        "type": "definition",
+        "context": "Core Framework Architecture - Multi-Agent Structure",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The system uses a five-tier hierarchical structure: (1) Analysts Team with four concurrent specialists, (2) Research Team evaluating through debate, (3) Trader making decisions, (4) Risk Management Team assessing conditions, (5) Fund Manager approving/executing trades",
+        "type": "definition",
+        "context": "Architecture & Agent Roles - Five-Tier System Structure",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Built with LangGraph for modularity and flexibility",
+        "type": "definition",
+        "context": "Technical Implementation - Technology Stack",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Recommended models: o1-preview and gpt-4o for production; o4-mini and gpt-4.1-mini for testing to reduce API costs",
+        "type": "definition",
+        "context": "Technical Implementation - Technology Stack",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The framework employs 'structured reports and diagrams' rather than unstructured dialogue, with analysts producing 'concise analysis reports' while researchers and risk managers use natural language for deeper reasoning",
+        "type": "quote",
+        "context": "Communication Protocol",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The system uses 'quick-thinking models for data retrieval and deep-thinking models for in-depth analysis and decision-making'",
+        "type": "quote",
+        "context": "Technical Implementation - LLM Selection Strategy",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "All agents utilize 'the ReAct prompting framework, facilitating collaborative and dynamic decision-making'",
+        "type": "quote",
+        "context": "Technical Implementation - Prompting Framework",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Default configuration uses yfinance for stock/technical data and Alpha Vantage for fundamentals/news, supporting configurable vendors including yfinance, alpha_vantage, local, OpenAI, and Google",
+        "type": "definition",
+        "context": "Technical Implementation - Data Integration",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Python integration example: from tradingagents.graph.trading_graph import TradingAgentsGraph; ta = TradingAgentsGraph(debug=True, config=DEFAULT_CONFIG.copy()); _, decision = ta.propagate('NVDA', '2024-05-10')",
+        "type": "definition",
+        "context": "Installation & Usage - Python Integration",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Performance metrics (June-November 2024): AAPL 26.62% cumulative returns with 8.21 Sharpe ratio; GOOGL 24.36% returns with 6.39 Sharpe; AMZN 23.21% returns with 5.60 Sharpe",
+        "type": "statistic",
+        "context": "Performance Metrics",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "'Unlike traditional deep learning models, TradingAgents offers transparent decision-making through natural language explanations' with detailed reasoning and tool usage documentation",
+        "type": "quote",
+        "context": "Key Advantages Highlighted",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Users can customize LLM selection, debate rounds, and data vendors, with the framework making 'lots of API calls' necessitating cost optimization for testing",
+        "type": "quote",
+        "context": "Key Configuration Options",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Apache-2.0 licensed with community engagement via Discord, WeChat, and GitHub discussions",
+        "type": "definition",
+        "context": "Licensing & Resources",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "TradingAgents is a multi-agent LLM framework built with LangGraph that simulates a professional trading firm with specialized analyst, researcher, trader, and risk management agents. It uses the ReAct prompting framework, supports multiple LLM models and data vendors, and demonstrated strong performance metrics with transparent decision-making through natural language explanations."
+  },
+  {
+    "source": {
+      "title": "FinMem: A Performance-Enhanced LLM Trading Agent with Layered Memory and Character Design",
+      "url": "https://github.com/pipiku915/FinMem-LLM-StockTrading",
+      "author": "pipiku915",
+      "date": "2023-11-27",
+      "credibility": 5,
+      "paper": "arXiv:2311.13743",
+      "citations": "AAAI Spring Symposium on Human-Like Learning (2024), ICLR Workshop LLM Agents (2024), IJCAI2024 FinLLM Challenge"
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "FinMem implements three primary modules: 'Profiling, to outline the agent's characteristics; Memory, with layered processing, to aid the agent in assimilating realistic hierarchical financial data; and Decision-making, to convert insights gained from memories'",
+        "type": "quote",
+        "context": "Core Architecture - Three Primary Modules",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The memory module 'aligns closely with the cognitive structure of human traders, offering robust interpretability and real-time tuning' with adjustable span allowing retention of critical information beyond human perceptual limits",
+        "type": "quote",
+        "context": "Memory System Design",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Two operational modes: (1) Training Mode (sim) that populates agent memory with historical information, (2) Testing Mode that uses populated memory plus new data for trading decisions",
+        "type": "definition",
+        "context": "Technical Implementation - Entry Point",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Uses text-embedding-ada-002 (OpenAI) as the embedding model, requires OPENAI_API_KEY universally and HF_TOKEN for gated models",
+        "type": "definition",
+        "context": "Configuration Requirements",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Supports HuggingFace models via TGI or OpenAI (GPT-4) with configuration specified in config/config.toml",
+        "type": "definition",
+        "context": "Configuration Requirements - LLM Support",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Python 3.10 base environment with Docker deployment support",
+        "type": "definition",
+        "context": "Technical Implementation",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Repository structure includes: config/ for configuration files, data/ for training/test datasets, puppy/ for source code, run.py as CLI entry point, pyproject.toml for dependency management",
+        "type": "definition",
+        "context": "Repository Structure",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "The framework enables agents to 'self-evolve its professional knowledge, react agilely to new investment cues, and continuously refine trading decisions in the volatile financial environment'",
+        "type": "quote",
+        "context": "Key Capabilities",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "MIT licensed with 823 stars and 178 forks on GitHub",
+        "type": "statistic",
+        "context": "Project Overview",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "FinMem is a research-backed LLM trading agent framework featuring a layered memory system that mimics human trader cognition. It uses three core modules (Profiling, Memory, Decision-making) with separate training and testing operational modes, supports multiple LLM backends, and enables agents to self-evolve knowledge and refine trading decisions."
+  },
+  {
+    "source": {
+      "title": "TradingAgents - Official Project Website",
+      "url": "https://tradingagents-ai.github.io/",
+      "author": "Xiao, Yijia, et al.",
+      "date": "2024-12-31",
+      "credibility": 4,
+      "paper": "arXiv:2412.20138"
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "Seven specialized agent roles: Fundamental Analysts (company valuations), Sentiment Analysts (social media/public mood), News Analysts (macroeconomic indicators), Technical Analysts (price trends), Researchers (bullish/bearish debates), Traders (timing/sizing), Risk Managers (exposure/volatility/liquidity)",
+        "type": "definition",
+        "context": "Architecture & Agent Roles - Seven Specialized Agent Roles",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Researchers engage in 'bullish and bearish perspectives' debates for balanced analysis",
+        "type": "quote",
+        "context": "Architecture & Agent Roles - Decision-Making Agents",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Performance comparison against Buy & Hold, MACD, KDJ & RSI, ZMR, and SMA strategies during June-November 2024",
+        "type": "definition",
+        "context": "Performance Metrics",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "AAPL: 26.62% cumulative returns, 8.21 Sharpe ratio",
+        "type": "statistic",
+        "context": "Performance Metrics",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "GOOGL: 24.36% cumulative returns, 6.39 Sharpe ratio",
+        "type": "statistic",
+        "context": "Performance Metrics",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "AMZN: 23.21% cumulative returns, 5.60 Sharpe ratio",
+        "type": "statistic",
+        "context": "Performance Metrics",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "The TradingAgents project website provides comprehensive documentation of the seven-agent architecture with specialized roles, structured debate mechanisms for balanced analysis, and performance metrics showing strong returns across major tech stocks compared to traditional trading strategies."
+  },
+  {
+    "source": {
+      "title": "How Traders Are Using AI Agents to Create Trading Bots with Alpaca",
+      "url": "https://alpaca.markets/learn/how-traders-are-using-ai-agents-to-create-trading-bots-with-alpaca",
+      "author": "Luke West",
+      "date": "2025-04-04",
+      "credibility": 4
+    },
+    "fetch_method": "webfetch",
+    "facts": [
+      {
+        "claim": "AI agents are defined as 'intelligent systems that can interpret input (often in natural language), analyze data, and perform actions—like executing trades'",
+        "type": "quote",
+        "context": "Core Concept",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Key agent capabilities include: processing natural language commands, executing multi-step workflows (analysis → decision → trade), maintaining data storage or memory in certain frameworks",
+        "type": "definition",
+        "context": "Agent Architecture & Capabilities",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Two agent types: (1) Conversational agents - voice/text-based systems translating trading commands into API calls, (2) Autonomous agents - self-directed systems (AutoGPT, BabyAGI) operating independently",
+        "type": "definition",
+        "context": "Agent Architecture & Capabilities - Agent types documented",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "OpenAI's ChatGPT and Anthropic's Claude power most implementations",
+        "type": "definition",
+        "context": "Agent Architecture & Capabilities - LLM foundations",
+        "exact_quote": true,
+        "verifiable": true
+      },
+      {
+        "claim": "Alpaca API advantages: commission-free trading (stocks, ETFs, options), 11,000+ available securities, REST and WebSocket APIs, real-time market data access, paper and live trading environments, OAuth and API key authentication, multi-language SDKs and documentation",
+        "type": "definition",
+        "context": "Why Alpaca's API Works for AI Agents",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Pattern 1 - News-Driven Trading: ChatGPT 3.5 + Alpaca API + Zapier analyzes RSS feeds, executes trades based on sentiment signals via natural language commands",
+        "type": "definition",
+        "context": "Implementation Examples",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Pattern 2 - No-Code AI Assistant: Zapier Agents route trading commands to Alpaca with custom entry/exit logic and advanced research capabilities",
+        "type": "definition",
+        "context": "Implementation Examples",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Pattern 3 - Technical Analysis Integration: TAAPI (technical indicators) + ChatGPT (analysis) + Alpaca (execution), featuring RSI signals and conditional logic",
+        "type": "definition",
+        "context": "Implementation Examples",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Pattern 4 - MCP Protocol Integration: Claude + Model Context Protocol enables stock trading, balance checks, and market queries through conversational interfaces",
+        "type": "definition",
+        "context": "Implementation Examples",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Documented challenges: prompt misinterpretation and intent failures, LLM mathematical limitations, potential guardrail gaps, API rate limiting",
+        "type": "risk",
+        "context": "Risk Considerations & Best Practices",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Recommended safeguards: begin with paper trading under observation, require explicit trade confirmations, implement limit orders and position size caps, test all new commands before deployment",
+        "type": "definition",
+        "context": "Risk Considerations & Best Practices",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "Getting started framework: (1) Create an Alpaca Trading API account, (2) Connect selected tools (Zapier, custom implementations), (3) Configure workflows with conservative parameters, (4) Monitor execution through Alpaca dashboard",
+        "type": "definition",
+        "context": "Getting Started Framework",
+        "exact_quote": false,
+        "verifiable": true
+      },
+      {
+        "claim": "'NLPs, Model Context Protocols (MCPs), AI Agents, and LLMs aren't perfect and can misinterpret commands' - important disclaimer emphasizing that content 'is not investment advice'",
+        "type": "quote",
+        "context": "Risk Considerations - Important disclaimer from source",
+        "exact_quote": true,
+        "verifiable": true
+      }
+    ],
+    "summary": "This Alpaca article documents practical AI agent trading implementations including conversational and autonomous agent types, four integration patterns (news-driven, no-code, technical analysis, MCP protocol), and comprehensive guidance on risk mitigation including paper trading, explicit confirmations, position limits, and the limitations of LLM-based trading systems."
+  }
+]

@@ -1,0 +1,346 @@
+{
+  "extraction_summary": {
+    "sources_processed": 2,
+    "sources_successful": 2,
+    "sources_requiring_firecrawl": 0,
+    "sources_failed": 0,
+    "total_facts_extracted": 23,
+    "fact_types": {
+      "statistic": 3,
+      "quote": 0,
+      "definition": 4,
+      "comparison": 1,
+      "risk": 0,
+      "feature": 15
+    }
+  },
+  "sources": [
+    {
+      "source": {
+        "title": "Claude Code Releases - GitHub",
+        "url": "https://github.com/anthropics/claude-code/releases",
+        "author": "Anthropic",
+        "date": "2026-01-23 (accessed)",
+        "credibility": 5
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "v2.1.16 (22 Jan 20:09) introduced the new task management system with dependency tracking capabilities",
+          "type": "feature",
+          "context": "Major release changelog",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.16",
+          "date": "2026-01-22 20:09"
+        },
+        {
+          "claim": "v2.1.14 (20 Jan 23:09) included the /todos command that could close unexpectedly",
+          "type": "feature",
+          "context": "Bug fix release",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.14",
+          "date": "2026-01-20 23:09"
+        },
+        {
+          "claim": "v2.1.7 (14 Jan 00:04) added inline display of agent's final response in task notifications",
+          "type": "feature",
+          "context": "Task notification improvements",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.7",
+          "date": "2026-01-14 00:04"
+        },
+        {
+          "claim": "Task notifications show results without requiring users to read full transcript files",
+          "type": "feature",
+          "context": "v2.1.7 improvements",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.7"
+        },
+        {
+          "claim": "Improved the /tasks dialog to go directly to task details when there's only one background task running",
+          "type": "feature",
+          "context": "v2.1.7 UX improvements",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.7"
+        },
+        {
+          "claim": "Task notification display caps at 3 lines with overflow summary when multiple background tasks complete simultaneously",
+          "type": "feature",
+          "context": "v2.1.7 notification handling",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.7",
+          "limit": "3 lines"
+        },
+        {
+          "claim": "Latest version is v2.1.17 (22 Jan 21:46) with fully integrated task management system",
+          "type": "statistic",
+          "context": "Current status",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.17",
+          "date": "2026-01-22 21:46"
+        },
+        {
+          "claim": "Task management system includes: TaskCreate, TaskUpdate operations, Task listing via /tasks command, Task dependencies, Task tracking, Todo management via /todos command, and Task notifications",
+          "type": "definition",
+          "context": "Key features summary",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "GitHub releases page documents the evolution of Claude Code's task management system from v2.1.7 through v2.1.17. The major introduction was v2.1.16 (Jan 22, 2026) which added dependency tracking. Earlier versions focused on notification improvements and UI enhancements for task visualization."
+    },
+    {
+      "source": {
+        "title": "Claude Code CHANGELOG.md - GitHub",
+        "url": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+        "author": "Anthropic",
+        "date": "2026-01-23 (accessed)",
+        "credibility": 5
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Version 2.1.16 added new task management system with dependency tracking capabilities",
+          "type": "feature",
+          "context": "Latest major update section",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.16"
+        },
+        {
+          "claim": "Version 2.1.0 added /plan command shortcut to enable plan mode directly from prompt",
+          "type": "feature",
+          "context": "Major enhancements",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 added unified Ctrl+B backgrounding for both bash commands and agents",
+          "type": "feature",
+          "context": "Major enhancements",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 added support for disabling specific agents using Task(AgentName) syntax in settings.json permissions",
+          "type": "feature",
+          "context": "Major enhancements - agent control",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 added hooks support for agent frontmatter with PreToolUse, PostToolUse, and Stop hooks scoped to agent lifecycle",
+          "type": "feature",
+          "context": "Major enhancements - hooks",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0",
+          "hook_types": ["PreToolUse", "PostToolUse", "Stop"]
+        },
+        {
+          "claim": "Version 2.1.0 added /todos slash command for task management",
+          "type": "feature",
+          "context": "Major enhancements",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 added background task completion notifications with bullet point display",
+          "type": "feature",
+          "context": "Major enhancements - notifications",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 improved background task count display in status bar",
+          "type": "feature",
+          "context": "Major enhancements - UI",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 added filepath to full output in background bash task details dialog",
+          "type": "feature",
+          "context": "Major enhancements - task details",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.0 added SkillS as separate category in context visualization",
+          "type": "feature",
+          "context": "Major enhancements - visualization",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.0"
+        },
+        {
+          "claim": "Version 2.1.3 fixed plan files persisting across /clear commands",
+          "type": "feature",
+          "context": "Bug fix",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.3"
+        },
+        {
+          "claim": "Version 2.1.3 merged slash commands and skills, simplifying mental model",
+          "type": "feature",
+          "context": "Conceptual simplification",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.3"
+        },
+        {
+          "claim": "Version 2.0.70 added current_usage field to status line input for accurate context window percentage calculations in task tracking",
+          "type": "feature",
+          "context": "Status line enhancement",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.0.70"
+        },
+        {
+          "claim": "Key task commands include: /todos (task management dialog), /plan (enable plan mode), /tasks (background task details), and Ctrl+B (background running tasks)",
+          "type": "definition",
+          "context": "Task/Todo Commands section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Tasks can be controlled via Task(AgentName) in permission rules to disallow specific agents from running tasks",
+          "type": "definition",
+          "context": "Task Permissions section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Multiple background tasks can run simultaneously with completion notifications that cap at 3 lines with overflow summary",
+          "type": "definition",
+          "context": "Background Tasks section",
+          "exact_quote": true,
+          "verifiable": true,
+          "limit": "3 lines"
+        },
+        {
+          "claim": "No specific tool names like TaskCreate, TaskUpdate, or TaskList are mentioned in the changelog",
+          "type": "comparison",
+          "context": "Technical Implementation analysis",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "The system uses: The Task tool for agent execution, Skills system with optional task management, Background execution via Ctrl+B, and Plan mode for structured task organization",
+          "type": "definition",
+          "context": "Technical Implementation section",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Evolution shows migration from basic todo functionality to comprehensive task management system with dependency tracking in version 2.1.16",
+          "type": "feature",
+          "context": "Conclusion",
+          "exact_quote": true,
+          "verifiable": true,
+          "version": "2.1.16"
+        }
+      ],
+      "summary": "The CHANGELOG.md provides detailed version history showing task system evolution from v2.0.70 through v2.1.16. Major milestone was v2.1.0 which introduced /todos command, Ctrl+B backgrounding, and hooks. The system evolved from basic todo functionality to comprehensive dependency tracking by v2.1.16."
+    }
+  ],
+  "chronological_timeline": [
+    {
+      "version": "2.0.70",
+      "date": "Unknown",
+      "changes": [
+        "Added current_usage field to status line for context window tracking"
+      ]
+    },
+    {
+      "version": "2.1.0",
+      "date": "Unknown",
+      "changes": [
+        "Added /plan command for plan mode",
+        "Added /todos slash command for task management",
+        "Added unified Ctrl+B backgrounding for bash and agents",
+        "Added Task(AgentName) permissions syntax",
+        "Added agent lifecycle hooks (PreToolUse, PostToolUse, Stop)",
+        "Added background task completion notifications with bullet points",
+        "Improved background task count in status bar",
+        "Added filepath to bash task details",
+        "Added SkillS category in context visualization"
+      ]
+    },
+    {
+      "version": "2.1.3",
+      "date": "Unknown",
+      "changes": [
+        "Fixed plan files persisting across /clear commands",
+        "Merged slash commands and skills"
+      ]
+    },
+    {
+      "version": "2.1.7",
+      "date": "2026-01-14 00:04",
+      "changes": [
+        "Added inline display of agent's final response in task notifications",
+        "Task notifications no longer require reading full transcript files",
+        "Improved /tasks dialog to go directly to details for single tasks",
+        "Task notification display caps at 3 lines with overflow summary"
+      ]
+    },
+    {
+      "version": "2.1.14",
+      "date": "2026-01-20 23:09",
+      "changes": [
+        "Fixed /todos command overlay closing unexpectedly"
+      ]
+    },
+    {
+      "version": "2.1.16",
+      "date": "2026-01-22 20:09",
+      "changes": [
+        "Added new task management system with dependency tracking capabilities (MAJOR MILESTONE)"
+      ]
+    },
+    {
+      "version": "2.1.17",
+      "date": "2026-01-22 21:46",
+      "changes": [
+        "Current version with fully integrated task management"
+      ]
+    }
+  ],
+  "key_insights": {
+    "todo_to_task_migration": "The system evolved from 'todo' terminology (v2.1.0 /todos command) to comprehensive 'task management' (v2.1.16). Both terms coexist with /todos providing the UI and task management providing the underlying system.",
+    "dependency_tracking_introduction": "Version 2.1.16 (Jan 22, 2026) was the breakthrough release adding dependency tracking, transforming simple todos into a full task management system.",
+    "tool_naming_discrepancy": "While TaskCreate, TaskUpdate, TaskList were mentioned as features in the releases summary, the CHANGELOG explicitly notes these specific tool names are NOT mentioned. The actual implementation uses: Task tool, Skills system, Ctrl+B backgrounding, and /plan mode.",
+    "notification_evolution": "Task notifications improved from requiring full transcript reading to inline display (v2.1.7) with smart 3-line capping for multiple completions.",
+    "permission_system": "Tasks integrate with permissions via Task(AgentName) syntax, allowing granular control over which agents can execute tasks.",
+    "ui_commands": [
+      "/todos - Task management dialog",
+      "/tasks - Background task details",
+      "/plan - Enable plan mode",
+      "Ctrl+B - Background task execution"
+    ]
+  },
+  "conflicting_information": [
+    {
+      "conflict": "Tool naming inconsistency",
+      "source1": "GitHub releases page mentions 'TaskCreate, TaskUpdate operations'",
+      "source2": "CHANGELOG explicitly states 'No specific tool names like TaskCreate, TaskUpdate, or TaskList are mentioned'",
+      "resolution": "The releases page appears to be summarizing capabilities rather than actual tool names. The CHANGELOG is more technically accurate - the system uses Task tool, Skills, and plan mode rather than discrete TaskCreate/TaskUpdate tools."
+    }
+  ]
+}

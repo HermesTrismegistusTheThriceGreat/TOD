@@ -6,11 +6,69 @@
 
 ## Summary
 
-Phase 1 establishes the encrypted credential infrastructure that all subsequent phases depend on. The phase requires implementing Fernet-based encryption for API credentials at rest and preventing credentials from appearing in logs. Research confirms that this is the established best practice in Python/FastAPI ecosystems, with a clear pattern: encrypt credentials before database storage using cryptography's Fernet, implement log redaction to mask secrets, and use pre-commit hooks to prevent accidental commits of unencrypted credentials.
+Phase 1 establishes the encrypted credential infrastructure that all subsequent phases depend on. The phase requires implementing encryption for API credentials at rest and preventing credentials from appearing in logs. Research confirms that **application-level Fernet encryption is the best solution for Alpaca credentials**, not Neon Auth or PostgreSQL's pgcrypto extension.
 
-The project already uses python-dotenv for environment variable management, which is the correct approach for loading the Fernet encryption key on server startup. Credentials will flow: ENV → Encrypt with Fernet → Store in DB → Decrypt on retrieval. Logging infrastructure exists but needs enhancement to redact sensitive data.
+**Critical Finding:** Neon Auth and Better Auth are designed for USER IDENTITY management (email/password, OAuth), not for storing third-party API credentials (like Alpaca keys). This is a scope boundary issue: Better Auth tables exist for user authentication, but Alpaca credentials require a separate encryption strategy.
 
-**Primary recommendation:** Use the cryptography library's Fernet class (from `cryptography.fernet.Fernet`) as the encryption engine, store the key via environment variable (ENCRYPTION_KEY), implement a credential encryption service with encrypt/decrypt methods, add log filtering to redact secrets, and deploy detect-secrets pre-commit hook to prevent commits containing plaintext credentials.
+The project has two separate credential domains:
+1. **User identity** (email/password, OAuth tokens) — Handled by Better Auth tables
+2. **Alpaca API credentials** (API keys, secret keys) — Must use application-level Fernet encryption
+
+Research confirms that this is the established best practice in Python/FastAPI ecosystems. Encrypt credentials before database storage using cryptography's Fernet, implement log redaction to mask secrets, and use pre-commit hooks to prevent accidental commits of unencrypted credentials.
+
+The project already uses python-dotenv for environment variable management, which is the correct approach for loading the Fernet encryption key on server startup. Credentials will flow: ENV → Encrypt with Fernet → Store in DB → Decrypt on retrieval.
+
+**Primary recommendation:** Use the cryptography library's Fernet class for Alpaca credential encryption. Do NOT use Neon Auth, pgcrypto, or Better Auth's OAuth token storage for this purpose—these are the wrong tool for the wrong problem domain. Implement a credential encryption service with encrypt/decrypt methods, add log filtering to redact secrets, and deploy detect-secrets pre-commit hook to prevent commits containing plaintext credentials.
+
+## Neon Auth & Better Auth Analysis
+
+### What Neon Auth & Better Auth Actually Provide (HIGH confidence)
+
+**Neon Auth (Managed, powered by Better Auth):**
+- Manages USER IDENTITY: Users, sessions, email verification, OAuth integration
+- Stores: User accounts, OAuth tokens (access_token, refresh_token), password hashes
+- Schema: `user`, `session`, `account`, `verification` tables (confirmed in migration 13_better_auth_tables.sql)
+- Encryption: Better Auth supports `encryptOAuthTokens` option (defaults to false) for OAuth tokens only
+- Scope: "Branch-aware authentication"—auth state branches with database branches
+
+**Better Auth (Framework, open-source or via Neon Auth):**
+- Same user identity focus as Neon Auth
+- Provides plugins for: OAuth, email/password, 2FA, organizations, API keys
+- OAuth Token Storage: By default stores tokens UNENCRYPTED in `account` table
+- API Key Plugin: Can store API keys but primary use is for service-to-service auth, not third-party credential storage
+
+**Critical Limitation:** Neither Neon Auth nor Better Auth is designed to store encrypted third-party API credentials. They are authentication frameworks, not credential vaults. Trying to use them for Alpaca credentials is like using a password manager as a secrets management system—wrong layer, wrong abstraction.
+
+### What Neon Does NOT Provide (HIGH confidence)
+
+| Requirement | Neon Auth | Better Auth | Fernet |
+|-------------|-----------|-------------|--------|
+| Third-party API credential storage | ✗ Not designed for this | ✗ Not designed for this | ✓ Designed for this |
+| Encryption at rest for credentials | ✗ (tokens optional) | ✗ (OAuth tokens optional) | ✓ All data encrypted |
+| Integration with Alpaca keys | ✗ No | ✗ No | ✓ Application-level |
+| Scope: User authentication | ✓ Yes | ✓ Yes | ✗ Not applicable |
+| Scope: Credential encryption | ✗ No | ✗ No | ✓ Yes |
+
+### Why NOT Neon Auth or pgcrypto? (HIGH confidence)
+
+**Neon Auth / Better Auth:**
+- **Wrong abstraction layer**: These are user identity systems, not credential vaults. Using them for API keys is a conceptual mismatch.
+- **OAuth token focus**: Better Auth's encryption feature (`encryptOAuthTokens`) targets OAuth tokens from third-party providers, not credentials FOR those providers.
+- **Not designed for this**: The Better Auth documentation explicitly states encryption is optional and defaults to false, letting developers "implement their own encryption strategies"—because this is not Better Auth's responsibility.
+
+**PostgreSQL pgcrypto Extension:**
+- **Database-level limitation**: pgcrypto encrypts at the database layer (SQL functions like `pgp_sym_encrypt()`), but the encryption password/key must be provided at query time.
+- **Key management problem**: Keys stored in the database (or passed in queries) are exposed in query logs and memory. Neon docs explicitly warn: "Never store keys in plaintext within the database as that would defeat the purpose of encryption."
+- **No application-level key rotation**: Keys must be rotated manually; no support for MultiFernet-style zero-downtime rotation.
+- **Performance overhead**: Every SELECT/INSERT triggers encryption/decryption in the database, not in the application tier.
+- **Comparison to Fernet**: Fernet keys are stored as environment variables (external to database), rotate at application tier, and are compatible with cloud-native deployment patterns.
+
+**Wrong tool for wrong problem:**
+- Neon Auth is for: "How do I authenticate users?"
+- pgcrypto is for: "How do I add encryption operations to SQL?"
+- Fernet is for: "How do I encrypt sensitive data in my application?"
+
+For Alpaca credentials, we're asking: "How do I securely store and encrypt API credentials in my application?" → Answer: Fernet.
 
 ## Standard Stack
 
@@ -29,12 +87,14 @@ The project already uses python-dotenv for environment variable management, whic
 | python-logging-redaction | Latest | Custom logging redaction | Lighter alternative to logredactor if only simple secret masking needed |
 
 ### Alternatives Considered
-| Instead of | Could Use | Tradeoff |
-|------------|-----------|----------|
-| Fernet (AES-128) | PyCryptodome + custom HMAC | Full control but no authenticated encryption by default; requires careful implementation |
-| Fernet | AES-256 via cryptography lib | Overkill for API credentials; Fernet's AES-128 + HMAC is sufficient and faster |
-| detect-secrets | GitGuardian ggshield | More advanced pattern detection but requires external service; detect-secrets works offline |
-| Environment variable key | AWS Secrets Manager | Better for production multi-service deployments; not needed for this phase; can migrate later |
+| Instead of | Could Use | Tradeoff | Why NOT Recommended |
+|------------|-----------|----------|---------------------|
+| Fernet (AES-128) | PyCryptodome + custom HMAC | Full control but no authenticated encryption by default; requires careful implementation | Higher complexity, more chance of bugs in encryption layer |
+| Fernet | AES-256 via cryptography lib | Overkill for API credentials; Fernet's AES-128 + HMAC is sufficient and faster | Unnecessary complexity for credential encryption use case |
+| Fernet | Neon Auth / Better Auth | Wrong abstraction layer; these are user identity systems, not credential vaults | Conceptual mismatch; these frameworks explicitly delegate credential encryption to application layer |
+| Fernet | PostgreSQL pgcrypto | Database-level encryption requires key in database or query; no key rotation support | Key exposure risk; violates principle of keeping keys external to database |
+| detect-secrets | GitGuardian ggshield | More advanced pattern detection but requires external service; detect-secrets works offline | Overkill for this phase; offline detection sufficient |
+| Environment variable key | AWS Secrets Manager | Better for production multi-service deployments; not needed for this phase; can migrate later | Can defer to Phase 3+ when scaling production |
 
 **Installation:**
 ```bash
@@ -178,6 +238,8 @@ logger.addFilter(SecretRedactionFilter())
 - **Log credentials in error messages:** MUST add redaction filters. A single unredacted credential leak exposes the entire system.
 - **Skip pre-commit hooks:** ALWAYS deploy detect-secrets. Prevention is cheaper than incident response.
 - **Use weak key derivation:** Use at least 1,200,000 iterations if deriving keys from passwords (PBKDF2HMAC). For random keys, use Fernet.generate_key().
+- **Try to use Neon Auth / Better Auth for API credential storage:** These are user identity systems, not credential vaults. Use Fernet instead.
+- **Store encryption keys in database (pgcrypto):** Keys in the database defeat the purpose. Keep keys external via environment variables.
 
 ## Don't Hand-Roll
 
@@ -189,8 +251,10 @@ Problems that look simple but have existing solutions:
 | "I'll just filter secrets from logs manually" | Custom log filtering | Structured logging + RedactionFilter | Manual filtering with string matching misses edge cases (different formats, encoding, exceptions). Centralized filters catch everything. |
 | "I'll store the key in a config file, that's secure enough" | Config file key storage | Environment variables via python-dotenv | Config files can be accidentally committed, backed up unencrypted, or leaked in container images. Environment variables follow cloud-native best practices. |
 | "Let developers commit their own credentials, we'll clean up manually" | Manual secret removal | detect-secrets pre-commit hook | At least 15% of GitHub commits contain secrets. Hooks prevent the commit entirely; cleanup is already too late. |
+| "Neon Auth handles all my authentication, including API credentials" | Use Neon Auth for API credentials | Separate Fernet encryption for API credentials, separate Better Auth for user identity | Neon Auth/Better Auth are user identity systems. API credential encryption is a different concern. Mixing abstractions causes bugs. |
+| "I'll use pgcrypto to encrypt credentials at the database layer" | Database-level pgcrypto encryption | Application-level Fernet encryption | pgcrypto requires encryption keys to be in the database (defeating the purpose) or passed in queries (exposing keys in logs). Application-level encryption keeps keys external. |
 
-**Key insight:** Encryption and secret management have well-solved patterns in the cryptography community. The mistakes are almost always in implementation details (key storage, log leakage, validation) not in the encryption itself.
+**Key insight:** Encryption and secret management have well-solved patterns in the cryptography community. The mistakes are almost always in implementation details (key storage, log leakage, validation, wrong abstraction layer) not in the encryption itself.
 
 ## Common Pitfalls
 
@@ -270,6 +334,23 @@ Problems that look simple but have existing solutions:
 **Warning signs:**
 - Credentials appear in exception stack traces in logs
 - Different log output for successful vs. failed authentication
+
+### Pitfall 6: Confusing Abstraction Layers (NEW - from Neon/Better Auth research)
+**What goes wrong:** Attempting to use Neon Auth or Better Auth to store Alpaca API credentials, leading to either insecure storage (plaintext tokens) or architectural confusion.
+
+**Why it happens:** Developers see "Better Auth can store tokens" and assume it covers all credentials. In reality, Better Auth is for user identity (OAuth tokens), not third-party API credentials.
+
+**How to avoid:**
+- Understand the scope boundary: Better Auth = user identity; Fernet = application secrets
+- Better Auth tables (`user`, `session`, `account`) handle OAuth tokens and passwords
+- Create separate tables/columns for third-party credentials (Alpaca API keys) encrypted with Fernet
+- If tempted to use pgcrypto, remember: keys must be stored external to database
+- Document: "Better Auth handles user auth; Fernet handles Alpaca credentials"
+
+**Warning signs:**
+- Trying to store Alpaca keys in Better Auth `account` table
+- Passing encryption keys in SQL queries (pgcrypto pattern)
+- Keys stored in database or config files instead of environment variables
 
 ## Code Examples
 
@@ -511,11 +592,15 @@ repos:
 | Post-commit secret detection | Pre-commit hook detection (detect-secrets) | Industry adoption ~2018 onwards | Prevention model; stops commit before it happens |
 | Store key in config files | Environment variables via python-dotenv | Cloud-native standard (12-factor app) | Portable across environments; compatible with containerization |
 | Single static key forever | Key rotation via MultiFernet (optional later) | Not in Phase 1; deferred to Phase 3 | Zero-downtime key rotation; limits damage from key compromise |
+| Use one auth system for everything | Separate user auth (Better Auth) from credential encryption (Fernet) | Industry practice 2020+ | Clear separation of concerns; prevents architectural confusion |
+| Database-level encryption (pgcrypto) with keys in database | Application-level encryption (Fernet) with keys in environment | Best practice 2015+ | Keys external to database; no exposure in query logs |
 
 **Deprecated/outdated:**
 - **Plaintext credential storage:** Unacceptable for any system handling user data. All production systems must encrypt.
 - **Manual secret removal:** Too slow and error-prone. Pre-commit hooks prevent the leak.
 - **Hardcoded keys in source:** Violates every compliance standard. Always use environment variables.
+- **Using user identity systems (Neon Auth, Better Auth) for API credential storage:** These are the wrong abstraction. Use Fernet for third-party credentials.
+- **Database-level encryption with keys in database (pgcrypto):** Defeats the purpose. Keep keys external.
 
 ## Open Questions
 
@@ -540,30 +625,42 @@ Things that couldn't be fully resolved:
 ## Sources
 
 ### Primary (HIGH confidence)
-- **cryptography.io** - [Fernet documentation](https://cryptography.io/en/latest/fernet/) - API, best practices, key management, token expiration, MultiFernet
-- **Official Alpaca Docs** - [Authentication](https://docs.alpaca.markets/docs/authentication) - Credential types, access control, credential expiration
-- **Pydantic Official Docs** - [Secret Types](https://docs.pydantic.dev/2.0/usage/types/secrets/) - SecretStr/SecretBytes masking behavior
-- **SQLAlchemy Wiki** - [DatabaseCrypt Pattern](https://github.com/sqlalchemy/sqlalchemy/wiki/DatabaseCrypt) - Hybrid property encryption examples
-- **Yelp/detect-secrets** - [GitHub repo](https://github.com/Yelp/detect-secrets) - Pre-commit hook configuration, entropy detection
+
+- **cryptography.io** — [Fernet documentation](https://cryptography.io/en/latest/fernet/) — API, best practices, key management, token expiration, MultiFernet
+- **Neon Auth Overview** — [Neon Auth documentation](https://neon.com/docs/auth/overview) — Confirmed Neon Auth is user identity system, Better Auth tables for sessions/accounts
+- **Better Auth Homepage** — [Better Auth](https://www.better-auth.com/) — Core auth framework, OAuth token storage (unencrypted by default), plugin architecture
+- **PostgreSQL pgcrypto** — [Official PostgreSQL pgcrypto documentation](https://www.postgresql.org/docs/current/pgcrypto.html) — Encryption functions, key management limitations, warnings about key storage
+- **Neon pgcrypto Extension** — [Neon pgcrypto docs](https://neon.com/docs/extensions/pgcrypto) — Column-level encryption support, key management best practices
+- **Official Alpaca Docs** — [Authentication](https://docs.alpaca.markets/docs/authentication) — Credential types, access control, credential expiration
+- **Pydantic Official Docs** — [Secret Types](https://docs.pydantic.dev/2.0/usage/types/secrets/) — SecretStr/SecretBytes masking behavior
+- **SQLAlchemy Wiki** — [DatabaseCrypt Pattern](https://github.com/sqlalchemy/sqlalchemy/wiki/DatabaseCrypt) — Hybrid property encryption examples
+- **Yelp/detect-secrets** — [GitHub repo](https://github.com/Yelp/detect-secrets) — Pre-commit hook configuration, entropy detection
 
 ### Secondary (MEDIUM confidence)
-- Better Stack Community - [Logging sensitive data best practices](https://betterstack.com/community/guides/logging/sensitive-data/) - Log redaction filter patterns, multiple sources confirming approach
-- DEV Community - [Pydantic Secret Types guide](https://www.getorchestra.io/guides/pydantic-secret-types-handling-sensitive-data-securely-with-secretstr-and-secretbytes) - SecretStr masking and FastAPI patterns
-- Medium articles by Parthiban Marimuthu - [Fernet encryption guide](https://parthibanmarimuthu.medium.com/securely-encrypting-sensitive-data-in-python-with-fernet-dd50638bde0f) - Round-trip encryption examples
+
+- **Better Stack Community** — [Logging sensitive data best practices](https://betterstack.com/community/guides/logging/sensitive-data/) — Log redaction filter patterns, multiple sources confirming approach
+- **Neon Security Overview** — [Security documentation](https://neon.com/docs/security/security-overview) — Encryption at rest (AES-256), key management via AWS KMS, transport security
+- **Better Auth Documentation** — [Options & Configuration](https://www.better-auth.com/docs/reference/options) — `encryptOAuthTokens` feature for OAuth tokens only, delegation to application for custom encryption
+- **Neon Blog: MCP Authentication** — [Solving MCP Authentication with Vercel & Better Auth](https://neon.com/blog) — Demonstrates Better Auth is for user identity (OAuth), not API credential storage
+- **Stack Overflow** — [Best practices for REST API security](https://stackoverflow.blog/2021/10/06/best-practices-for-authentication-and-authorization-for-rest-apis/) — Industry consensus on credential encryption, key management
 
 ### Tertiary (LOW confidence, marked for validation)
-- WebSearch sources on "Python credential encryption patterns" - Community blog posts without official documentation; used for pattern confirmation only
-- Stack Overflow discussions on SQLAlchemy hybrid encryption - User-contributed patterns; implementation may vary
+
+- **WebSearch results on "Neon PostgreSQL column encryption pgcrypto 2026"** — General information on pgcrypto availability and limitations; used for confirmation only
+- **DEV Community articles on credential encryption** — Community best practices; used for pattern confirmation, not architectural guidance
+- **Medium articles on Fernet encryption** — Community examples; verified against official cryptography.io documentation
 
 ## Metadata
 
 **Confidence breakdown:**
 - **Standard stack (HIGH):** Cryptography library Fernet is official, audited, widely used. Python-dotenv is standard. Detect-secrets is enterprise-maintained by Yelp. All verified with official documentation.
+- **Neon Auth Analysis (HIGH):** Neon Auth documentation explicitly states it's a user identity system. Better Auth is designed for user auth with optional OAuth token encryption. Neither designed for third-party API credential storage.
+- **pgcrypto Limitations (HIGH):** PostgreSQL official docs clearly state key management limitations. Neon docs warn against storing keys in database.
 - **Architecture patterns (HIGH):** Encryption service pattern is documented in cryptography.io. Log redaction patterns verified across multiple sources. SQLAlchemy hybrid property approach in official wiki.
 - **Pitfalls (HIGH):** All major pitfalls documented in official security guides (Sentry, OWASP, Better Stack). Round-trip test pattern from cryptography.io examples.
 - **Code examples (HIGH):** All examples derived from official documentation or verified against best practices. Edge cases documented.
 - **Alpaca integration (MEDIUM):** Alpaca documentation is clear on credential types but limited on lifecycle. Phase context notes this as a blocker requiring support contact.
 
 **Research date:** 2026-01-29
-**Valid until:** 2026-02-28 (stable technologies, 30-day horizon)
-**Next validation:** Before Phase 2 if Alpaca token lifecycle requires changes to credential model
+**Valid until:** 2026-02-28 (stable technologies; 30-day horizon for Neon Auth evolution)
+**Next validation:** Before Phase 2 if Alpaca token lifecycle changes require modifications to credential model; also check Neon Auth changelog for any new credential management features (unlikely, but beta service may evolve)

@@ -1,0 +1,717 @@
+{
+  "extraction_metadata": {
+    "extraction_date": "2026-01-29",
+    "extractor": "Claude Sonnet 4.5",
+    "task": "Backtesting frameworks with Alpaca - comparative analysis",
+    "total_sources": 4
+  },
+  "sources": [
+    {
+      "source_id": 1,
+      "title": "Alpaca Backtrader API",
+      "url": "https://github.com/alpacahq/alpaca-backtrader-api",
+      "source_type": "GitHub Repository - Official Integration",
+      "author": "Alpaca Markets",
+      "last_updated": "2022-01-02",
+      "maintenance_status": "Active (683 stars, 155 forks, 45 open issues)",
+      "license": "Apache-2.0",
+      "facts": [
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Integrates Alpaca's trading API with backtrader framework for strategy backtesting",
+          "quote": "toggle between backtesting and paper trading by changing `ALPACA_PAPER`",
+          "context": "README - Features section"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Supports historical data retrieval, portfolio value tracking, and visual plotting",
+          "quote": null,
+          "context": "README - Backtesting features"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Strategies inherit from bt.SignalStrategy with technical indicators",
+          "quote": "class SmaCross(bt.SignalStrategy):\n  def __init__(self):\n    sma1, sma2 = bt.ind.SMA(period=10), bt.ind.SMA(period=30)\n    crossover = bt.ind.CrossOver(sma1, sma2)\n    self.signal_add(bt.SIGNAL_LONG, crossover)",
+          "context": "README - Example code"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Seamless transition using ALPACA_PAPER flag without code changes",
+          "quote": "if not ALPACA_PAPER:\n  broker = store.getbroker()\n  cerebro.setbroker(broker)",
+          "context": "README - Paper/Live mode section"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Data sourced from Alpaca API with historical parameter",
+          "quote": "DataFactory = store.getdata\ndata0 = DataFactory(dataname='AAPL', historical=True, \n                    fromdate=datetime(2015, 1, 1), \n                    timeframe=bt.TimeFrame.Days)\ncerebro.adddata(data0)",
+          "context": "README - Data handling section"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Requires Python 3.5+, alpaca-trade-api, backtrader dependencies",
+          "quote": "module supports only python version 3.5 and above",
+          "context": "README - Installation section"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Installation via pip",
+          "quote": "$ pip3 install alpaca-backtrader-api",
+          "context": "README - Install instructions"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Supports signal-based order generation, streaming websocket, multi-strategy execution with proxy",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "limitations",
+          "fact": "Single websocket per account, requires funded account for Polygon data",
+          "quote": "These examples only work if you have a funded brokerage account or another means of accessing Polygon data",
+          "context": "README - Known issues"
+        },
+        {
+          "category": "limitations",
+          "fact": "Multiple strategies require external Alpaca Proxy Agent",
+          "quote": null,
+          "context": "README - Running Multiple Strategies section"
+        },
+        {
+          "category": "code_example_complete",
+          "fact": "Complete strategy setup example available",
+          "quote": "import alpaca_backtrader_api\nimport backtrader as bt\nfrom datetime import datetime\n\nALPACA_API_KEY = <key_id>\nALPACA_SECRET_KEY = <secret_key>\nALPACA_PAPER = True\n\ncerebro = bt.Cerebro()\ncerebro.addstrategy(SmaCross)\n\nstore = alpaca_backtrader_api.AlpacaStore(\n    key_id=ALPACA_API_KEY,\n    secret_key=ALPACA_SECRET_KEY,\n    paper=ALPACA_PAPER\n)\n\nprint('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())\ncerebro.run()\nprint('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())",
+          "context": "README - Complete example"
+        }
+      ]
+    },
+    {
+      "source_id": 2,
+      "title": "Alpaca Zipline Docker Image",
+      "url": "https://github.com/alpacahq/alpaca-zipline",
+      "source_type": "GitHub Repository - Official Integration",
+      "author": "Alpaca Markets",
+      "last_updated": "2018-06-15",
+      "maintenance_status": "Active maintenance acknowledged, 27 stars, 22 forks, 3 open issues",
+      "license": "Not specified",
+      "facts": [
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Packages Zipline backtesting engine with minute and daily data frequencies",
+          "quote": null,
+          "context": "README - Overview"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Supports alpaca-bundle with 8,000 stocks, daily and minute data, 3000 bars",
+          "quote": null,
+          "context": "README - Data handling"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "State persistence through serialized context files",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Dual-path workflow: Jupyter exploration phase (port 8888) and CLI production phase",
+          "quote": null,
+          "context": "README - Usage section"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Algorithms require Python 3 compatibility (migrated from Quantopian Python 2)",
+          "quote": null,
+          "context": "README - Compatibility notes"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Required algorithm initialization imports",
+          "quote": "from zipline.api import *\nimport logbook\nlog = logbook.Logger('algo')",
+          "context": "README - Algorithm requirements"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Jupyter algorithms export to .py files for CLI execution with --broker=alpaca flag",
+          "quote": null,
+          "context": "README - Transition workflow"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "State files maintain algorithm context across executions",
+          "quote": null,
+          "context": "README - State management"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Primary data via alpaca-bundle ingestion",
+          "quote": "$ zipline ingest -b alpaca-bundle",
+          "context": "README - Data ingestion"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Bundle data mounted at /root/.zipline/data with persistent host mounting support",
+          "quote": null,
+          "context": "README - Data organization"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Covers 8,000 equities with multiple timeframes",
+          "quote": null,
+          "context": "README - Data coverage"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Single requirement: Docker installation",
+          "quote": null,
+          "context": "README - Prerequisites"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Environment variables required: APCA_API_KEY_ID, APCA_API_SECRET_KEY",
+          "quote": "$ export APCA_API_KEY_ID=xxxxx\n$ export APCA_API_SECRET_KEY=yyyy",
+          "context": "README - Setup"
+        },
+        {
+          "category": "code_example_jupyter",
+          "fact": "Jupyter container launch command",
+          "quote": "$ docker run -it --rm \\\n    -e APCA_API_KEY_ID -e APCA_API_SECRET_KEY -p 8888:8888 \\\n    alpacamarkets/alpaca-zipline",
+          "context": "README - Jupyter usage"
+        },
+        {
+          "category": "code_example_cli",
+          "fact": "CLI container launch with volume mounting",
+          "quote": "$ docker run -it --rm -e APCA_API_KEY_ID -e APCA_API_SECRET_KEY \\\n    -v $DATADIR:/root/.zipline/data \\\n    -v $ALGODIR:/work -w /work \\\n    alpacamarkets/alpaca-zipline bash",
+          "context": "README - CLI usage"
+        },
+        {
+          "category": "code_example_execution",
+          "fact": "Algorithm execution command with all parameters",
+          "quote": "$ zipline run -f /work/myalgo.py \\\n    --broker=alpaca --broker-uri=dummy \\\n    --state-file /work/state \\\n    --realtime-bar-target /work/realtime-bars/ \\\n    --bundle alpaca-bundle --data-frequency minute",
+          "context": "README - Algorithm execution"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Real-time trading, state file serialization, scheduled bundle ingestion, Jupyter automation",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "limitations",
+          "fact": "Python 2 to 3 migration required for Quantopian algorithms",
+          "quote": null,
+          "context": "README - Compatibility"
+        },
+        {
+          "category": "limitations",
+          "fact": "broker-uri parameter ignored but required",
+          "quote": "The `--broker-uri` parameter is ignored with alpaca broker, but you have to specify something",
+          "context": "README - Known quirks"
+        },
+        {
+          "category": "limitations",
+          "fact": "Limited documentation on algorithm-specific compatibility",
+          "quote": "we are aware of many different use cases",
+          "context": "README - Support section"
+        }
+      ]
+    },
+    {
+      "source_id": 3,
+      "title": "Freqtrade-Alpaca Fork",
+      "url": "https://github.com/aidinstinct/freqtrade-alpaca",
+      "source_type": "GitHub Repository - Community Fork",
+      "author": "aidinstinct",
+      "last_updated": "2025-01-20",
+      "maintenance_status": "Active development (develop branch, 27,378 commits)",
+      "license": "GPL-3.0",
+      "facts": [
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Dynamic fee generation for crypto trades",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Extended hours trading support to mirror actual market conditions",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Mixed asset backtesting: simultaneous crypto and US equities testing",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Data stored in feather format",
+          "quote": "BTC_USD-USD-timeframe.feather",
+          "context": "README - Data handling"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Backtesting command syntax",
+          "quote": "freqtrade backtesting --config config.json -s MyStrategy --timerange 20240101-",
+          "context": "README - Usage"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Five-step workflow: config creation, strategy generation, backtesting, hyperopt, deployment",
+          "quote": null,
+          "context": "README - Workflow"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Config generation command",
+          "quote": "freqtrade new-config",
+          "context": "README - Quick start"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Strategy template generation",
+          "quote": "freqtrade new-strategy",
+          "context": "README - Quick start"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Switch dry_run from true to false for live trading",
+          "quote": null,
+          "context": "README - Configuration guide"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Update credentials from paper_key/paper_secret to mkey/msecret",
+          "quote": null,
+          "context": "README - Configuration guide"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Set max_open_trades to 3 for accounts under $25k due to day trading rules",
+          "quote": null,
+          "context": "README - Configuration guide"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Set process_throttle_secs to minimum 40 to avoid API overload",
+          "quote": null,
+          "context": "README - Configuration guide"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Downloads historic data from Alpaca exchange",
+          "quote": "Downloads historic data from alpaca exchange",
+          "context": "README - Data handling"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Crypto data pattern format",
+          "quote": "BTC_USD-USD-timeframe.feather",
+          "context": "README - Data format"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Multi-timeframe download command",
+          "quote": "freqtrade download-data --config config.json --timerange 20240101- --timeframe 30m 1h 4h",
+          "context": "README - Data download"
+        },
+        {
+          "category": "code_example_installation",
+          "fact": "Complete installation sequence",
+          "quote": "git clone https://github.com/aidinstinct/freqtrade-alpaca.git\ncd freqtrade-alpaca\n./setup.sh -i\nsource .venv/bin/activate",
+          "context": "README - Installation"
+        },
+        {
+          "category": "code_example_hyperopt",
+          "fact": "Hyperopt optimization command",
+          "quote": "freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --config config.json -s MyStrategy --timerange 20240101-",
+          "context": "README - Hyperopt section"
+        },
+        {
+          "category": "code_example_pairs",
+          "fact": "Cryptocurrency pair format",
+          "quote": "\"BTC/USD/USD\", \"ETH/USD/USD\"",
+          "context": "README - Configuration example"
+        },
+        {
+          "category": "code_example_pairs",
+          "fact": "Equity pair format",
+          "quote": "\"GLD/USD\", \"SPY/USD\", \"SIVR/USD\"",
+          "context": "README - Configuration example"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Hardware: 2GB RAM minimum, 1GB disk, 2vCPU",
+          "quote": null,
+          "context": "README - Requirements"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Python >= 3.10, pip, git, TA-Lib required",
+          "quote": null,
+          "context": "README - Requirements"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Critical credential configuration warning",
+          "quote": "Do not put alpaca keys and secrets in exchange 'key' or 'secret'",
+          "context": "README - Configuration warning"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Websocket support for Alpaca Markets",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "automation_features",
+          "fact": "API server capability with JWT authentication",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Telegram integration support (disabled by default)",
+          "quote": null,
+          "context": "README - Features"
+        },
+        {
+          "category": "limitations",
+          "fact": "Limit trading not thoroughly tested",
+          "quote": "Limit trading for Alpaca Markets is not thoroughly tested",
+          "context": "README - Known issues"
+        },
+        {
+          "category": "limitations",
+          "fact": "Options and leverage trading not implemented",
+          "quote": null,
+          "context": "README - Known issues"
+        },
+        {
+          "category": "limitations",
+          "fact": "Orderbook insights unavailable for crypto on Alpaca",
+          "quote": null,
+          "context": "README - Known issues"
+        },
+        {
+          "category": "limitations",
+          "fact": "Simultaneous websocket connections hit limits; defaults to crypto monitoring",
+          "quote": null,
+          "context": "README - Known issues"
+        },
+        {
+          "category": "limitations",
+          "fact": "Requires separate credentials for dual endpoint trading",
+          "quote": null,
+          "context": "README - Configuration"
+        }
+      ]
+    },
+    {
+      "source_id": 4,
+      "title": "Introduction to Backtesting with VectorBT",
+      "url": "https://alpaca.markets/learn/introduction-to-backtesting-with-vectorbt",
+      "source_type": "Tutorial Article",
+      "author": "Rahul Chowdhury",
+      "publication_date": "2022-01-13",
+      "read_time": "5 minutes",
+      "category": "Trading API",
+      "topics": ["Backtesting", "Python"],
+      "facts": [
+        {
+          "category": "backtesting_capabilities",
+          "fact": "VectorBT excels at processing large datasets using numpy vectorization",
+          "quote": "It excels at processing large amounts of data",
+          "context": "Introduction section"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Enables testing hundreds of strategy variations quickly",
+          "quote": "testing hundreds of variations of strategies relatively quickly",
+          "context": "Introduction section"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Supports 5+ years of historical data across thousands of US stocks and cryptocurrencies",
+          "quote": "over 5+ years of historical data across thousands of US stocks and cryptocurrencies",
+          "context": "Data access section"
+        },
+        {
+          "category": "backtesting_capabilities",
+          "fact": "Multi-asset simultaneous backtesting capability",
+          "quote": null,
+          "context": "Optimizing Parameters section"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Five-phase workflow: Setup, Data Retrieval, Indicator Calculation, Signal Generation, Portfolio Analysis",
+          "quote": null,
+          "context": "Tutorial structure"
+        },
+        {
+          "category": "strategy_development",
+          "fact": "Installation command",
+          "quote": "pip install vectorbt",
+          "context": "Introduction section"
+        },
+        {
+          "category": "live_trading_transition",
+          "fact": "Article focuses on backtesting; does not explicitly detail Alpaca live trading transition",
+          "quote": null,
+          "context": "N/A - limitation noted"
+        },
+        {
+          "category": "data_handling",
+          "fact": "API credential configuration in settings",
+          "quote": "import vectorbt as vbt\nvbt.settings.data['alpaca']['key_id'] = 'Your API Key'\nvbt.settings.data['alpaca']['secret_key'] = 'Your Secret Key'",
+          "context": "Accessing Historical Data section"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Flexible time definitions: absolute dates, relative timeframes, various resolutions",
+          "quote": null,
+          "context": "Data retrieval section"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Data download example with flexible time syntax",
+          "quote": "alpacadata = vbt.AlpacaData.Download(symbol='AAPL', \n  start='4 days ago UTC', end='1 day ago UTC', timeframe='1h')\nalpaca.get_data()",
+          "context": "Accessing Historical Data section"
+        },
+        {
+          "category": "data_handling",
+          "fact": "Data tier limitations: Free plans get IEX with 15-min delay; premium gets all exchanges",
+          "quote": null,
+          "context": "Data access section"
+        },
+        {
+          "category": "code_example_strategy",
+          "fact": "Complete simple moving average crossover implementation",
+          "quote": "fast_ma = vbt.MA.run(alpacadata, 10, short_name='fast')\nslow_ma = vbt.MA.run(alpacadata, 20, short_name='slow')\nentries = fast_ma.ma_crossed_above(slow_ma)\nexits = fast_ma.ma_crossed_below(slow_ma)\npf = vbt.Portfolio.from_signals(alpacadata, entries, exits)\npf.total_return()  # 0.636680693047752",
+          "context": "Running Backtests section"
+        },
+        {
+          "category": "code_example_optimization",
+          "fact": "Parameter optimization with multiple symbols and windows",
+          "quote": "alpacadata = vbt.AlpacaData.Download(\n  symbol=['AAPL', \"BTCUSD\"], \n  start='4 days ago UTC', end='1 day ago UTC', timeframe='1h')\nfast_ma = vbt.MA.run(alpacadata, [10, 20], short_name='fast')\nslow_ma = vbt.MA.run(alpacadata, [30, 30], short_name='slow')",
+          "context": "Optimizing Parameters section"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Batch testing across multiple parameter combinations",
+          "quote": null,
+          "context": "Optimizing Parameters section"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Comparative analysis across symbols and timeframes",
+          "quote": null,
+          "context": "Optimizing Parameters section"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Automated signal generation from technical indicators",
+          "quote": null,
+          "context": "Running Backtests section"
+        },
+        {
+          "category": "automation_features",
+          "fact": "Portfolio performance calculation across scenarios",
+          "quote": null,
+          "context": "Running Backtests section"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Python environment with numpy support required",
+          "quote": null,
+          "context": "Installation section"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Alpaca API credentials required",
+          "quote": null,
+          "context": "Setup section"
+        },
+        {
+          "category": "setup_requirements",
+          "fact": "Free or premium Alpaca market data plan",
+          "quote": null,
+          "context": "Data access section"
+        },
+        {
+          "category": "performance_metrics",
+          "fact": "Total return calculation method",
+          "quote": "pf.total_return()",
+          "context": "Running Backtests section"
+        },
+        {
+          "category": "performance_metrics",
+          "fact": "Example return value demonstration",
+          "quote": "0.636680693047752",
+          "context": "Running Backtests section"
+        },
+        {
+          "category": "performance_metrics",
+          "fact": "Multi-dimensional performance comparison output",
+          "quote": null,
+          "context": "Optimizing Parameters section"
+        },
+        {
+          "category": "key_takeaway",
+          "fact": "VectorBT enables rapid prototyping against 5+ years of Alpaca data before live trading",
+          "quote": null,
+          "context": "Conclusion"
+        }
+      ]
+    }
+  ],
+  "comparative_analysis": {
+    "backtesting_capabilities": {
+      "backtrader": {
+        "strengths": ["Signal-based strategy framework", "Visual plotting", "Historical data from Alpaca", "Portfolio tracking"],
+        "approach": "Traditional event-driven backtesting with technical indicators"
+      },
+      "zipline": {
+        "strengths": ["Minute and daily frequencies", "8,000 stocks coverage", "3,000 bars depth", "State persistence"],
+        "approach": "Quantopian-style algorithmic backtesting with bundle system"
+      },
+      "freqtrade": {
+        "strengths": ["Mixed asset backtesting (crypto + equities)", "Extended hours trading", "Dynamic fee generation", "Hyperopt optimization"],
+        "approach": "Comprehensive crypto-first framework adapted for equities"
+      },
+      "vectorbt": {
+        "strengths": ["Vectorized operations for speed", "5+ years historical data", "Hundreds of variations quickly", "Multi-asset simultaneous testing"],
+        "approach": "High-performance numpy-based vectorization"
+      }
+    },
+    "automation_features": {
+      "backtrader": {
+        "features": ["Signal-based order generation", "Streaming websocket", "Multi-strategy with proxy"],
+        "limitations": ["Requires external proxy agent for multiple strategies", "Single websocket per account"]
+      },
+      "zipline": {
+        "features": ["Real-time trading execution", "State file serialization", "Scheduled bundle ingestion", "Jupyter automation"],
+        "limitations": ["broker-uri parameter quirk", "Limited multi-strategy documentation"]
+      },
+      "freqtrade": {
+        "features": ["Websocket support", "API server with JWT auth", "Telegram integration", "REST endpoints"],
+        "limitations": ["Simultaneous websocket connection limits", "Separate credentials needed for dual endpoints"]
+      },
+      "vectorbt": {
+        "features": ["Batch parameter testing", "Comparative analysis", "Automated signal generation", "Performance calculation"],
+        "limitations": ["Tutorial does not cover live trading transition automation"]
+      }
+    },
+    "live_trading_transition": {
+      "backtrader": {
+        "ease": "Seamless",
+        "method": "Single ALPACA_PAPER flag toggle",
+        "code_changes": "Minimal (conditional broker setup)"
+      },
+      "zipline": {
+        "ease": "Moderate",
+        "method": "Export Jupyter to .py with --broker=alpaca flag",
+        "code_changes": "File export + CLI command structure"
+      },
+      "freqtrade": {
+        "ease": "Configuration-based",
+        "method": "Change dry_run flag and credentials in config.json",
+        "code_changes": "Config file modifications + throttle settings"
+      },
+      "vectorbt": {
+        "ease": "Not documented",
+        "method": "Tutorial focuses on backtesting only",
+        "code_changes": "Unknown - requires additional research"
+      }
+    },
+    "data_handling": {
+      "backtrader": {
+        "source": "Alpaca API with historical parameter",
+        "requirement": "Funded account or Polygon access",
+        "format": "DataFactory with timeframe specification"
+      },
+      "zipline": {
+        "source": "alpaca-bundle ingestion system",
+        "requirement": "Bundle download command",
+        "format": "Mounted directory at /root/.zipline/data"
+      },
+      "freqtrade": {
+        "source": "Alpaca exchange historic data",
+        "requirement": "download-data command",
+        "format": "Feather format (BTC_USD-USD-timeframe.feather)"
+      },
+      "vectorbt": {
+        "source": "AlpacaData.Download method",
+        "requirement": "Free or premium data plan",
+        "format": "Flexible time syntax (absolute/relative)"
+      }
+    },
+    "setup_complexity": {
+      "backtrader": {
+        "complexity": "Low",
+        "install": "pip3 install alpaca-backtrader-api",
+        "requirements": ["Python 3.5+", "alpaca-trade-api", "backtrader"]
+      },
+      "zipline": {
+        "complexity": "Low (Docker)",
+        "install": "docker run alpacamarkets/alpaca-zipline",
+        "requirements": ["Docker only"]
+      },
+      "freqtrade": {
+        "complexity": "Medium",
+        "install": "git clone + setup.sh -i",
+        "requirements": ["Python 3.10+", "2GB RAM", "TA-Lib", "virtualenv"]
+      },
+      "vectorbt": {
+        "complexity": "Low",
+        "install": "pip install vectorbt",
+        "requirements": ["Python with numpy", "Alpaca credentials"]
+      }
+    },
+    "maintenance_status": {
+      "backtrader": {
+        "status": "Active",
+        "indicators": ["683 stars", "155 forks", "45 open issues", "Last update 2022-01-02"]
+      },
+      "zipline": {
+        "status": "Maintained",
+        "indicators": ["27 stars", "22 forks", "3 open issues", "Acknowledged ongoing improvements"]
+      },
+      "freqtrade": {
+        "status": "Very Active",
+        "indicators": ["27,378 commits", "9.7k forks", "Created 2025-01-20", "Active develop branch"]
+      },
+      "vectorbt": {
+        "status": "N/A (Tutorial)",
+        "indicators": ["Article from 2022-01-13", "5-minute read", "Educational content"]
+      }
+    }
+  },
+  "recommendations": {
+    "for_beginners": {
+      "framework": "VectorBT or Backtrader",
+      "reasoning": "Low setup complexity, clear documentation, simple pip install"
+    },
+    "for_speed": {
+      "framework": "VectorBT",
+      "reasoning": "Numpy vectorization enables testing hundreds of variations quickly"
+    },
+    "for_crypto_and_equities": {
+      "framework": "Freqtrade",
+      "reasoning": "Only framework explicitly supporting mixed asset backtesting with proper fee handling"
+    },
+    "for_quantopian_migration": {
+      "framework": "Zipline",
+      "reasoning": "Direct Quantopian compatibility with Docker containerization"
+    },
+    "for_production_automation": {
+      "framework": "Freqtrade or Zipline",
+      "reasoning": "Freqtrade has API server + webhooks; Zipline has state persistence + scheduled ingestion"
+    },
+    "for_seamless_live_transition": {
+      "framework": "Backtrader",
+      "reasoning": "Single flag toggle between paper and live trading without code changes"
+    }
+  }
+}

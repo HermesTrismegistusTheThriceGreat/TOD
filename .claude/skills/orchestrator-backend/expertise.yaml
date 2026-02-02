@@ -1,6 +1,6 @@
 backend_expertise:
   meta:
-    last_validated: "2026-01-21"
+    last_validated: "2026-02-01"
     codebase_path: "apps/orchestrator_3_stream/backend"
     skill_file: ".claude/skills/orchestrator-backend/SKILL.md"
     max_lines: 600
@@ -31,9 +31,12 @@ backend_expertise:
     - name: "Rich"
       version: "13.x"
       purpose: "Console logging"
-    - name: "python-dotenv"
-      version: "1.x"
-      purpose: "Environment loading"
+    - name: "cryptography"
+      version: "latest"
+      purpose: "Fernet encryption for credentials"
+    - name: "APScheduler"
+      version: "latest"
+      purpose: "Greeks snapshot scheduling"
 
   api_endpoints:
     health:
@@ -60,6 +63,9 @@ backend_expertise:
       - method: "GET"
         path: "/api/me"
         purpose: "Current authenticated user (Better Auth)"
+      - method: "POST"
+        path: "/api/open-file"
+        purpose: "Open file in IDE"
 
     events:
       - method: "GET"
@@ -116,6 +122,11 @@ backend_expertise:
         path: "/api/positions/{id}/close-leg"
         purpose: "Close single leg"
 
+    alpaca_agent:
+      - method: "POST"
+        path: "/api/alpaca-agent/chat"
+        purpose: "Natural language trading via Claude SDK + Alpaca MCP"
+
     greeks:
       - method: "POST"
         path: "/api/greeks/snapshot"
@@ -156,39 +167,38 @@ backend_expertise:
     tables:
       - name: "orchestrator_agents"
         purpose: "Main orchestrator instances"
-        key_columns: ["id", "session_id", "status", "metadata"]
       - name: "agents"
         purpose: "Managed agents"
-        key_columns: ["id", "orchestrator_agent_id", "name", "status"]
       - name: "agent_logs"
         purpose: "Agent hook/response events"
-        key_columns: ["id", "agent_id", "event_type", "content", "payload"]
       - name: "system_logs"
         purpose: "Infrastructure events"
-        key_columns: ["id", "level", "message", "adw_id"]
       - name: "orchestrator_chat"
         purpose: "Three-way conversation logs"
-        key_columns: ["id", "sender_type", "receiver_type", "content"]
       - name: "ai_developer_workflows"
         purpose: "ADW workflows"
-        key_columns: ["id", "name", "status", "orchestrator_agent_id"]
       - name: "options_positions"
         purpose: "Trading positions"
-        key_columns: ["id", "underlying", "expiry", "legs"]
       - name: "trade_orders"
         purpose: "Order history"
-        key_columns: ["id", "trade_id", "symbol", "side", "qty"]
       - name: "greeks_snapshots"
         purpose: "Options Greeks data"
-        key_columns: ["id", "symbol", "delta", "gamma", "theta", "vega"]
+      - name: "user_accounts"
+        purpose: "User trading accounts (multi-tenant)"
+      - name: "user_credentials"
+        purpose: "Encrypted API credentials"
 
     operations:
       orchestrator:
         - "get_or_create_orchestrator"
         - "create_new_orchestrator"
+        - "get_orchestrator"
         - "get_orchestrator_by_session"
+        - "get_orchestrator_by_id"
         - "update_orchestrator_session"
         - "update_orchestrator_costs"
+        - "update_orchestrator_status"
+        - "update_orchestrator_metadata"
         - "clear_orchestrator_session"
       agents:
         - "create_agent"
@@ -196,25 +206,43 @@ backend_expertise:
         - "get_agent_by_name"
         - "list_agents"
         - "update_agent_status"
+        - "update_agent_session"
         - "update_agent_costs"
+        - "reset_agent_tokens"
         - "delete_agent"
       logs:
         - "insert_hook_event"
         - "insert_message_block"
-        - "get_agent_logs"
-        - "get_tail_summaries"
+        - "insert_prompt"
         - "insert_system_log"
+        - "get_agent_logs"
+        - "list_agent_logs"
+        - "get_tail_summaries"
+        - "get_tail_raw"
+        - "get_latest_task_slug"
         - "list_system_logs"
+        - "update_log_summary"
+        - "update_log_payload"
+        - "update_system_log_summary"
       chat:
         - "insert_chat_message"
         - "get_chat_history"
         - "get_turn_count"
+        - "delete_chat_history"
+        - "update_chat_summary"
+        - "update_prompt_summary"
+        - "list_orchestrator_chat"
+        - "get_orchestrator_action_blocks"
       adw:
         - "create_adw"
         - "get_adw"
         - "update_adw_status"
         - "list_adws"
         - "get_adw_logs"
+        - "get_adw_system_logs"
+      rls:
+        - "set_rls_context"
+        - "get_connection_with_rls"
 
   websocket:
     manager_file: "modules/websocket_manager.py"
@@ -230,6 +258,16 @@ backend_expertise:
           broadcast: "broadcast_agent_status_change"
         - type: "agent_log"
           broadcast: "broadcast_agent_log"
+        - type: "agent_summary_update"
+          broadcast: "broadcast_agent_summary_update"
+
+      orchestrator:
+        - type: "orchestrator_updated"
+          broadcast: "broadcast_orchestrator_updated"
+        - type: "orchestrator_chat"
+          broadcast: "broadcast_orchestrator_chat"
+        - type: "system_log"
+          broadcast: "broadcast_system_log"
 
       adw:
         - type: "adw_created"
@@ -240,32 +278,31 @@ backend_expertise:
           broadcast: "broadcast_adw_event"
         - type: "adw_step_change"
           broadcast: "broadcast_adw_step_change"
+        - type: "adw_event_summary_update"
+          broadcast: "broadcast_adw_event_summary_update"
 
       chat:
         - type: "chat_stream"
           broadcast: "broadcast_chat_stream"
-        - type: "chat_typing"
-          broadcast: "broadcast_chat_typing"
-        - type: "orchestrator_chat"
-          broadcast: "broadcast_orchestrator_chat"
-
-      claude_sdk:
-        - type: "thinking_block"
-          broadcast: "broadcast_thinking_block"
-        - type: "tool_use_block"
-          broadcast: "broadcast_tool_use_block"
+        - type: "chat_message"
+          broadcast: "broadcast_chat_message"
 
       alpaca:
         - type: "option_price_update"
-          broadcast: "broadcast_option_price"
+          broadcast: "broadcast_option_price_update"
+        - type: "option_price_batch"
+          broadcast: "broadcast_option_price_batch"
         - type: "spot_price_update"
-          broadcast: "broadcast_spot_price"
+          broadcast: "broadcast_spot_price_update"
         - type: "position_update"
           broadcast: "broadcast_position_update"
+        - type: "alpaca_status"
+          broadcast: "broadcast_alpaca_status"
 
       system:
         - type: "connection_established"
         - type: "error"
+          broadcast: "broadcast_error"
         - type: "heartbeat"
 
   services:
@@ -275,17 +312,6 @@ backend_expertise:
       methods:
         - "process_user_message"
         - "load_chat_history"
-      tools:
-        - "create_agent"
-        - "list_agents"
-        - "command_agent"
-        - "check_agent_status"
-        - "delete_agent"
-        - "interrupt_agent"
-        - "read_system_logs"
-        - "report_cost"
-        - "start_adw"
-        - "check_adw"
 
     agent_manager:
       file: "modules/agent_manager.py"
@@ -306,6 +332,16 @@ backend_expertise:
         - "close_leg"
         - "start_price_streaming"
         - "stop_price_streaming"
+
+    alpaca_agent:
+      file: "modules/alpaca_agent_service.py"
+      class: "AlpacaAgentService"
+      purpose: "Claude SDK + Alpaca MCP natural language trading"
+      methods:
+        - "invoke_agent"
+        - "invoke_agent_streaming"
+        - "invoke_with_stored_credential"
+        - "verify_mcp_config"
 
     alpaca_sync:
       file: "modules/alpaca_sync_service.py"
@@ -339,6 +375,39 @@ backend_expertise:
         - "get_latest_snapshots"
         - "get_greeks_history"
 
+    encryption:
+      file: "modules/encryption_service.py"
+      class: "CredentialEncryptionService"
+      purpose: "Fernet-based credential encryption"
+      methods:
+        - "encrypt"
+        - "decrypt"
+        - "get_encryption_service"
+
+    credential:
+      file: "modules/credential_service.py"
+      purpose: "Decrypt-on-demand credential management"
+      methods:
+        - "get_decrypted_alpaca_credential"
+        - "validate_alpaca_credentials"
+        - "store_credential"
+
+    account:
+      file: "modules/account_service.py"
+      purpose: "Alpaca account data fetching"
+      methods:
+        - "fetch_alpaca_account_data"
+
+    greeks_scheduler:
+      file: "modules/greeks_scheduler.py"
+      purpose: "APScheduler for 3x daily Greeks snapshots"
+      methods:
+        - "init_greeks_scheduler"
+        - "shutdown_greeks_scheduler"
+        - "run_london_session_snapshot"
+        - "run_us_session_snapshot"
+        - "run_asian_session_snapshot"
+
   models:
     file: "modules/orch_database_models.py"
     core:
@@ -364,11 +433,25 @@ backend_expertise:
         - "OptionPriceUpdate"
         - "CloseOrderResult"
 
+    alpaca_agent:
+      file: "modules/alpaca_agent_models.py"
+      models:
+        - "AlpacaAgentChatRequest"
+        - "AlpacaAgentChatResponse"
+        - "AlpacaAgentStreamChunk"
+
     autocomplete:
       file: "modules/autocomplete_models.py"
       models:
         - "AutocompleteItem"
         - "AutocompleteResponse"
+
+    user:
+      file: "modules/user_models.py"
+      models:
+        - "EncryptedString"
+        - "UserAccountORM"
+        - "UserCredentialORM"
 
   hooks:
     command_agent:
@@ -418,13 +501,15 @@ backend_expertise:
     - name: "event_summarizer"
       file: "modules/event_summarizer.py"
       purpose: "AI-generated event summaries"
-
-  prompts:
-    directory: "prompts/"
-    files:
-      - "orchestrator_agent_system_prompt.md"
-      - "managed_agent_system_prompt_template.md"
-      - "experts/orch_autocomplete/expertise.yaml"
+    - name: "single_agent_prompt"
+      file: "modules/single_agent_prompt.py"
+      purpose: "Single agent prompt template"
+    - name: "subagent_models"
+      file: "modules/subagent_models.py"
+      purpose: "Subagent Pydantic models"
+    - name: "autocomplete_agent"
+      file: "modules/autocomplete_agent.py"
+      purpose: "Autocomplete agent implementation"
 
   environment:
     file: ".env"
@@ -432,6 +517,9 @@ backend_expertise:
       - name: "DATABASE_URL"
         required: true
         description: "PostgreSQL connection string"
+      - name: "ENCRYPTION_KEY"
+        required: true
+        description: "Fernet key for credential encryption"
       - name: "ALPACA_API_KEY"
         required: false
         description: "Alpaca trading API key"
@@ -464,17 +552,12 @@ backend_expertise:
       - "test_autocomplete_*.py"
       - "test_agent_events.py"
       - "test_slash_command_discovery.py"
-
-  logging:
-    file: "modules/logger.py"
-    class: "OrchestratorLogger"
-    features:
-      - "Rich console formatting"
-      - "Hourly rotating file logs"
-      - "Dual output (console + file)"
-    log_directory: "logs/"
-    rotation: "hourly"
-    format: "YYYY-MM-DD_HH.log"
+      - "test_encryption_service.py"
+      - "test_user_credentials.py"
+      - "test_credential_lifecycle.py"
+      - "test_credential_endpoints.py"
+      - "test_real_alpaca_integration.py"
+      - "test_display.py"
 
   cli:
     arguments:

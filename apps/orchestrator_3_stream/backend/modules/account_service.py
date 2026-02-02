@@ -14,7 +14,7 @@ logger = OrchestratorLogger("account_service")
 async def fetch_alpaca_account_data(
     api_key: str,
     secret_key: str,
-    account_type: str,  # "paper" or "live" - determines API endpoint
+    account_type: str = None,  # "paper" or "live" - auto-detected from API key if not provided
 ) -> Dict[str, Any]:
     """
     Fetch real-time account data from Alpaca API.
@@ -22,7 +22,8 @@ async def fetch_alpaca_account_data(
     Args:
         api_key: Alpaca API key (plaintext, already decrypted)
         secret_key: Alpaca secret key (plaintext, already decrypted)
-        account_type: "paper" or "live" to select correct endpoint
+        account_type: "paper" or "live" to select correct endpoint.
+                     If not provided or "alpaca", auto-detects from API key prefix.
 
     Returns:
         Dict with keys: account_type, cash, equity, buying_power, currency, trading_blocked
@@ -31,6 +32,13 @@ async def fetch_alpaca_account_data(
         Exception: If API call fails
     """
     try:
+        # Auto-detect paper vs live from API key prefix if needed
+        # Paper keys start with "PK", Live keys start with "AK" or "CK"
+        if account_type is None or account_type == "alpaca":
+            is_paper = api_key.startswith("PK")
+            account_type = "paper" if is_paper else "live"
+            logger.info(f"Auto-detected account type: {account_type} (from API key prefix)")
+
         # TradingClient uses paper=True for paper-api.alpaca.markets
         client = TradingClient(
             api_key=api_key,

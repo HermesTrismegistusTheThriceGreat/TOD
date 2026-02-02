@@ -1,27 +1,125 @@
 ---
 name: agent-browser
 description: Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, test web applications, or extract information from web pages.
-allowed-tools: Bash(agent-browser:*)
+allowed-tools: Bash(agent-browser:*),Bash(AGENT_BROWSER_SESSION=*),Bash(lsof:*),Bash(./start_be.sh:*),Bash(./start_fe.sh:*),Bash(cd apps/orchestrator_3_stream:*),Bash(sleep:*),Bash(curl:*)
 ---
 
 # Browser Automation with agent-browser
 
-## Quick start
+## ⚠️ CRITICAL: Required Setup (READ FIRST)
+
+### 1. Session Environment Variable is REQUIRED
+
+**Every `agent-browser` command MUST use the `AGENT_BROWSER_SESSION` environment variable.**
+
+Without it, you will get: `✗ Browser not launched. Call launch first.`
 
 ```bash
-agent-browser open <url>        # Navigate to page
-agent-browser snapshot -i       # Get interactive elements with refs
-agent-browser click @e1         # Click element by ref
-agent-browser fill @e2 "text"   # Fill input by ref
-agent-browser close             # Close browser
+# ❌ WRONG - Will fail with "Browser not launched"
+agent-browser open http://localhost:5175
+
+# ✅ CORRECT - Always use AGENT_BROWSER_SESSION
+AGENT_BROWSER_SESSION=test1 agent-browser open http://localhost:5175
+AGENT_BROWSER_SESSION=test1 agent-browser snapshot -i
+AGENT_BROWSER_SESSION=test1 agent-browser click @e1
+```
+
+### 2. First-Time Setup: Install Chromium
+
+On first use, you must install the browser:
+
+```bash
+agent-browser install
+```
+
+This only needs to be run once. If you get errors about missing browser, run this command.
+
+### 3. Commands That DON'T Exist (Don't Try These)
+
+These commands do NOT exist - don't waste turns trying them:
+- ❌ `agent-browser launch` - No such command
+- ❌ `agent-browser new` - No such command
+- ❌ `agent-browser state new` - No such command
+- ❌ `agent-browser start` - No such command
+- ❌ `agent-browser connect` (without CDP port) - Requires running Chrome with remote debugging
+
+## CRITICAL: Local Server Prerequisite
+
+**Before navigating to any localhost URL, you MUST ensure the development server is running.**
+
+### Checking if Orchestrator is Running
+
+```bash
+# Check if frontend (port 5175) is running
+lsof -ti:5175 >/dev/null 2>&1 && echo "Frontend running" || echo "Frontend NOT running"
+
+# Check if backend (port 8002 or 9403) is running
+lsof -ti:9403 >/dev/null 2>&1 && echo "Backend running on 9403" || echo "Backend NOT running"
+```
+
+### Starting the Orchestrator (if not running)
+
+If localhost:5175 returns connection refused, start the servers:
+
+```bash
+# Start backend in background
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+
+# Wait for backend to initialize
+sleep 3
+
+# Start frontend in background
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_fe.sh &
+
+# Wait for frontend to compile and serve
+sleep 5
+```
+
+### Complete Pre-flight Workflow for localhost:5175
+
+**ALWAYS run this workflow before browser automation on localhost:5175:**
+
+1. **Check if servers are running:**
+   ```bash
+   lsof -ti:5175 >/dev/null 2>&1 && lsof -ti:9403 >/dev/null 2>&1 && echo "Both servers running" || echo "Need to start servers"
+   ```
+
+2. **If not running, start them:**
+   ```bash
+   cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+   sleep 3
+   cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_fe.sh &
+   sleep 5
+   ```
+
+3. **Then proceed with browser automation (WITH SESSION!):**
+   ```bash
+   AGENT_BROWSER_SESSION=test1 agent-browser open http://localhost:5175
+   ```
+
+## Quick start
+
+**Remember: Always use `AGENT_BROWSER_SESSION=<name>` prefix!**
+
+```bash
+# Set session name (use same name for all commands in a workflow)
+export AGENT_BROWSER_SESSION=test1
+
+# Or prefix each command:
+AGENT_BROWSER_SESSION=test1 agent-browser open <url>        # Navigate to page
+AGENT_BROWSER_SESSION=test1 agent-browser snapshot -i       # Get interactive elements with refs
+AGENT_BROWSER_SESSION=test1 agent-browser click @e1         # Click element by ref
+AGENT_BROWSER_SESSION=test1 agent-browser fill @e2 "text"   # Fill input by ref
+AGENT_BROWSER_SESSION=test1 agent-browser close             # Close browser
 ```
 
 ## Core workflow
 
-1. Navigate: `agent-browser open <url>`
-2. Snapshot: `agent-browser snapshot -i` (returns elements with refs like `@e1`, `@e2`)
-3. Interact using refs from the snapshot
-4. Re-snapshot after navigation or significant DOM changes
+1. **Set session**: `export AGENT_BROWSER_SESSION=test1` (or prefix each command)
+2. **Navigate**: `AGENT_BROWSER_SESSION=test1 agent-browser open <url>`
+3. **Snapshot**: `AGENT_BROWSER_SESSION=test1 agent-browser snapshot -i` (returns elements with refs like `@e1`, `@e2`)
+4. **Interact** using refs from the snapshot
+5. **Re-snapshot** after navigation or significant DOM changes
 
 ## Commands
 
@@ -188,39 +286,44 @@ agent-browser eval "document.title"   # Run JavaScript
 ## Example: Form submission
 
 ```bash
-agent-browser open https://example.com/form
-agent-browser snapshot -i
+# Always set session first
+export AGENT_BROWSER_SESSION=form_test
+
+AGENT_BROWSER_SESSION=form_test agent-browser open https://example.com/form
+AGENT_BROWSER_SESSION=form_test agent-browser snapshot -i
 # Output shows: textbox "Email" [ref=e1], textbox "Password" [ref=e2], button "Submit" [ref=e3]
 
-agent-browser fill @e1 "user@example.com"
-agent-browser fill @e2 "password123"
-agent-browser click @e3
-agent-browser wait --load networkidle
-agent-browser snapshot -i  # Check result
+AGENT_BROWSER_SESSION=form_test agent-browser fill @e1 "user@example.com"
+AGENT_BROWSER_SESSION=form_test agent-browser fill @e2 "password123"
+AGENT_BROWSER_SESSION=form_test agent-browser click @e3
+AGENT_BROWSER_SESSION=form_test agent-browser wait --load networkidle
+AGENT_BROWSER_SESSION=form_test agent-browser snapshot -i  # Check result
 ```
 
 ## Example: Authentication with saved state
 
 ```bash
 # Login once
-agent-browser open https://app.example.com/login
-agent-browser snapshot -i
-agent-browser fill @e1 "username"
-agent-browser fill @e2 "password"
-agent-browser click @e3
-agent-browser wait --url "**/dashboard"
-agent-browser state save auth.json
+AGENT_BROWSER_SESSION=auth agent-browser open https://app.example.com/login
+AGENT_BROWSER_SESSION=auth agent-browser snapshot -i
+AGENT_BROWSER_SESSION=auth agent-browser fill @e1 "username"
+AGENT_BROWSER_SESSION=auth agent-browser fill @e2 "password"
+AGENT_BROWSER_SESSION=auth agent-browser click @e3
+AGENT_BROWSER_SESSION=auth agent-browser wait --url "**/dashboard"
+AGENT_BROWSER_SESSION=auth agent-browser state save auth.json
 
 # Later sessions: load saved state
-agent-browser state load auth.json
-agent-browser open https://app.example.com/dashboard
+AGENT_BROWSER_SESSION=auth agent-browser state load auth.json
+AGENT_BROWSER_SESSION=auth agent-browser open https://app.example.com/dashboard
 ```
 
 ## Sessions (parallel browsers)
 
+Use different session names to run multiple browser instances:
+
 ```bash
-agent-browser --session test1 open site-a.com
-agent-browser --session test2 open site-b.com
+AGENT_BROWSER_SESSION=test1 agent-browser open site-a.com
+AGENT_BROWSER_SESSION=test2 agent-browser open site-b.com
 agent-browser session list
 ```
 

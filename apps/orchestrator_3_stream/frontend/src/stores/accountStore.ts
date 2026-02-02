@@ -187,12 +187,13 @@ export const useAccountStore = defineStore('account', () => {
         throw new Error('No user account available')
       }
 
-      console.log('[AccountStore] Adding credential:', input.credential_type)
+      console.log('[AccountStore] Adding credential:', input.credential_type, 'nickname:', input.nickname)
       const newCredential = await credentialService.storeCredential({
         account_id: userAccount.value.id,
         credential_type: input.credential_type,
         api_key: input.api_key,
-        secret_key: input.secret_key
+        secret_key: input.secret_key,
+        nickname: input.nickname || undefined
       })
 
       // Add to credentials array

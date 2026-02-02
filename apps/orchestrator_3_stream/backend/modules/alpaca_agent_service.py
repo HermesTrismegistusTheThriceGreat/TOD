@@ -478,7 +478,16 @@ class AlpacaAgentService:
         Yields:
             SSE-formatted string chunks
         """
-        self.logger.info(f"[ALPACA AGENT SERVICE] Invoking agent (streaming) with provided credentials: {message[:100]}...")
+        import uuid
+        request_id = str(uuid.uuid4())[:8]  # Short unique ID for this request
+        api_key_fingerprint = api_key[-4:] if len(api_key) >= 4 else "????"  # Last 4 chars for debugging
+
+        self.logger.info(
+            f"[ALPACA AGENT SERVICE] [{request_id}] NEW REQUEST - "
+            f"api_key_fingerprint=...{api_key_fingerprint}, "
+            f"paper_trade={paper_trade}, "
+            f"message={message[:50]}..."
+        )
 
         client = None
 
@@ -561,12 +570,14 @@ class AlpacaAgentService:
             ]
 
             options = ClaudeAgentOptions(**options_dict)
-            self.logger.info(f"[ALPACA AGENT SERVICE] Working directory: {self.working_dir}")
+            self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Working directory: {self.working_dir}")
+            self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Creating NEW ClaudeSDKClient instance (id={id(options)})")
 
             client = ClaudeSDKClient(options=options)
+            self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Client created (id={id(client)}), entering context...")
             await client.__aenter__()
 
-            self.logger.info("[ALPACA AGENT SERVICE] Claude SDK client started with provided credentials")
+            self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Claude SDK client STARTED with api_key_fingerprint=...{api_key_fingerprint}")
 
             # Send user's prompt
             await client.query(message)
@@ -615,27 +626,30 @@ class AlpacaAgentService:
                         f"cost=${getattr(msg, 'total_cost_usd', 0.0):.4f}"
                     )
 
-            self.logger.success(f"[ALPACA AGENT SERVICE] Streaming completed with provided credentials, chunks={chunk_count}")
+            self.logger.success(f"[ALPACA AGENT SERVICE] [{request_id}] Streaming completed, chunks={chunk_count}, api_key_fingerprint=...{api_key_fingerprint}")
             yield "data: [DONE]\n\n"
 
         except asyncio.CancelledError:
-            self.logger.warning("Alpaca agent streaming cancelled by client")
+            self.logger.warning(f"[ALPACA AGENT SERVICE] [{request_id}] Streaming CANCELLED")
             cancel_chunk = {"type": "error", "content": "Stream cancelled"}
             yield f"data: {json.dumps(cancel_chunk)}\n\n"
             yield "data: [DONE]\n\n"
 
         except Exception as e:
-            self.logger.error(f"Failed to stream Alpaca agent response: {e}", exc_info=True)
+            self.logger.error(f"[ALPACA AGENT SERVICE] [{request_id}] Streaming FAILED: {e}", exc_info=True)
             error_chunk = {"type": "error", "content": f"Streaming error: {str(e)}"}
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
 
         finally:
+            self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Entering FINALLY block, client={client is not None}")
             if client:
                 try:
+                    self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Calling client.__aexit__() to cleanup MCP subprocess...")
                     await client.__aexit__(None, None, None)
+                    self.logger.info(f"[ALPACA AGENT SERVICE] [{request_id}] Client CLOSED successfully")
                 except Exception as e:
-                    self.logger.warning(f"Error closing client: {e}")
+                    self.logger.warning(f"[ALPACA AGENT SERVICE] [{request_id}] Error closing client: {e}")
 
     async def invoke_with_stored_credential(
         self,

@@ -27,9 +27,14 @@ A comprehensive skill for implementing features, designing APIs, and understandi
 | OrchestratorService | `orchestrator_service.py` | Claude SDK agent execution |
 | AgentManager | `agent_manager.py` | Agent lifecycle management |
 | AlpacaService | `alpaca_service.py` | Trading API integration |
+| AlpacaAgentService | `alpaca_agent_service.py` | Claude SDK + Alpaca MCP trading |
 | AutocompleteService | `autocomplete_service.py` | Command suggestions |
 | SpotPriceService | `spot_price_service.py` | Real-time stock prices |
 | GreeksSnapshotService | `greeks_snapshot_service.py` | Options Greeks data |
+| CredentialEncryptionService | `encryption_service.py` | Fernet credential encryption |
+| CredentialService | `credential_service.py` | Decrypt-on-demand credentials |
+| AccountService | `account_service.py` | Alpaca account data |
+| GreeksScheduler | `greeks_scheduler.py` | APScheduler for Greeks snapshots |
 
 ### API Endpoint Groups
 | Group | Path Prefix | Purpose |
@@ -40,6 +45,7 @@ A comprehensive skill for implementing features, designing APIs, and understandi
 | Events | `/get_events` | Event stream |
 | ADWs | `/adws` | AI Developer Workflows |
 | Positions | `/api/positions` | Trading positions |
+| Alpaca Agent | `/api/alpaca-agent/chat` | Natural language trading |
 | Greeks | `/api/greeks` | Options Greeks |
 | Trades | `/api/trades`, `/api/trade-stats` | Trade history |
 
@@ -57,6 +63,7 @@ A comprehensive skill for implementing features, designing APIs, and understandi
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `DATABASE_URL` | - | PostgreSQL connection |
+| `ENCRYPTION_KEY` | - | Fernet key for credentials |
 | `ALPACA_API_KEY` | - | Alpaca trading API key |
 | `ALPACA_SECRET_KEY` | - | Alpaca secret |
 | `ALPACA_BASE_URL` | paper API | Paper/live trading |
@@ -266,6 +273,8 @@ def create_post_tool_hook(agent_id, ws_manager, logger):
 | `options_positions` | Trading positions |
 | `trade_orders` | Order history |
 | `greeks_snapshots` | Options Greeks data |
+| `user_accounts` | Multi-tenant user accounts |
+| `user_credentials` | Encrypted API credentials |
 
 ## Troubleshooting
 
