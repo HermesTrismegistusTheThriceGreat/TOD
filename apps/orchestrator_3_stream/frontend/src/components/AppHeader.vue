@@ -512,7 +512,7 @@ onUnmounted(() => {
 }
 
 .mobile-account-selector {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -657,8 +657,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
@@ -710,6 +710,7 @@ onUnmounted(() => {
   top: calc(100% + 8px);
   right: 0;
   min-width: 160px;
+  max-width: calc(100vw - 2rem);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -721,7 +722,8 @@ onUnmounted(() => {
 .mobile-menu-item {
   display: block;
   width: 100%;
-  padding: 0.75rem 1rem;
+  min-height: 44px;
+  padding: 12px 16px;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.025em;
