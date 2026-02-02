@@ -146,6 +146,9 @@ Recent decisions affecting current work:
 - [07-03]: Test both same-user credential switching and cross-user isolation
 - [07-03]: Capture screenshots as evidence for visual verification
 - [07-03]: Start auth service (port 9404) as prerequisite for login functionality
+- [08-01]: Use 650px breakpoint for mobile account components (narrower than 768px layout breakpoint)
+- [08-01]: Enforce 44px minimum touch targets across all interactive mobile elements
+- [08-01]: Use calc(100vw - 2rem) pattern for viewport-safe dropdowns on mobile
 
 ### Pending Todos
 
