@@ -156,4 +156,30 @@ onMounted(() => {
 :deep(.el-select .el-icon.is-reverse) {
   color: var(--accent-primary);
 }
+
+/* Mobile responsive styles */
+@media (max-width: 650px) {
+  .account-selector {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  :deep(.el-select .el-input__wrapper) {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+
+  :deep(.el-select-dropdown) {
+    max-width: calc(100vw - 2rem);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  :deep(.el-select-dropdown__item) {
+    padding: 12px 16px;
+    min-height: 44px;
+    line-height: 1.4;
+  }
+}
 </style>
