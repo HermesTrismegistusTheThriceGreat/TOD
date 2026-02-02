@@ -308,14 +308,18 @@ async function sendMessage() {
     scrollToBottom()
 
     // Call the backend API to invoke alpaca-mcp agent with credential_id
+    const credentialIdToSend = accountStore.activeCredentialId
+    console.log('[AlpacaAgentChat] Sending request with credential_id:', credentialIdToSend)
+
     const response = await fetch(`${API_BASE_URL}/api/alpaca-agent/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',  // Required for cookie-based auth
       body: JSON.stringify({
         message: content,
-        credential_id: accountStore.activeCredentialId
+        credential_id: credentialIdToSend
       })
     })
 
@@ -1228,6 +1232,63 @@ onUnmounted(() => {
 
   .input-hints {
     display: none;
+  }
+}
+
+/* Small mobile phones */
+@media (max-width: 650px) {
+  .alpaca-chat-container {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height - accounts for mobile browser chrome */
+  }
+
+  .chat-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .header-info h1 {
+    font-size: 0.875rem;
+  }
+
+  /* Wider message bubbles on small screens */
+  .message {
+    max-width: 95%;
+  }
+
+  .message-content {
+    font-size: 0.875rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  /* Touch-friendly input area */
+  .input-area {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .input-wrapper textarea {
+    min-height: 44px;
+    font-size: 1rem; /* Prevents iOS zoom on focus */
+    padding: 0.625rem 0.75rem;
+  }
+
+  .send-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.625rem;
+  }
+
+  /* Compact position indicators */
+  .status-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Scrollable messages area takes remaining space */
+  .messages-area {
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem;
   }
 }
 </style>
