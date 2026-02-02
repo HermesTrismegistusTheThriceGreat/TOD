@@ -75,10 +75,8 @@
             PROMPT <span class="btn-hint">(Cmd+K)</span>
           </button>
           -->
-          <!-- Account Selector (desktop only, shows when authenticated) -->
-          <AccountSelector v-if="authStore.isAuthenticated" class="desktop-nav" />
-          <!-- Account Data Display (desktop only, shows when authenticated) -->
-          <AccountDataDisplay v-if="authStore.isAuthenticated" class="desktop-nav" />
+          <!-- Unified Account Info (desktop only, shows when authenticated) -->
+          <HeaderAccountInfo v-if="authStore.isAuthenticated" class="desktop-nav" />
           <!-- Desktop navigation buttons (hidden on mobile) -->
           <button
             v-if="authStore.isAuthenticated"
@@ -145,9 +143,31 @@
               </span>
             </button>
             <div v-if="mobileMenuOpen" class="mobile-dropdown">
-              <!-- Account Selector in mobile menu -->
-              <div v-if="authStore.isAuthenticated" class="mobile-account-selector">
-                <AccountSelector />
+              <!-- Account section at top of mobile menu -->
+              <div v-if="authStore.isAuthenticated" class="mobile-account-section">
+                <div class="mobile-account-header">
+                  <span class="mobile-account-label">Active Account</span>
+                  <span
+                    v-if="accountStore.accountData"
+                    class="mobile-account-badge"
+                    :class="mobileAccountType"
+                  >
+                    {{ mobileAccountType.toUpperCase() }}
+                  </span>
+                </div>
+                <AccountSelector class="mobile-account-selector" />
+                <div v-if="accountStore.accountData" class="mobile-account-metrics">
+                  <div class="mobile-metric">
+                    <span class="metric-label">Buying Power</span>
+                    <span class="metric-value">{{ mobileBuyingPower }}</span>
+                  </div>
+                </div>
+                <div v-else-if="accountStore.accountDataLoading" class="mobile-account-metrics">
+                  <div class="mobile-metric">
+                    <span class="metric-label">Buying Power</span>
+                    <span class="metric-value metric-loading">Loading...</span>
+                  </div>
+                </div>
               </div>
               <button
                 v-if="authStore.isAuthenticated"
@@ -217,7 +237,7 @@ import { useOrchestratorStore } from "../stores/orchestratorStore";
 import { useAuthStore } from "../stores/authStore";
 import { useAccountStore } from "../stores/accountStore";
 import AccountSelector from "./AccountSelector.vue";
-import AccountDataDisplay from "./AccountDataDisplay.vue";
+import HeaderAccountInfo from "./HeaderAccountInfo.vue";
 import type { ViewMode } from "../types.d";
 
 // Use header bar composable for state management
@@ -237,6 +257,28 @@ const mobileMenuOpen = ref(false);
 
 // Alpaca Agent navigation
 const isAlpacaAgentRoute = computed(() => route.path === '/alpaca-agent');
+
+// Mobile account section computed properties
+const mobileAccountType = computed(() => {
+  if (!accountStore.accountData) return 'paper'
+  return accountStore.accountData.account_type || 'paper'
+})
+
+const mobileBuyingPower = computed(() => {
+  if (!accountStore.accountData) return '$0'
+  const value = parseFloat(accountStore.accountData.buying_power)
+  return formatCurrency(value)
+})
+
+function formatCurrency(value: number): string {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(2)}M`
+  }
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`
+  }
+  return `$${value.toFixed(2)}`
+}
 
 function navigateToAlpacaAgent() {
   if (route.path !== '/alpaca-agent') {
@@ -511,14 +553,94 @@ onUnmounted(() => {
   border-right: 1px solid var(--border-color);
 }
 
-.mobile-account-selector {
+/* Mobile Account Section - Enhanced with metrics */
+.mobile-account-section {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
 }
 
-.mobile-account-selector .account-selector {
+.mobile-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mobile-account-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobile-account-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.mobile-account-badge.paper {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--status-warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.mobile-account-badge.live {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--status-error, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.mobile-account-selector {
+  margin-bottom: 8px;
+}
+
+.mobile-account-selector :deep(.account-selector) {
   width: 100%;
   max-width: 100%;
+}
+
+.mobile-account-selector :deep(.el-input__wrapper) {
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.mobile-account-metrics {
+  display: flex;
+  gap: 16px;
+}
+
+.mobile-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-metric .metric-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobile-metric .metric-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--status-success);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-metric .metric-value.metric-loading {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .stat-item {
@@ -813,6 +935,33 @@ onUnmounted(() => {
 
   .btn-logout {
     display: none;
+  }
+}
+
+/* Touch optimization breakpoint (650px) */
+@media (max-width: 650px) {
+  .mobile-account-section {
+    padding: 16px;
+  }
+
+  .mobile-account-selector :deep(.el-input__wrapper) {
+    min-height: 48px;
+  }
+
+  .mobile-metric .metric-value {
+    font-size: 1rem;
+  }
+
+  .mobile-menu-item {
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+  }
+
+  .btn-prompt {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 0.75rem;
   }
 }
 

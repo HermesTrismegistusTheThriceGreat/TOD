@@ -1,6 +1,6 @@
 frontend_expertise:
   meta:
-    last_validated: "2026-02-01"
+    last_validated: "2026-02-02"
     codebase_path: "apps/orchestrator_3_stream/frontend"
     skill_file: ".claude/skills/orchestrator-frontend/SKILL.md"
     max_lines: 600
@@ -289,14 +289,27 @@ frontend_expertise:
         - "userAccount: UserAccountResponse | null"
         - "credentials: CredentialResponse[]"
         - "activeCredentialId: string | null"
+        - "isLoading: boolean"
+        - "error: string | null"
+        - "isInitialized: boolean"
         - "accountData: AccountDataResponse | null"
+        - "accountDataLoading: boolean"
+      getters:
+        - "activeCredential: computed credential object"
+        - "hasCredentials: boolean"
+        - "alpacaCredentials: filtered by type"
+        - "hasAccountData: boolean"
       actions:
-        - "initialize(): Get/create account and fetch credentials"
+        - "initialize(): Get/create account and fetch credentials (idempotent)"
+        - "reset(): Clear all state for logout"
+        - "fetchCredentials(accountId?): Fetch credentials for account"
         - "addCredential(input): Store new credential"
         - "updateCredential(id, data): Update existing credential"
         - "removeCredential(id): Delete credential"
         - "setActiveCredential(id): Set active credential for trading"
+        - "loadActiveCredential(): Load from localStorage"
         - "fetchAccountData(id): Fetch real-time Alpaca account data"
+        - "clearAccountData(): Clear account data"
     - name: "authStore"
       file: "src/stores/authStore.ts"
       pattern: "Composition API with defineStore"
@@ -365,7 +378,12 @@ frontend_expertise:
     - name: "credentialService"
       path: "src/services/credentialService.ts"
       purpose: "Account/credential HTTP service for CRUD operations"
-      exports: ["storeCredential", "listCredentials", "updateCredential", "deleteCredential", "validateCredential", "getAccountData", "getOrCreateAccount", "listAccounts"]
+      exports: ["default", "credentialService", "storeCredential", "listCredentials", "updateCredential", "deleteCredential", "validateCredential", "getAccountData", "getOrCreateAccount", "listAccounts"]
+    - name: "positionsService"
+      path: "src/services/positionsService.ts"
+      purpose: "Trading positions and orders HTTP service"
+      exports: ["default", "fetchPositions", "fetchPositionById", "fetchOrders"]
+      types: ["Position", "PositionsResponse", "Order", "OrdersResponse"]
 
   config:
     - name: "constants"
@@ -507,6 +525,31 @@ frontend_expertise:
     shallow_refs:
       - "alpacaPriceCache"
       - "spotPriceCache"
+
+  design_standards:
+    reference: ".claude/skills/orchestrator-frontend/design-standards.md"
+    mobile_responsive: ".claude/skills/orchestrator-frontend/mobile-responsive-synthesis.md"
+    research_report: "app_docs/research/vue-ui-ux-design-best-practices-2026-02-02.md"
+    color_system:
+      primary_bg: "#0a0a0a"
+      secondary_bg: "#1a1a1a"
+      accent_primary: "#06b6d4"
+      accent_hover: "#0891b2"
+      agent_purple: "#a855f7"
+    typography:
+      font_sans: "system-ui, -apple-system, sans-serif"
+      font_mono: "JetBrains Mono, Fira Code, monospace"
+      base_size: "1rem"
+    spacing_scale: "4px increments (0.25rem to 2rem)"
+    mobile_breakpoints:
+      primary: "650px"
+      tablet: "768px"
+      desktop: "1024px"
+    touch_targets: "44x44px minimum"
+    animation_timing:
+      micro: "150ms"
+      standard: "200ms"
+      layout: "300ms"
 
   build:
     config: "vite.config.ts"

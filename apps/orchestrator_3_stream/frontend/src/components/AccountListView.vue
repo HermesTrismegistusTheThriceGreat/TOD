@@ -1,130 +1,155 @@
 <template>
-  <div class="account-list-view">
-    <!-- Header -->
-    <div class="account-list-header">
-      <div class="header-left">
-        <h2>Connected Accounts</h2>
-      </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="showAddDialog">
-          Add Account
-        </el-button>
-      </div>
-    </div>
+  <div class="account-list-page">
+    <!-- App Header for Navigation -->
+    <AppHeader />
 
-    <!-- Error State -->
-    <el-alert
-      v-if="store.error"
-      type="error"
-      :closable="false"
-      class="error-alert"
-      show-icon
-    >
-      <template #default>
-        <div class="error-content">
-          <span>{{ store.error }}</span>
-          <el-button size="small" @click="handleRetry">Retry</el-button>
+    <div class="account-list-view">
+      <!-- Page Header -->
+      <div class="account-list-header">
+        <div class="header-left">
+          <h2>Connected Accounts</h2>
         </div>
-      </template>
-    </el-alert>
+        <div class="header-actions">
+          <el-button type="primary" @click="showAddDialog">
+            Add Account
+          </el-button>
+        </div>
+      </div>
 
-    <!-- Loading State -->
-    <div v-if="store.isLoading && store.credentials.length === 0" class="state-container">
-      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
-      <span>Loading accounts...</span>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="!store.isLoading && store.credentials.length === 0" class="state-container">
-      <el-empty description="No accounts connected yet">
-        <el-button type="primary" @click="showAddDialog">
-          Add Your First Account
-        </el-button>
-      </el-empty>
-    </div>
-
-    <!-- Credentials Table -->
-    <div v-else class="table-container">
-      <el-table
-        :data="store.credentials"
-        :loading="store.isLoading"
-        style="width: 100%"
-        class="credentials-table"
-        :header-cell-style="{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }"
-        :cell-style="{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }"
+      <!-- Error State -->
+      <el-alert
+        v-if="store.error"
+        type="error"
+        :closable="false"
+        class="error-alert"
+        show-icon
       >
-        <el-table-column prop="credential_type" label="TYPE" width="120">
-          <template #default="{ row }">
-            <span class="credential-type">
-              {{ formatCredentialType(row.credential_type) }}
-            </span>
-          </template>
-        </el-table-column>
+        <template #default>
+          <div class="error-content">
+            <span>{{ store.error }}</span>
+            <el-button size="small" @click="handleRetry">Retry</el-button>
+          </div>
+        </template>
+      </el-alert>
 
-        <el-table-column label="STATUS" width="100">
-          <template #default="{ row }">
-            <el-tag
-              :type="row.is_active ? 'success' : 'info'"
-              size="small"
-              effect="light"
-            >
-              {{ row.is_active ? 'Active' : 'Inactive' }}
-            </el-tag>
-          </template>
-        </el-table-column>
+      <!-- Loading State -->
+      <div v-if="store.isLoading && store.credentials.length === 0" class="state-container">
+        <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+        <span>Loading accounts...</span>
+      </div>
 
-        <el-table-column prop="created_at" label="ADDED" width="150">
-          <template #default="{ row }">
-            {{ formatDate(row.created_at) }}
-          </template>
-        </el-table-column>
+      <!-- Empty State -->
+      <div v-else-if="!store.isLoading && store.credentials.length === 0" class="state-container">
+        <el-empty description="No accounts connected yet">
+          <el-button type="primary" @click="showAddDialog">
+            Add Your First Account
+          </el-button>
+        </el-empty>
+      </div>
 
-        <el-table-column label="ACTIONS" width="250" align="right">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <el-button
+      <!-- Credentials Table -->
+      <div v-else class="table-container">
+        <el-table
+          :data="store.credentials"
+          :loading="store.isLoading"
+          style="width: 100%"
+          class="credentials-table"
+          :header-cell-style="{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }"
+          :cell-style="{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }"
+        >
+          <el-table-column prop="nickname" label="NICKNAME" min-width="140">
+            <template #default="{ row }">
+              <span class="credential-nickname">
+                {{ getDisplayName(row) }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="credential_type" label="TYPE" width="100">
+            <template #default="{ row }">
+              <span class="credential-type">
+                {{ formatCredentialType(row.credential_type) }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="BALANCE" min-width="140">
+            <template #default="{ row }">
+              <span v-if="loadingAccountData.has(row.id)" class="balance-loading">
+                <el-icon class="is-loading" :size="14"><Loading /></el-icon>
+              </span>
+              <span v-else class="balance-value">
+                {{ formatBalance(getAccountData(row.id)?.equity) }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="STATUS" width="100">
+            <template #default="{ row }">
+              <el-tag
+                :type="row.is_active ? 'success' : 'info'"
                 size="small"
-                @click="handleEdit(row)"
+                effect="light"
               >
-                Edit
-              </el-button>
-              <el-button
-                size="small"
-                :loading="validatingId === row.id"
-                @click="handleValidate(row)"
-              >
-                Test
-              </el-button>
-              <el-button
-                size="small"
-                type="danger"
-                @click="handleDelete(row)"
-              >
-                Remove
-              </el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+                {{ row.is_active ? 'Active' : 'Inactive' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="created_at" label="ADDED" width="130">
+            <template #default="{ row }">
+              {{ formatDate(row.created_at) }}
+            </template>
+          </el-table-column>
+
+          <el-table-column label="ACTIONS" width="220" align="right">
+            <template #default="{ row }">
+              <div class="action-buttons">
+                <el-button
+                  size="small"
+                  @click="handleEdit(row)"
+                >
+                  Edit
+                </el-button>
+                <el-button
+                  size="small"
+                  :loading="validatingId === row.id"
+                  @click="handleValidate(row)"
+                >
+                  Test
+                </el-button>
+                <el-button
+                  size="small"
+                  type="danger"
+                  @click="handleDelete(row)"
+                >
+                  Remove
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Account Manager Dialog -->
+      <AccountManagerDialog
+        v-model:visible="dialogVisible"
+        :credentialId="editingCredentialId"
+        @success="handleDialogSuccess"
+      />
     </div>
-
-    <!-- Account Manager Dialog -->
-    <AccountManagerDialog
-      v-model:visible="dialogVisible"
-      :credentialId="editingCredentialId"
-      @success="handleDialogSuccess"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { useAccountStore } from '@/stores/accountStore'
 import credentialService from '@/services/credentialService'
 import AccountManagerDialog from './AccountManagerDialog.vue'
-import type { CredentialResponse } from '@/types/account'
+import AppHeader from './AppHeader.vue'
+import type { CredentialResponse, AccountDataResponse } from '@/types/account'
 
 // Store
 const store = useAccountStore()
@@ -133,6 +158,10 @@ const store = useAccountStore()
 const dialogVisible = ref(false)
 const editingCredentialId = ref<string | null>(null)
 const validatingId = ref<string | null>(null)
+
+// Account data cache (credential_id -> account data)
+const accountDataCache = reactive<Map<string, AccountDataResponse>>(new Map())
+const loadingAccountData = reactive<Set<string>>(new Set())
 
 // Format credential type for display
 function formatCredentialType(type: string): string {
@@ -147,6 +176,45 @@ function formatDate(dateString: string): string {
     month: 'short',
     day: 'numeric'
   })
+}
+
+// Format currency for balance display
+function formatBalance(balance: string | undefined): string {
+  if (!balance) return '-'
+  const num = parseFloat(balance)
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num)
+}
+
+// Get display name for credential (nickname or fallback)
+function getDisplayName(credential: CredentialResponse): string {
+  return credential.nickname || formatCredentialType(credential.credential_type)
+}
+
+// Fetch account data for a credential
+async function fetchAccountData(credentialId: string): Promise<void> {
+  if (accountDataCache.has(credentialId) || loadingAccountData.has(credentialId)) {
+    return
+  }
+
+  loadingAccountData.add(credentialId)
+  try {
+    const data = await credentialService.getAccountData(credentialId)
+    accountDataCache.set(credentialId, data)
+  } catch (error) {
+    console.error(`[AccountListView] Failed to fetch account data for ${credentialId}:`, error)
+  } finally {
+    loadingAccountData.delete(credentialId)
+  }
+}
+
+// Get cached account data for a credential
+function getAccountData(credentialId: string): AccountDataResponse | undefined {
+  return accountDataCache.get(credentialId)
 }
 
 // Show add dialog
@@ -251,19 +319,34 @@ onMounted(async () => {
       console.error('[AccountListView] Failed to initialize store:', error)
     }
   }
+
+  // Fetch account data for all credentials
+  for (const credential of store.credentials) {
+    fetchAccountData(credential.id)
+  }
 })
 </script>
 
 <style scoped>
+/* Page wrapper - full screen with header */
+.account-list-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* Content area below header */
 .account-list-view {
-  height: 100%;
+  flex: 1;
   background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Header */
+/* Page Header */
 .account-list-header {
   display: flex;
   justify-content: space-between;
@@ -345,6 +428,25 @@ onMounted(async () => {
   font-weight: 600;
   color: var(--accent-primary);
   text-transform: capitalize;
+}
+
+.credential-nickname {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.balance-value {
+  font-weight: 600;
+  color: var(--status-success);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.balance-loading {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
 }
 
 /* Action Buttons */

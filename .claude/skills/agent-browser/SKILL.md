@@ -43,29 +43,36 @@ These commands do NOT exist - don't waste turns trying them:
 - ❌ `agent-browser start` - No such command
 - ❌ `agent-browser connect` (without CDP port) - Requires running Chrome with remote debugging
 
-## CRITICAL: Local Server Prerequisite
+## CRITICAL: Orchestrator Dev Server Setup
 
-**Before navigating to any localhost URL, you MUST ensure the development server is running.**
+**Before navigating to any localhost URL, you MUST ensure ALL required services are running.**
+
+### Required Services (ALL THREE must be running)
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Frontend | 5175 | Vue.js app |
+| Backend | 9403 | FastAPI server |
+| **Auth** | **9404** | **Authentication service (CRITICAL)** |
 
 ### Checking if Orchestrator is Running
 
 ```bash
-# Check if frontend (port 5175) is running
-lsof -ti:5175 >/dev/null 2>&1 && echo "Frontend running" || echo "Frontend NOT running"
-
-# Check if backend (port 8002 or 9403) is running
-lsof -ti:9403 >/dev/null 2>&1 && echo "Backend running on 9403" || echo "Backend NOT running"
+# Check ALL required services
+lsof -ti:5175 >/dev/null 2>&1 && echo "✓ Frontend (5175)" || echo "✗ Frontend NOT running"
+lsof -ti:9403 >/dev/null 2>&1 && echo "✓ Backend (9403)" || echo "✗ Backend NOT running"
+lsof -ti:9404 >/dev/null 2>&1 && echo "✓ Auth (9404)" || echo "✗ Auth NOT running"
 ```
 
 ### Starting the Orchestrator (if not running)
 
-If localhost:5175 returns connection refused, start the servers:
+If any service is not running, start the servers:
 
 ```bash
-# Start backend in background
+# Start backend in background (includes auth service on 9404)
 cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
 
-# Wait for backend to initialize
+# Wait for backend + auth to initialize
 sleep 3
 
 # Start frontend in background
@@ -79,9 +86,12 @@ sleep 5
 
 **ALWAYS run this workflow before browser automation on localhost:5175:**
 
-1. **Check if servers are running:**
+1. **Check if ALL servers are running:**
    ```bash
-   lsof -ti:5175 >/dev/null 2>&1 && lsof -ti:9403 >/dev/null 2>&1 && echo "Both servers running" || echo "Need to start servers"
+   FE=$(lsof -ti:5175 >/dev/null 2>&1 && echo "1" || echo "0")
+   BE=$(lsof -ti:9403 >/dev/null 2>&1 && echo "1" || echo "0")
+   AUTH=$(lsof -ti:9404 >/dev/null 2>&1 && echo "1" || echo "0")
+   [ "$FE" = "1" ] && [ "$BE" = "1" ] && [ "$AUTH" = "1" ] && echo "All servers running" || echo "Need to start servers"
    ```
 
 2. **If not running, start them:**
@@ -96,6 +106,85 @@ sleep 5
    ```bash
    AGENT_BROWSER_SESSION=test1 agent-browser open http://localhost:5175
    ```
+
+---
+
+## Orchestrator Login (REQUIRED for most testing)
+
+**Most Orchestrator features require authentication. ALWAYS log in before testing.**
+
+### Login Credentials (USE THESE EXACT VALUES)
+
+| Field | Value |
+|-------|-------|
+| Login URL | `http://localhost:5175/login` |
+| Email | `seagerjoe@gmail.com` |
+| Password | `password123` |
+
+### Standard Authentication Flow
+
+```bash
+export AGENT_BROWSER_SESSION=orch_test
+
+# 1. Navigate directly to login page
+AGENT_BROWSER_SESSION=orch_test agent-browser open http://localhost:5175/login
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 1000
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# 2. Fill credentials (element refs from snapshot - typically e1=email, e2=password, e3=submit)
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e1 "seagerjoe@gmail.com"
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e2 "password123"
+AGENT_BROWSER_SESSION=orch_test agent-browser click @e3
+
+# 3. Wait for auth redirect
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 3000
+
+# 4. Verify authentication succeeded
+AGENT_BROWSER_SESSION=orch_test agent-browser get url
+# Should show: http://localhost:5175/ (NOT /login)
+```
+
+### Verify Auth State
+
+After login, verify you're authenticated by checking for auth-only elements:
+
+```bash
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+# Should show: ACCOUNTS button, LOGOUT button, HeaderAccountInfo component
+# If you only see ALPACA, POSITIONS, CALENDAR, TRADE STATS - auth failed
+```
+
+---
+
+## Troubleshooting Auth Issues
+
+If login appears to succeed but you're redirected back to login or `isAuthenticated` stays false:
+
+1. **Check auth service is running:**
+   ```bash
+   lsof -ti:9404 >/dev/null 2>&1 && echo "✓ Auth running on 9404" || echo "✗ Auth NOT running - restart backend!"
+   ```
+
+2. **Check browser console for errors:**
+   ```bash
+   AGENT_BROWSER_SESSION=orch_test agent-browser console
+   ```
+   Look for: `ECONNREFUSED :9404` or `[AuthClient] Connection refused`
+
+3. **Restart backend (which includes auth):**
+   ```bash
+   # Kill existing backend processes
+   lsof -ti:9403 | xargs kill -9 2>/dev/null
+   lsof -ti:9404 | xargs kill -9 2>/dev/null
+
+   # Restart
+   cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+   sleep 3
+   ```
+
+4. **Re-attempt login after auth service is confirmed running**
+
+---
 
 ## Quick start
 
@@ -283,7 +372,71 @@ agent-browser dialog dismiss        # Dismiss dialog
 agent-browser eval "document.title"   # Run JavaScript
 ```
 
-## Example: Form submission
+## Example: Complete Orchestrator Testing Workflow
+
+This is the **recommended workflow** for testing the Orchestrator app:
+
+```bash
+# ═══════════════════════════════════════════════════════════════
+# STEP 1: Check and start all required services
+# ═══════════════════════════════════════════════════════════════
+
+# Check all services
+lsof -ti:5175 >/dev/null 2>&1 && echo "✓ Frontend" || echo "✗ Frontend"
+lsof -ti:9403 >/dev/null 2>&1 && echo "✓ Backend" || echo "✗ Backend"
+lsof -ti:9404 >/dev/null 2>&1 && echo "✓ Auth" || echo "✗ Auth"
+
+# Start if needed (skip if all are running)
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+sleep 3
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_fe.sh &
+sleep 5
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 2: Launch browser and authenticate
+# ═══════════════════════════════════════════════════════════════
+
+export AGENT_BROWSER_SESSION=orch_test
+
+# Navigate to login
+AGENT_BROWSER_SESSION=orch_test agent-browser open http://localhost:5175/login
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 1000
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# Login with credentials
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e1 "seagerjoe@gmail.com"
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e2 "password123"
+AGENT_BROWSER_SESSION=orch_test agent-browser click @e3
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 3000
+
+# Verify redirect to home (not /login)
+AGENT_BROWSER_SESSION=orch_test agent-browser get url
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 3: Now test the app (authenticated)
+# ═══════════════════════════════════════════════════════════════
+
+# Set viewport for testing
+AGENT_BROWSER_SESSION=orch_test agent-browser set viewport 1920 1080
+
+# Take screenshot
+AGENT_BROWSER_SESSION=orch_test agent-browser screenshot /path/to/screenshot.png
+
+# Get interactive elements
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# Test mobile viewport
+AGENT_BROWSER_SESSION=orch_test agent-browser set viewport 375 667
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 4: Cleanup
+# ═══════════════════════════════════════════════════════════════
+
+AGENT_BROWSER_SESSION=orch_test agent-browser close
+```
+
+## Example: Generic Form submission
 
 ```bash
 # Always set session first

@@ -1,0 +1,486 @@
+railway_deploy_expertise:
+  meta:
+    last_validated: "2026-02-02"
+    codebase_path: ".claude/skills/railway-deploy"
+    skill_file: ".claude/skills/railway-deploy/SKILL.md"
+    max_lines: 600
+
+  architecture:
+    service_count: 3
+    deployment_platform: "Railway.app"
+    orchestration: "Docker multi-stage builds"
+    database: "NeonDB PostgreSQL (shared between environments)"
+
+    services:
+      - name: "orchestrator"
+        role: "Backend API"
+        location: "apps/orchestrator_3_stream/backend/"
+        dockerfile: "apps/orchestrator_3_stream/backend/Dockerfile"
+        technology: "Python 3.12, FastAPI, uvicorn"
+        package_manager: "Astral UV"
+        runtime_dependencies:
+          - "libpq5 (PostgreSQL client)"
+          - "Node.js 20 (for Claude CLI)"
+          - "@anthropic-ai/claude-code (global npm package)"
+        dev_port: 9403
+        prod_port: 8002
+        prod_port_source: "Railway injects PORT env var"
+        health_check: "GET /health (30s interval)"
+        dockerfile_stages:
+          - "builder: Install uv, sync dependencies with uv.lock"
+          - "production: Copy venv, install runtime deps, add claude CLI, non-root user"
+        startup_command: "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8002}"
+
+      - name: "orchestrator-frontend"
+        role: "Vue.js SPA"
+        location: "apps/orchestrator_3_stream/frontend/"
+        dockerfile: "apps/orchestrator_3_stream/frontend/Dockerfile"
+        technology: "Vue 3, Vite, nginx alpine"
+        dev_port: 5175
+        prod_port: 80
+        prod_port_source: "Railway injects PORT, nginx uses envsubst"
+        dockerfile_stages:
+          - "builder: npm install, build with Vite (build args: VITE_API_BASE_URL, VITE_WEBSOCKET_URL, VITE_AUTH_URL)"
+          - "production: nginx alpine, copy dist/, envsubst for PORT substitution"
+        build_args:
+          - name: "VITE_API_BASE_URL"
+            description: "Backend API URL (https://backend.railway.app)"
+          - name: "VITE_WEBSOCKET_URL"
+            description: "WebSocket URL (wss://backend.railway.app/ws)"
+          - name: "VITE_AUTH_URL"
+            description: "Auth service URL (https://auth.railway.app)"
+        startup_command: "sh -c \"envsubst '\\$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'\""
+
+      - name: "auth-service"
+        role: "Authentication microservice"
+        location: "apps/orchestrator_3_stream/auth-service/"
+        dockerfile: "apps/orchestrator_3_stream/auth-service/Dockerfile"
+        technology: "Node.js 20, Hono, Better Auth"
+        dev_port: 9404
+        prod_port: 9404
+        prod_port_source: "Priority: PORT → AUTH_PORT → 9404"
+        dockerfile_stages:
+          - "builder: npm install --include=dev, generate tsconfig.json, npm run build"
+          - "production: npm install --omit=dev, copy dist/"
+        port_resolution: "parseInt(process.env.PORT || process.env.AUTH_PORT || '9404')"
+        startup_command: "node dist/index.js"
+
+  environment_configuration:
+    backend:
+      required:
+        - name: "DATABASE_URL"
+          description: "NeonDB PostgreSQL connection string (same for dev & prod)"
+          example: "postgresql://user:password@host/database?sslmode=require"
+        - name: "ENCRYPTION_KEY"
+          description: "Fernet key for encrypting user credentials"
+          generation: "python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+        - name: "ANTHROPIC_API_KEY"
+          description: "Claude API access for agent orchestration"
+      optional:
+        - name: "ALPACA_API_KEY"
+          description: "Alpaca trading API key (for production Elite account ONLY)"
+          critical_constraint: "NEVER CHANGE IN PRODUCTION - see alpaca_elite_subscription section"
+        - name: "ALPACA_SECRET_KEY"
+          description: "Alpaca secret key (for production Elite account ONLY)"
+          critical_constraint: "NEVER CHANGE IN PRODUCTION - see alpaca_elite_subscription section"
+        - name: "ALPACA_PAPER_TRADE"
+          description: "true for paper trading, false for live trading"
+          default: "true"
+        - name: "ALPACA_DATA_FEED"
+          description: "Data feed selection: 'iex' (free) or 'opra' (Elite required)"
+          default: "iex"
+          dev_value: "iex"
+          prod_value: "opra"
+          critical_constraint: "Dev MUST use 'iex', prod uses 'opra' with Elite subscription"
+        - name: "CORS_ORIGINS"
+          description: "Allowed CORS origins (comma-separated)"
+          default: "http://localhost:5175"
+        - name: "LOG_LEVEL"
+          description: "Logging verbosity"
+          default: "INFO"
+
+    frontend:
+      build_args:
+        - name: "VITE_API_BASE_URL"
+          description: "Backend API base URL"
+          dev_value: "http://127.0.0.1:9403"
+          prod_value: "https://orchestrator.up.railway.app"
+        - name: "VITE_WEBSOCKET_URL"
+          description: "WebSocket endpoint URL"
+          dev_value: "ws://127.0.0.1:9403/ws"
+          prod_value: "wss://orchestrator.up.railway.app/ws"
+        - name: "VITE_AUTH_URL"
+          description: "Auth service URL"
+          dev_value: "http://localhost:9404"
+          prod_value: "https://auth-service.up.railway.app"
+
+    auth_service:
+      required:
+        - name: "DATABASE_URL"
+          description: "Same NeonDB connection as backend"
+        - name: "AUTH_BASE_URL"
+          description: "Public URL for auth service"
+          example: "https://auth-service.up.railway.app"
+        - name: "BETTER_AUTH_SECRET"
+          description: "Secret for Better Auth session encryption"
+        - name: "FRONTEND_URL"
+          description: "Frontend URL for CORS"
+          example: "https://orchestrator-frontend.up.railway.app"
+      optional:
+        - name: "AUTH_PORT"
+          description: "Fallback port if PORT not set by Railway"
+          default: "9404"
+        - name: "NODE_ENV"
+          description: "Node environment"
+          default: "production"
+
+  critical_alpaca_elite_subscription:
+    constraint: "Production uses Alpaca Elite subscription for OPRA WebSocket feed"
+    limitation: "Only ONE account/credential can have active OPRA WebSocket connection at a time"
+    risk: "Dev testing with credential switching can SILENTLY BREAK PRODUCTION WebSocket feed"
+
+    feeds:
+      iex:
+        name: "IEX Feed"
+        subscription: "Free tier (Basic plan)"
+        real_time_coverage: "IEX exchange only"
+        websocket_limit: "30 symbols"
+        use_case: "Development and multi-credential testing"
+        safety: "SAFE - Multiple connections allowed"
+
+      opra:
+        name: "OPRA Feed (Options Price Reporting Authority)"
+        subscription: "Algo Trader Plus / Elite required ($99+/month)"
+        real_time_coverage: "All US options exchanges"
+        websocket_limit: "1000 quote subscriptions"
+        use_case: "Production real-time options trading"
+        safety: "CRITICAL - Only ONE active connection per Elite account"
+        constraint: "If dev uses Elite credentials with OPRA, prod WebSocket feed BREAKS"
+
+    configuration:
+      environment_variable: "ALPACA_DATA_FEED"
+      dev_setting: "iex"
+      prod_setting: "opra"
+      enforcement: "MUST be set explicitly in Railway environment variables"
+
+    safe_multi_credential_testing:
+      requirement: "Dev environment MUST use IEX feed when testing multiple Alpaca accounts"
+      reason: "Application supports multiple user credentials, but Elite OPRA feed only allows one active connection"
+      implementation: "Set ALPACA_DATA_FEED=iex in dev .env, ALPACA_DATA_FEED=opra in Railway prod vars"
+
+    deployment_rules:
+      - rule: "NEVER change ALPACA_API_KEY or ALPACA_SECRET_KEY in Railway production environment"
+        reason: "These are the Elite-authorized credentials with active OPRA WebSocket subscription"
+      - rule: "NEVER test Elite credentials in development with ALPACA_DATA_FEED=opra"
+        reason: "Will conflict with production OPRA WebSocket and cause silent failures"
+      - rule: "ALWAYS use IEX feed in development for multi-credential testing"
+        reason: "IEX supports multiple simultaneous connections safely"
+      - rule: "VERIFY ALPACA_DATA_FEED before deployment"
+        reason: "Incorrect feed setting can break production trading data stream"
+
+    affected_services:
+      - service: "alpaca_service.py OptionDataStream"
+        feed_config: "OptionsFeed.OPRA (hardcoded for real-time quotes)"
+        constraint: "Only one OPRA stream per Elite account globally"
+      - service: "spot_price_service.py StockDataStream"
+        feed_config: "Configurable via ALPACA_DATA_FEED env var"
+        constraint: "Elite subscription recommended for SIP feed"
+      - service: "greeks_snapshot_service.py"
+        feed_config: "feed='opra' parameter in get_option_chain_snapshot()"
+        constraint: "Elite subscription required for real-time Greeks data"
+
+    troubleshooting:
+      symptom: "WebSocket connection failures in production"
+      likely_cause: "Dev environment connected to Elite OPRA feed, conflicting with prod"
+      solution: "Ensure dev uses ALPACA_DATA_FEED=iex, restart dev services, verify prod WebSocket reconnects"
+
+      symptom: "Options price updates stop streaming in production"
+      likely_cause: "Another connection (possibly dev) took over the Elite OPRA WebSocket slot"
+      solution: "Check ALPACA_DATA_FEED across all environments, terminate dev connections, restart prod backend"
+
+  dev_vs_production_environment:
+    comparison:
+      - aspect: "Backend Port"
+        development: "9403 (set in .env)"
+        production: "8002 (Railway sets PORT env var)"
+
+      - aspect: "Frontend Port"
+        development: "5175 (Vite dev server)"
+        production: "80 (nginx, Railway sets PORT)"
+
+      - aspect: "Auth Port"
+        development: "9404 (hardcoded fallback)"
+        production: "9404 (PORT → AUTH_PORT → 9404)"
+
+      - aspect: "Alpaca Data Feed"
+        development: "IEX (free, safe for multi-credential)"
+        production: "OPRA (Elite required, ONE connection only)"
+
+      - aspect: "Multi-credential Testing"
+        development: "Allowed and encouraged (IEX feed)"
+        production: "FORBIDDEN - will break Elite WebSocket connection"
+
+      - aspect: "Database"
+        development: "Same NeonDB as production (use RLS for isolation)"
+        production: "Same NeonDB (shared connection pool)"
+
+      - aspect: "WebSocket URL"
+        development: "ws://127.0.0.1:9403/ws"
+        production: "wss://orchestrator.up.railway.app/ws"
+
+      - aspect: "CORS Origins"
+        development: "http://localhost:5175, http://127.0.0.1:5175"
+        production: "https://orchestrator-frontend.up.railway.app"
+
+      - aspect: "Claude CLI"
+        development: "Installed globally or via npm"
+        production: "Installed in Docker (npm install -g @anthropic-ai/claude-code)"
+
+      - aspect: "Alpaca MCP Config"
+        development: ".mcp.json.alpaca in backend/ (gitignored, local credentials)"
+        production: "Generated at runtime from ALPACA_API_KEY and ALPACA_SECRET_KEY env vars"
+
+  deployment_workflow:
+    safe_deployment_checklist:
+      pre_deployment:
+        - "Verify git working tree is clean and synced with remote"
+        - "Confirm ALPACA_DATA_FEED=iex in local dev environment"
+        - "NEVER modify ALPACA_API_KEY or ALPACA_SECRET_KEY in Railway prod vars"
+        - "Verify production Railway env vars still have Elite credentials"
+        - "Check that ALPACA_DATA_FEED=opra in Railway prod environment"
+
+      deployment:
+        - "Use railway-mcp subagent for all Railway operations"
+        - "Deploy backend: railway deploy (or via MCP deploy tool)"
+        - "Deploy frontend: railway deploy (build args set in Railway)"
+        - "Deploy auth-service: railway deploy"
+
+      post_deployment:
+        - "Verify backend health: GET https://orchestrator.up.railway.app/health"
+        - "Check WebSocket connection: Test frontend connection to wss://.../ws"
+        - "Verify OPRA feed active: Check logs for 'OptionDataStream initialized (feed=opra)'"
+        - "Test auth flow: Login via frontend, verify session creation"
+        - "Monitor Railway logs for WebSocket errors or OPRA feed issues"
+
+    delegation_to_railway_mcp:
+      tool: "Task"
+      subagent_type: "railway-mcp"
+      mcp_config: ".mcp.json.railway"
+      available_tools: 13
+
+      common_operations:
+        - operation: "Deploy backend"
+          prompt: "Deploy the backend service from apps/orchestrator_3_stream/backend/ to Railway. Use port 8002 or Railway's $PORT variable."
+
+        - operation: "Deploy frontend"
+          prompt: "Deploy the frontend service from apps/orchestrator_3_stream/frontend/ to Railway. Configure nginx to use Railway's $PORT variable."
+
+        - operation: "Deploy auth service"
+          prompt: "Deploy the auth-service from apps/orchestrator_3_stream/auth-service/ to Railway. Use port 9404."
+
+        - operation: "Full stack deployment"
+          prompt: "Deploy all three services: backend (FastAPI), frontend (Vue.js/nginx), and auth-service (Hono). Link them in the same project."
+
+        - operation: "Check deployment status"
+          prompt: "List all services in the Railway project and show deployment status, logs, and URLs."
+
+        - operation: "View logs"
+          prompt: "Get recent logs for the <service-name> service to debug issues."
+
+        - operation: "Set environment variables"
+          prompt: "Set environment variable <VAR_NAME>=<value> for <service-name> service."
+
+        - operation: "Generate domain"
+          prompt: "Generate a Railway domain for <service-name> service."
+
+  railway_mcp_tools:
+    status:
+      - name: "check-railway-status"
+        purpose: "Verify CLI installation and authentication"
+
+    project_management:
+      - name: "list-projects"
+        purpose: "List all Railway projects"
+      - name: "create-project-and-link"
+        purpose: "Create new project and link to current directory"
+
+    service_management:
+      - name: "list-services"
+        purpose: "List all services in current project"
+      - name: "link-service"
+        purpose: "Link service to current directory"
+      - name: "deploy"
+        purpose: "Deploy a service (Railway auto-detects Dockerfile)"
+      - name: "deploy-template"
+        purpose: "Deploy from Railway Template Library"
+
+    environment_management:
+      - name: "create-environment"
+        purpose: "Create new environment (e.g., staging, production)"
+      - name: "link-environment"
+        purpose: "Link environment to current directory"
+
+    configuration:
+      - name: "list-variables"
+        purpose: "List environment variables for service"
+      - name: "set-variables"
+        purpose: "Set environment variables"
+      - name: "generate-domain"
+        purpose: "Generate Railway-provided domain (*.up.railway.app)"
+
+    monitoring:
+      - name: "get-logs"
+        purpose: "Retrieve service logs for debugging"
+
+  troubleshooting:
+    railway_cli_not_authenticated:
+      symptom: "Railway MCP commands fail with authentication error"
+      solution: "Run 'railway login' to authenticate Railway CLI before deployment"
+
+    mcp_config_missing:
+      symptom: "railway-mcp subagent cannot connect to Railway MCP server"
+      solution: "Ensure .mcp.json.railway exists in project root with Railway MCP server config"
+
+    deployment_fails:
+      symptom: "Railway deployment fails with build error"
+      steps:
+        - "Check Railway logs via railway-mcp subagent"
+        - "Test Dockerfile builds locally: docker build -t test apps/orchestrator_3_stream/backend/"
+        - "Verify all environment variables are set in Railway"
+        - "Check for missing dependencies in pyproject.toml or package.json"
+
+    service_not_accessible:
+      symptom: "Service deployed but not accessible via domain"
+      steps:
+        - "Generate domain via railway-mcp if not already created"
+        - "Check service logs for startup errors"
+        - "Verify PORT environment variable is correctly used in startup command"
+        - "Check Railway service health status"
+
+    websocket_connection_failures:
+      symptom: "Frontend cannot connect to WebSocket, or connection drops frequently"
+      likely_cause: "Alpaca Elite OPRA feed conflict between dev and prod"
+      steps:
+        - "Check ALPACA_DATA_FEED in all environments (dev should be 'iex', prod should be 'opra')"
+        - "Verify dev environment is NOT using Elite credentials with OPRA feed"
+        - "Restart backend service in Railway to reconnect OPRA WebSocket"
+        - "Monitor backend logs for 'OptionDataStream initialized' message"
+        - "Ensure only ONE environment is using OPRA feed at a time"
+
+    auth_service_port_conflicts:
+      symptom: "Auth service fails to start or returns 502 errors"
+      steps:
+        - "Verify PORT or AUTH_PORT is set in Railway environment"
+        - "Check auth service logs for port binding errors"
+        - "Ensure FRONTEND_URL and AUTH_BASE_URL are correctly configured"
+        - "Verify CORS origins include frontend domain"
+
+    environment_variable_mismatches:
+      symptom: "Frontend displays 'cannot connect to backend' or 'API error'"
+      steps:
+        - "Verify VITE_API_BASE_URL matches backend Railway domain"
+        - "Verify VITE_WEBSOCKET_URL uses wss:// (not ws://) for production"
+        - "Verify VITE_AUTH_URL matches auth service Railway domain"
+        - "Check CORS_ORIGINS in backend includes frontend domain"
+        - "Rebuild frontend if build args changed (Railway caches builds)"
+
+    alpaca_elite_websocket_broken:
+      symptom: "Production options price updates stopped, WebSocket disconnects, or OPRA feed errors"
+      root_cause: "Development environment connected to Elite OPRA feed, taking over the single allowed connection"
+      immediate_fix:
+        - "Stop all dev backend instances immediately"
+        - "Verify dev .env has ALPACA_DATA_FEED=iex (NOT opra)"
+        - "Restart Railway production backend service"
+        - "Monitor logs for 'OptionDataStream initialized (feed=opra)'"
+
+      prevention:
+        - "NEVER set ALPACA_DATA_FEED=opra in development"
+        - "Use separate non-Elite Alpaca credentials for dev testing"
+        - "Add pre-commit check to verify ALPACA_DATA_FEED=iex in dev .env"
+        - "Document Elite credential usage in team onboarding"
+
+  documentation_reference:
+    railway_docs_directory: "railway_docs/"
+
+    key_references:
+      - topic: "CLI Guide"
+        file: "railway_docs/cli-guide.md"
+        use_when: "Need Railway CLI workflow guidance"
+
+      - topic: "CLI Reference"
+        file: "railway_docs/cli-reference.md"
+        use_when: "Need specific CLI command syntax (e.g., railway domain)"
+
+      - topic: "Deployments"
+        file: "railway_docs/deployments-guide.md"
+        use_when: "Deployment configuration, rollbacks, build settings"
+
+      - topic: "Services"
+        file: "railway_docs/services-guide.md"
+        use_when: "Service configuration, scaling, health checks"
+
+      - topic: "Variables"
+        file: "railway_docs/variables-guide.md"
+        use_when: "Environment variable patterns and best practices"
+
+      - topic: "Variables Reference"
+        file: "railway_docs/variables-reference.md"
+        use_when: "Variable syntax, Railway-provided variables (PORT, RAILWAY_PUBLIC_DOMAIN)"
+
+      - topic: "MCP Server Reference"
+        file: "railway_docs/mcp-server-reference.md"
+        use_when: "MCP tool details, advanced MCP usage"
+
+      - topic: "Config as Code"
+        file: "railway_docs/config-as-code.md"
+        use_when: "railway.toml configuration, infrastructure as code"
+
+    reading_guidance: "Always read relevant Railway docs when encountering errors not covered in troubleshooting, configuring advanced features, or setting up multi-environment workflows."
+
+  best_practices:
+    security:
+      - "Never commit .env files (use .env.sample templates)"
+      - "Rotate ENCRYPTION_KEY and BETTER_AUTH_SECRET periodically"
+      - "Use Railway's secret variables for sensitive data"
+      - "Enable Railway's automatic SSL for all services"
+      - "Run Docker containers as non-root users"
+
+    deployment:
+      - "Test Dockerfiles locally before deploying to Railway"
+      - "Use multi-stage builds to minimize production image size"
+      - "Set explicit health checks in Dockerfiles"
+      - "Use Railway environments (staging, production) for safe rollouts"
+      - "Monitor Railway logs during and after deployment"
+
+    alpaca_integration:
+      - "Use IEX feed for all non-production environments"
+      - "Document which credentials have Elite subscriptions"
+      - "Never test with production Elite credentials in development"
+      - "Set ALPACA_DATA_FEED explicitly in all environments"
+      - "Monitor OPRA WebSocket connection status in production logs"
+
+    cost_optimization:
+      - "Use Railway's sleep mode for non-critical services"
+      - "Optimize Docker image layers for faster builds and deployments"
+      - "Set appropriate resource limits to avoid overprovisioning"
+      - "Use shared NeonDB connection pool efficiently"
+
+  service_dependencies:
+    startup_order:
+      - "Database (NeonDB) must be accessible"
+      - "Auth service starts independently (port 9404)"
+      - "Backend starts, connects to database and auth service"
+      - "Frontend builds with backend/auth URLs, serves static files via nginx"
+
+    cross_service_communication:
+      - "Frontend → Backend: HTTP REST API (VITE_API_BASE_URL)"
+      - "Frontend → Backend: WebSocket (VITE_WEBSOCKET_URL)"
+      - "Frontend → Auth: HTTP (VITE_AUTH_URL for Better Auth endpoints)"
+      - "Backend → Auth: HTTP (validates sessions via Better Auth)"
+      - "Backend → NeonDB: PostgreSQL asyncpg connection pool"
+      - "Auth → NeonDB: PostgreSQL connection (Better Auth session storage)"
+
+    shared_resources:
+      - "NeonDB PostgreSQL database (shared, use RLS for multi-tenancy)"
+      - "Better Auth session store (in NeonDB)"
+      - "Alpaca Elite OPRA WebSocket feed (SINGLE CONNECTION ONLY in production)"
