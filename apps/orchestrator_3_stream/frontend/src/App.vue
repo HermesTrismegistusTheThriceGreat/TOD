@@ -5,6 +5,13 @@
       <router-view />
     </template>
 
+    <!-- Loading state while auth is being determined -->
+    <template v-else-if="authStore.isLoading">
+      <div class="auth-loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </template>
+
     <!-- Full-page routes (Alpaca Agent, etc.) - render via router-view -->
     <template v-else-if="isFullPageRoute">
       <router-view />
@@ -93,10 +100,12 @@ import TradeStatsGrid from "./components/TradeStatsGrid.vue";
 import OrchestratorChat from "./components/OrchestratorChat.vue";
 import GlobalCommandInput from "./components/GlobalCommandInput.vue";
 import { useOrchestratorStore } from "./stores/orchestratorStore";
+import { useAuthStore } from "./stores/authStore";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 
-// Use Pinia store
+// Use Pinia stores
 const store = useOrchestratorStore();
+const authStore = useAuthStore();
 
 // Use Vue Router
 const route = useRoute();
@@ -172,6 +181,30 @@ const handleSidebarCollapse = (isCollapsed: boolean) => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Auth Loading State */
+.auth-loading {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary, #09090b);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent-cyan, #22d3ee);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Main Layout */
