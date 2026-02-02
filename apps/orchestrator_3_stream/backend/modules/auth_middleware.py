@@ -36,8 +36,11 @@ from datetime import datetime, timezone
 from .database import get_connection
 from .orch_database_models import AuthUser, AuthSession
 
-# Cookie name used by Better Auth
+# Cookie names used by Better Auth
+# In production (HTTPS), Better Auth uses __Secure- prefix for enhanced security
+# In development (HTTP), the prefix is not used
 SESSION_COOKIE_NAME = "better-auth.session_token"
+SESSION_COOKIE_NAME_SECURE = "__Secure-better-auth.session_token"
 
 
 async def get_session_from_cookie(request: Request) -> Optional[str]:
@@ -47,6 +50,9 @@ async def get_session_from_cookie(request: Request) -> Optional[str]:
     Better Auth stores tokens in format "tokenId.signature" in cookies,
     but only the tokenId is stored in the database. We extract the tokenId
     (part before the dot) for database lookup.
+
+    In production (HTTPS), cookies are prefixed with __Secure- for security.
+    We check both variants to support both environments.
 
     Args:
         request: FastAPI Request object
@@ -59,7 +65,10 @@ async def get_session_from_cookie(request: Request) -> Optional[str]:
         >>> if token:
         ...     print(f"Found session token: {token[:20]}...")
     """
-    cookie_value = request.cookies.get(SESSION_COOKIE_NAME)
+    # Try secure cookie first (production), then fall back to non-secure (development)
+    cookie_value = request.cookies.get(SESSION_COOKIE_NAME_SECURE)
+    if not cookie_value:
+        cookie_value = request.cookies.get(SESSION_COOKIE_NAME)
     if not cookie_value:
         return None
 
