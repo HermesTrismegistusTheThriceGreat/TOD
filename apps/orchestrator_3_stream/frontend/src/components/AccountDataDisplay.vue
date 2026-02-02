@@ -156,4 +156,48 @@ const formattedBuyingPower = computed(() => {
 :deep(.el-statistic__content) {
   font-size: 18px;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 650px) {
+  .account-data-display {
+    min-width: auto;
+  }
+
+  .card-header {
+    font-size: 0.7rem;
+  }
+
+  .header-title {
+    font-size: 0.7rem;
+  }
+
+  .account-type-badge {
+    font-size: 0.65rem;
+  }
+
+  .account-metrics {
+    padding: 4px 0;
+  }
+
+  :deep(.el-statistic__head) {
+    font-size: 0.65rem;
+  }
+
+  :deep(.el-statistic__content) {
+    font-size: 0.875rem;
+  }
+
+  .account-alerts {
+    margin-top: 8px;
+  }
+
+  :deep(.el-alert) {
+    padding: 6px 8px;
+    font-size: 0.65rem;
+  }
+
+  :deep(.el-alert__title) {
+    font-size: 0.65rem;
+  }
+}
 </style>
