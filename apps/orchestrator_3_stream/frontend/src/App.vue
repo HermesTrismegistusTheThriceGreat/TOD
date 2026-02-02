@@ -108,7 +108,7 @@ const isAuthRoute = computed(() => {
 
 // Check if current route is a full-page route (not dashboard)
 // These routes render their own layout via router-view
-const fullPageRoutes = ["/alpaca-agent"];
+const fullPageRoutes = ["/alpaca-agent", "/accounts"];
 const isFullPageRoute = computed(() => {
   return fullPageRoutes.includes(route.path);
 });

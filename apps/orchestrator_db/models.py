@@ -649,6 +649,76 @@ class OptionGreeksSnapshot(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════
+# USER ACCOUNTS AND CREDENTIALS MODELS
+# ═══════════════════════════════════════════════════════════
+
+
+class UserAccount(BaseModel):
+    """
+    User's trading account (linked to Better Auth user).
+
+    Maps to: user_accounts table
+    """
+    id: UUID
+    user_id: str  # TEXT in DB, maps to user.id from Better Auth
+    account_name: str
+    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if isinstance(v, UUID):
+            return v
+        return UUID(str(v))
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class UserCredential(BaseModel):
+    """
+    Encrypted API credentials for a user account.
+
+    Maps to: user_credentials table
+    Note: api_key and secret_key are stored encrypted in DB.
+    Decryption happens via SQLAlchemy TypeDecorator (see user_models.py).
+    """
+    id: UUID
+    user_account_id: UUID
+    user_id: str  # Denormalized for RLS
+    credential_type: str  # "alpaca", "polygon", etc.
+    nickname: Optional[str] = None  # User-friendly label for credential
+    api_key: str  # Note: This is the decrypted value after ORM retrieval
+    secret_key: str  # Note: This is the decrypted value after ORM retrieval
+    is_active: bool = True
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    @field_validator('id', 'user_account_id', mode='before')
+    @classmethod
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if isinstance(v, UUID):
+            return v
+        return UUID(str(v))
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
+        }
+
+
+# ═══════════════════════════════════════════════════════════
 # BETTER AUTH MODELS
 # ═══════════════════════════════════════════════════════════
 
@@ -711,6 +781,8 @@ __all__ = [
     "AlpacaOrder",
     "AlpacaPosition",
     "OptionGreeksSnapshot",
+    "UserAccount",
+    "UserCredential",
     "AuthUser",
     "AuthSession",
 ]

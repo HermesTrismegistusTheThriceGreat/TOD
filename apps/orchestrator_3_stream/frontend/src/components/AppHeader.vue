@@ -75,7 +75,22 @@
             PROMPT <span class="btn-hint">(Cmd+K)</span>
           </button>
           -->
+          <!-- Unified Account Info (desktop only, shows when authenticated) -->
+          <HeaderAccountInfo v-if="authStore.isAuthenticated" class="desktop-nav" />
           <!-- Desktop navigation buttons (hidden on mobile) -->
+          <button
+            v-if="authStore.isAuthenticated"
+            class="btn-prompt desktop-nav"
+            :class="{ active: route.path === '/accounts' }"
+            @click="router.push('/accounts')"
+            title="Manage Accounts"
+          >
+            <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+            ACCOUNTS
+          </button>
           <button
             class="btn-prompt desktop-nav btn-alpaca"
             :class="{ active: isAlpacaAgentRoute }"
@@ -128,6 +143,40 @@
               </span>
             </button>
             <div v-if="mobileMenuOpen" class="mobile-dropdown">
+              <!-- Account section at top of mobile menu -->
+              <div v-if="authStore.isAuthenticated" class="mobile-account-section">
+                <div class="mobile-account-header">
+                  <span class="mobile-account-label">Active Account</span>
+                  <span
+                    v-if="accountStore.accountData"
+                    class="mobile-account-badge"
+                    :class="mobileAccountType"
+                  >
+                    {{ mobileAccountType.toUpperCase() }}
+                  </span>
+                </div>
+                <AccountSelector class="mobile-account-selector" />
+                <div v-if="accountStore.accountData" class="mobile-account-metrics">
+                  <div class="mobile-metric">
+                    <span class="metric-label">Buying Power</span>
+                    <span class="metric-value">{{ mobileBuyingPower }}</span>
+                  </div>
+                </div>
+                <div v-else-if="accountStore.accountDataLoading" class="mobile-account-metrics">
+                  <div class="mobile-metric">
+                    <span class="metric-label">Buying Power</span>
+                    <span class="metric-value metric-loading">Loading...</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                v-if="authStore.isAuthenticated"
+                class="mobile-menu-item"
+                :class="{ active: route.path === '/accounts' }"
+                @click="handleMobileNav('/accounts')"
+              >
+                MANAGE ACCOUNTS
+              </button>
               <button
                 class="mobile-menu-item"
                 :class="{ active: isAlpacaAgentRoute }"
@@ -186,6 +235,9 @@ import { useRouter, useRoute } from "vue-router";
 import { useHeaderBar } from "../composables/useHeaderBar";
 import { useOrchestratorStore } from "../stores/orchestratorStore";
 import { useAuthStore } from "../stores/authStore";
+import { useAccountStore } from "../stores/accountStore";
+import AccountSelector from "./AccountSelector.vue";
+import HeaderAccountInfo from "./HeaderAccountInfo.vue";
 import type { ViewMode } from "../types.d";
 
 // Use header bar composable for state management
@@ -196,6 +248,7 @@ const store = useOrchestratorStore();
 
 // Use auth store for authentication state
 const authStore = useAuthStore();
+const accountStore = useAccountStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -204,6 +257,28 @@ const mobileMenuOpen = ref(false);
 
 // Alpaca Agent navigation
 const isAlpacaAgentRoute = computed(() => route.path === '/alpaca-agent');
+
+// Mobile account section computed properties
+const mobileAccountType = computed(() => {
+  if (!accountStore.accountData) return 'paper'
+  return accountStore.accountData.account_type || 'paper'
+})
+
+const mobileBuyingPower = computed(() => {
+  if (!accountStore.accountData) return '$0'
+  const value = parseFloat(accountStore.accountData.buying_power)
+  return formatCurrency(value)
+})
+
+function formatCurrency(value: number): string {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(2)}M`
+  }
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`
+  }
+  return `$${value.toFixed(2)}`
+}
 
 function navigateToAlpacaAgent() {
   if (route.path !== '/alpaca-agent') {
@@ -227,9 +302,15 @@ function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 }
 
-function handleMobileNav(mode: ViewMode) {
+function handleMobileNav(modeOrPath: ViewMode | string) {
   mobileMenuOpen.value = false;
-  navigateToViewMode(mode);
+  // If it's a route path (starts with /), navigate directly
+  if (typeof modeOrPath === 'string' && modeOrPath.startsWith('/')) {
+    router.push(modeOrPath);
+  } else {
+    // Otherwise treat it as a ViewMode
+    navigateToViewMode(modeOrPath as ViewMode);
+  }
 }
 
 function handleMobileAlpacaNav() {
@@ -247,6 +328,20 @@ watch(
   () => authStore.isAuthenticated,
   (newVal) => {
     console.log("[AppHeader] isAuthenticated changed:", newVal, "user:", authStore.user);
+  },
+  { immediate: true }
+);
+
+// Initialize account store only when authenticated
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuth) => {
+    if (isAuth) {
+      await accountStore.initialize();
+    } else {
+      // User logged out - reset store
+      accountStore.reset();
+    }
   },
   { immediate: true }
 );
@@ -445,9 +540,107 @@ onUnmounted(() => {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
   padding-left: var(--spacing-xl);
   border-left: 1px solid var(--border-color);
+}
+
+/* Account Selector in Header */
+.header-actions > .account-selector {
+  margin-right: var(--spacing-md);
+  padding-right: var(--spacing-md);
+  border-right: 1px solid var(--border-color);
+}
+
+/* Mobile Account Section - Enhanced with metrics */
+.mobile-account-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.mobile-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mobile-account-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobile-account-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.mobile-account-badge.paper {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--status-warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.mobile-account-badge.live {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--status-error, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.mobile-account-selector {
+  margin-bottom: 8px;
+}
+
+.mobile-account-selector :deep(.account-selector) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.mobile-account-selector :deep(.el-input__wrapper) {
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.mobile-account-metrics {
+  display: flex;
+  gap: 16px;
+}
+
+.mobile-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-metric .metric-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobile-metric .metric-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--status-success);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-metric .metric-value.metric-loading {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .stat-item {
@@ -565,6 +758,17 @@ onUnmounted(() => {
   stroke: #3b82f6;
 }
 
+/* Settings Icon for Accounts Button */
+.settings-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.btn-prompt .settings-icon {
+  margin-right: 0.25rem;
+}
+
 /* Mobile Menu */
 .mobile-menu {
   display: none;
@@ -575,8 +779,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
@@ -628,6 +832,7 @@ onUnmounted(() => {
   top: calc(100% + 8px);
   right: 0;
   min-width: 160px;
+  max-width: calc(100vw - 2rem);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -639,7 +844,8 @@ onUnmounted(() => {
 .mobile-menu-item {
   display: block;
   width: 100%;
-  padding: 0.75rem 1rem;
+  min-height: 44px;
+  padding: 12px 16px;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.025em;
@@ -701,6 +907,10 @@ onUnmounted(() => {
     display: none;
   }
 
+  .header-actions > .account-selector.desktop-nav {
+    display: none;
+  }
+
   .mobile-menu {
     display: block;
   }
@@ -725,6 +935,33 @@ onUnmounted(() => {
 
   .btn-logout {
     display: none;
+  }
+}
+
+/* Touch optimization breakpoint (650px) */
+@media (max-width: 650px) {
+  .mobile-account-section {
+    padding: 16px;
+  }
+
+  .mobile-account-selector :deep(.el-input__wrapper) {
+    min-height: 48px;
+  }
+
+  .mobile-metric .metric-value {
+    font-size: 1rem;
+  }
+
+  .mobile-menu-item {
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+  }
+
+  .btn-prompt {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 0.75rem;
   }
 }
 

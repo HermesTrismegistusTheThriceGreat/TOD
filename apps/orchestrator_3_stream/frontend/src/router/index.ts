@@ -35,6 +35,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/AlpacaAgentView.vue"),
     meta: { requiresAuth: false }, // Disabled for testing
   },
+  {
+    path: "/accounts",
+    name: "Accounts",
+    component: () => import("@/components/AccountListView.vue"),
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({

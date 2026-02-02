@@ -3,10 +3,12 @@
  *
  * Manages fetching and state of open positions.
  * Integrates with orchestrator store for WebSocket updates.
+ * Uses accountStore for credential context.
  */
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useOrchestratorStore } from '../stores/orchestratorStore'
+import { useAccountStore } from '../stores/accountStore'
 import type { OpenPosition } from '../types/alpaca'
 import { extractSymbolsFromPositions, extractUnderlyingTickersFromPositions } from '../types/alpaca'
 import * as alpacaService from '../services/alpacaService'
@@ -28,6 +30,7 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
   } = options
 
   const store = useOrchestratorStore()
+  const accountStore = useAccountStore()
 
   // Local state
   const isSubscribed = ref(false)
@@ -50,14 +53,22 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
 
   /**
    * Fetch all positions from Alpaca API.
+   * Uses activeCredentialId from accountStore for credential context.
    */
   async function fetchPositions(): Promise<void> {
+    // Guard: Require active credential
+    if (!accountStore.activeCredentialId) {
+      console.warn('No credential selected, cannot fetch positions')
+      store.setAlpacaPositions([])
+      return
+    }
+
     store.setAlpacaLoading(true)
     store.setAlpacaError(null)
     localError.value = null
 
     try {
-      const response = await alpacaService.getPositions()
+      const response = await alpacaService.getPositions(accountStore.activeCredentialId)
 
       if (response.status === 'error') {
         throw new Error(response.message || 'Failed to fetch positions')
@@ -80,13 +91,20 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
 
   /**
    * Fetch a specific position by ID.
+   * Uses activeCredentialId from accountStore for credential context.
    */
   async function fetchPosition(id: string): Promise<void> {
+    // Guard: Require active credential
+    if (!accountStore.activeCredentialId) {
+      console.warn('No credential selected, cannot fetch position')
+      return
+    }
+
     store.setAlpacaLoading(true)
     store.setAlpacaError(null)
 
     try {
-      const response = await alpacaService.getPositionById(id)
+      const response = await alpacaService.getPositionById(id, accountStore.activeCredentialId)
 
       if (response.status === 'error') {
         throw new Error(response.message || 'Failed to fetch position')
@@ -181,9 +199,27 @@ export function useAlpacaPositions(options: UseAlpacaPositionsOptions = {}) {
     subscribeToUpdates()
   }
 
+  // Watch for credential changes and reload positions
+  watch(() => accountStore.activeCredentialId, (newId, oldId) => {
+    if (newId !== oldId) {
+      if (newId) {
+        console.log('Credential changed, reloading positions')
+        isSubscribed.value = false
+        if (positionId) {
+          fetchPosition(positionId)
+        } else {
+          fetchPositions()
+        }
+      } else {
+        // Clear positions when no credential
+        store.setAlpacaPositions([])
+      }
+    }
+  })
+
   // Lifecycle
   onMounted(() => {
-    if (autoFetch) {
+    if (autoFetch && accountStore.activeCredentialId) {
       if (positionId) {
         fetchPosition(positionId).catch(e => {
           console.error('Error fetching position on mount:', e)

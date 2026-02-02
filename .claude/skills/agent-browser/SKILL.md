@@ -1,27 +1,214 @@
 ---
 name: agent-browser
 description: Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, test web applications, or extract information from web pages.
-allowed-tools: Bash(agent-browser:*)
+allowed-tools: Bash(agent-browser:*),Bash(AGENT_BROWSER_SESSION=*),Bash(lsof:*),Bash(./start_be.sh:*),Bash(./start_fe.sh:*),Bash(cd apps/orchestrator_3_stream:*),Bash(sleep:*),Bash(curl:*)
 ---
 
 # Browser Automation with agent-browser
 
-## Quick start
+## ⚠️ CRITICAL: Required Setup (READ FIRST)
+
+### 1. Session Environment Variable is REQUIRED
+
+**Every `agent-browser` command MUST use the `AGENT_BROWSER_SESSION` environment variable.**
+
+Without it, you will get: `✗ Browser not launched. Call launch first.`
 
 ```bash
-agent-browser open <url>        # Navigate to page
-agent-browser snapshot -i       # Get interactive elements with refs
-agent-browser click @e1         # Click element by ref
-agent-browser fill @e2 "text"   # Fill input by ref
-agent-browser close             # Close browser
+# ❌ WRONG - Will fail with "Browser not launched"
+agent-browser open http://localhost:5175
+
+# ✅ CORRECT - Always use AGENT_BROWSER_SESSION
+AGENT_BROWSER_SESSION=test1 agent-browser open http://localhost:5175
+AGENT_BROWSER_SESSION=test1 agent-browser snapshot -i
+AGENT_BROWSER_SESSION=test1 agent-browser click @e1
+```
+
+### 2. First-Time Setup: Install Chromium
+
+On first use, you must install the browser:
+
+```bash
+agent-browser install
+```
+
+This only needs to be run once. If you get errors about missing browser, run this command.
+
+### 3. Commands That DON'T Exist (Don't Try These)
+
+These commands do NOT exist - don't waste turns trying them:
+- ❌ `agent-browser launch` - No such command
+- ❌ `agent-browser new` - No such command
+- ❌ `agent-browser state new` - No such command
+- ❌ `agent-browser start` - No such command
+- ❌ `agent-browser connect` (without CDP port) - Requires running Chrome with remote debugging
+
+## CRITICAL: Orchestrator Dev Server Setup
+
+**Before navigating to any localhost URL, you MUST ensure ALL required services are running.**
+
+### Required Services (ALL THREE must be running)
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Frontend | 5175 | Vue.js app |
+| Backend | 9403 | FastAPI server |
+| **Auth** | **9404** | **Authentication service (CRITICAL)** |
+
+### Checking if Orchestrator is Running
+
+```bash
+# Check ALL required services
+lsof -ti:5175 >/dev/null 2>&1 && echo "✓ Frontend (5175)" || echo "✗ Frontend NOT running"
+lsof -ti:9403 >/dev/null 2>&1 && echo "✓ Backend (9403)" || echo "✗ Backend NOT running"
+lsof -ti:9404 >/dev/null 2>&1 && echo "✓ Auth (9404)" || echo "✗ Auth NOT running"
+```
+
+### Starting the Orchestrator (if not running)
+
+If any service is not running, start the servers:
+
+```bash
+# Start backend in background (includes auth service on 9404)
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+
+# Wait for backend + auth to initialize
+sleep 3
+
+# Start frontend in background
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_fe.sh &
+
+# Wait for frontend to compile and serve
+sleep 5
+```
+
+### Complete Pre-flight Workflow for localhost:5175
+
+**ALWAYS run this workflow before browser automation on localhost:5175:**
+
+1. **Check if ALL servers are running:**
+   ```bash
+   FE=$(lsof -ti:5175 >/dev/null 2>&1 && echo "1" || echo "0")
+   BE=$(lsof -ti:9403 >/dev/null 2>&1 && echo "1" || echo "0")
+   AUTH=$(lsof -ti:9404 >/dev/null 2>&1 && echo "1" || echo "0")
+   [ "$FE" = "1" ] && [ "$BE" = "1" ] && [ "$AUTH" = "1" ] && echo "All servers running" || echo "Need to start servers"
+   ```
+
+2. **If not running, start them:**
+   ```bash
+   cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+   sleep 3
+   cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_fe.sh &
+   sleep 5
+   ```
+
+3. **Then proceed with browser automation (WITH SESSION!):**
+   ```bash
+   AGENT_BROWSER_SESSION=test1 agent-browser open http://localhost:5175
+   ```
+
+---
+
+## Orchestrator Login (REQUIRED for most testing)
+
+**Most Orchestrator features require authentication. ALWAYS log in before testing.**
+
+### Login Credentials (USE THESE EXACT VALUES)
+
+| Field | Value |
+|-------|-------|
+| Login URL | `http://localhost:5175/login` |
+| Email | `seagerjoe@gmail.com` |
+| Password | `password123` |
+
+### Standard Authentication Flow
+
+```bash
+export AGENT_BROWSER_SESSION=orch_test
+
+# 1. Navigate directly to login page
+AGENT_BROWSER_SESSION=orch_test agent-browser open http://localhost:5175/login
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 1000
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# 2. Fill credentials (element refs from snapshot - typically e1=email, e2=password, e3=submit)
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e1 "seagerjoe@gmail.com"
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e2 "password123"
+AGENT_BROWSER_SESSION=orch_test agent-browser click @e3
+
+# 3. Wait for auth redirect
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 3000
+
+# 4. Verify authentication succeeded
+AGENT_BROWSER_SESSION=orch_test agent-browser get url
+# Should show: http://localhost:5175/ (NOT /login)
+```
+
+### Verify Auth State
+
+After login, verify you're authenticated by checking for auth-only elements:
+
+```bash
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+# Should show: ACCOUNTS button, LOGOUT button, HeaderAccountInfo component
+# If you only see ALPACA, POSITIONS, CALENDAR, TRADE STATS - auth failed
+```
+
+---
+
+## Troubleshooting Auth Issues
+
+If login appears to succeed but you're redirected back to login or `isAuthenticated` stays false:
+
+1. **Check auth service is running:**
+   ```bash
+   lsof -ti:9404 >/dev/null 2>&1 && echo "✓ Auth running on 9404" || echo "✗ Auth NOT running - restart backend!"
+   ```
+
+2. **Check browser console for errors:**
+   ```bash
+   AGENT_BROWSER_SESSION=orch_test agent-browser console
+   ```
+   Look for: `ECONNREFUSED :9404` or `[AuthClient] Connection refused`
+
+3. **Restart backend (which includes auth):**
+   ```bash
+   # Kill existing backend processes
+   lsof -ti:9403 | xargs kill -9 2>/dev/null
+   lsof -ti:9404 | xargs kill -9 2>/dev/null
+
+   # Restart
+   cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+   sleep 3
+   ```
+
+4. **Re-attempt login after auth service is confirmed running**
+
+---
+
+## Quick start
+
+**Remember: Always use `AGENT_BROWSER_SESSION=<name>` prefix!**
+
+```bash
+# Set session name (use same name for all commands in a workflow)
+export AGENT_BROWSER_SESSION=test1
+
+# Or prefix each command:
+AGENT_BROWSER_SESSION=test1 agent-browser open <url>        # Navigate to page
+AGENT_BROWSER_SESSION=test1 agent-browser snapshot -i       # Get interactive elements with refs
+AGENT_BROWSER_SESSION=test1 agent-browser click @e1         # Click element by ref
+AGENT_BROWSER_SESSION=test1 agent-browser fill @e2 "text"   # Fill input by ref
+AGENT_BROWSER_SESSION=test1 agent-browser close             # Close browser
 ```
 
 ## Core workflow
 
-1. Navigate: `agent-browser open <url>`
-2. Snapshot: `agent-browser snapshot -i` (returns elements with refs like `@e1`, `@e2`)
-3. Interact using refs from the snapshot
-4. Re-snapshot after navigation or significant DOM changes
+1. **Set session**: `export AGENT_BROWSER_SESSION=test1` (or prefix each command)
+2. **Navigate**: `AGENT_BROWSER_SESSION=test1 agent-browser open <url>`
+3. **Snapshot**: `AGENT_BROWSER_SESSION=test1 agent-browser snapshot -i` (returns elements with refs like `@e1`, `@e2`)
+4. **Interact** using refs from the snapshot
+5. **Re-snapshot** after navigation or significant DOM changes
 
 ## Commands
 
@@ -185,42 +372,111 @@ agent-browser dialog dismiss        # Dismiss dialog
 agent-browser eval "document.title"   # Run JavaScript
 ```
 
-## Example: Form submission
+## Example: Complete Orchestrator Testing Workflow
+
+This is the **recommended workflow** for testing the Orchestrator app:
 
 ```bash
-agent-browser open https://example.com/form
-agent-browser snapshot -i
+# ═══════════════════════════════════════════════════════════════
+# STEP 1: Check and start all required services
+# ═══════════════════════════════════════════════════════════════
+
+# Check all services
+lsof -ti:5175 >/dev/null 2>&1 && echo "✓ Frontend" || echo "✗ Frontend"
+lsof -ti:9403 >/dev/null 2>&1 && echo "✓ Backend" || echo "✗ Backend"
+lsof -ti:9404 >/dev/null 2>&1 && echo "✓ Auth" || echo "✗ Auth"
+
+# Start if needed (skip if all are running)
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_be.sh &
+sleep 3
+cd /Users/muzz/Desktop/tac/TOD/apps/orchestrator_3_stream && ./start_fe.sh &
+sleep 5
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 2: Launch browser and authenticate
+# ═══════════════════════════════════════════════════════════════
+
+export AGENT_BROWSER_SESSION=orch_test
+
+# Navigate to login
+AGENT_BROWSER_SESSION=orch_test agent-browser open http://localhost:5175/login
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 1000
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# Login with credentials
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e1 "seagerjoe@gmail.com"
+AGENT_BROWSER_SESSION=orch_test agent-browser fill @e2 "password123"
+AGENT_BROWSER_SESSION=orch_test agent-browser click @e3
+AGENT_BROWSER_SESSION=orch_test agent-browser wait 3000
+
+# Verify redirect to home (not /login)
+AGENT_BROWSER_SESSION=orch_test agent-browser get url
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 3: Now test the app (authenticated)
+# ═══════════════════════════════════════════════════════════════
+
+# Set viewport for testing
+AGENT_BROWSER_SESSION=orch_test agent-browser set viewport 1920 1080
+
+# Take screenshot
+AGENT_BROWSER_SESSION=orch_test agent-browser screenshot /path/to/screenshot.png
+
+# Get interactive elements
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# Test mobile viewport
+AGENT_BROWSER_SESSION=orch_test agent-browser set viewport 375 667
+AGENT_BROWSER_SESSION=orch_test agent-browser snapshot -i
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 4: Cleanup
+# ═══════════════════════════════════════════════════════════════
+
+AGENT_BROWSER_SESSION=orch_test agent-browser close
+```
+
+## Example: Generic Form submission
+
+```bash
+# Always set session first
+export AGENT_BROWSER_SESSION=form_test
+
+AGENT_BROWSER_SESSION=form_test agent-browser open https://example.com/form
+AGENT_BROWSER_SESSION=form_test agent-browser snapshot -i
 # Output shows: textbox "Email" [ref=e1], textbox "Password" [ref=e2], button "Submit" [ref=e3]
 
-agent-browser fill @e1 "user@example.com"
-agent-browser fill @e2 "password123"
-agent-browser click @e3
-agent-browser wait --load networkidle
-agent-browser snapshot -i  # Check result
+AGENT_BROWSER_SESSION=form_test agent-browser fill @e1 "user@example.com"
+AGENT_BROWSER_SESSION=form_test agent-browser fill @e2 "password123"
+AGENT_BROWSER_SESSION=form_test agent-browser click @e3
+AGENT_BROWSER_SESSION=form_test agent-browser wait --load networkidle
+AGENT_BROWSER_SESSION=form_test agent-browser snapshot -i  # Check result
 ```
 
 ## Example: Authentication with saved state
 
 ```bash
 # Login once
-agent-browser open https://app.example.com/login
-agent-browser snapshot -i
-agent-browser fill @e1 "username"
-agent-browser fill @e2 "password"
-agent-browser click @e3
-agent-browser wait --url "**/dashboard"
-agent-browser state save auth.json
+AGENT_BROWSER_SESSION=auth agent-browser open https://app.example.com/login
+AGENT_BROWSER_SESSION=auth agent-browser snapshot -i
+AGENT_BROWSER_SESSION=auth agent-browser fill @e1 "username"
+AGENT_BROWSER_SESSION=auth agent-browser fill @e2 "password"
+AGENT_BROWSER_SESSION=auth agent-browser click @e3
+AGENT_BROWSER_SESSION=auth agent-browser wait --url "**/dashboard"
+AGENT_BROWSER_SESSION=auth agent-browser state save auth.json
 
 # Later sessions: load saved state
-agent-browser state load auth.json
-agent-browser open https://app.example.com/dashboard
+AGENT_BROWSER_SESSION=auth agent-browser state load auth.json
+AGENT_BROWSER_SESSION=auth agent-browser open https://app.example.com/dashboard
 ```
 
 ## Sessions (parallel browsers)
 
+Use different session names to run multiple browser instances:
+
 ```bash
-agent-browser --session test1 open site-a.com
-agent-browser --session test2 open site-b.com
+AGENT_BROWSER_SESSION=test1 agent-browser open site-a.com
+AGENT_BROWSER_SESSION=test2 agent-browser open site-b.com
 agent-browser session list
 ```
 

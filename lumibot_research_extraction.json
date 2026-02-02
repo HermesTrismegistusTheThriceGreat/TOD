@@ -1,0 +1,628 @@
+{
+  "extraction_date": "2026-01-29",
+  "extraction_purpose": "Detailed research on Lumibot trading framework for integration planning",
+  "sources": [
+    {
+      "source_id": 1,
+      "url": "https://github.com/Lumiwealth/lumibot",
+      "source_type": "GitHub Repository",
+      "accessed_date": "2026-01-29",
+      "metadata": {
+        "repository_name": "Lumiwealth/lumibot",
+        "license": "GPL-3.0",
+        "stars": "1.2k",
+        "forks": "250",
+        "commits": "4,555",
+        "contributors": "40+",
+        "latest_release": "v4.4.39 (Jan 27, 2026)",
+        "primary_language": "Python"
+      },
+      "key_facts": [
+        {
+          "category": "Core Philosophy",
+          "fact": "Unified codebase for backtesting and live trading",
+          "quote": "the same code you use for backtesting can be used for live trading",
+          "implementation_relevance": "Critical for development workflow - write once, test in backtest, deploy to live without code changes"
+        },
+        {
+          "category": "Framework Architecture",
+          "fact": "Detailed architecture documentation for data flow",
+          "detail": "Architecture documented in docs/BACKTESTING_ARCHITECTURE.md covering data flow across Yahoo, ThetaData, and Polygon sources, plus caching mechanisms",
+          "implementation_relevance": "Review this file for understanding data pipeline design patterns"
+        },
+        {
+          "category": "Data Source Configuration",
+          "fact": "Environment variable based data source selection",
+          "detail": "BACKTESTING_DATA_SOURCE environment variable enables single-provider and multi-provider routing by asset type",
+          "implementation_relevance": "Flexible data source switching without code changes - useful for production vs development environments"
+        },
+        {
+          "category": "Asset Class Support",
+          "fact": "Comprehensive multi-asset support",
+          "assets": [
+            "Stocks: Full OHLCV data with split/dividend adjustments",
+            "Options: Supported via ThetaData and some brokers",
+            "Crypto: Bitcoin, Ethereum, and altcoins",
+            "Futures: Commodity and financial futures",
+            "Forex: Currency pair trading"
+          ],
+          "implementation_relevance": "Can handle diverse portfolio requirements without separate frameworks"
+        },
+        {
+          "category": "Backtesting Features",
+          "fact": "Advanced backtesting with multiple data adjustment options",
+          "features": [
+            "Historical price data retrieval with configurable sources",
+            "Split and dividend adjustment across data providers",
+            "Returns calculation with optional dividend-adjusted metrics",
+            "Performance gating via acceptance test suite (docs/ACCEPTANCE_BACKTESTS.md)",
+            "Remote cache configuration for AWS S3 integration (optional, defaults to local storage)"
+          ],
+          "implementation_relevance": "Built-in data quality handling reduces custom preprocessing code"
+        },
+        {
+          "category": "Data Source Comparison",
+          "fact": "Yahoo provides most comprehensive adjustments",
+          "detail": "Yahoo: OHLCV, splits, dividends, returns; Alpaca and Polygon: OHLCV and splits but lack dividend data",
+          "implementation_relevance": "Choose Yahoo for dividend-heavy strategies, Polygon/Alpaca for intraday or crypto"
+        },
+        {
+          "category": "Installation",
+          "fact": "Development installation process",
+          "commands": [
+            "pip install -r requirements_dev.txt",
+            "pip install -e ."
+          ],
+          "implementation_relevance": "Use editable install for local development and customization"
+        },
+        {
+          "category": "Recommended Data Provider",
+          "fact": "ThetaData as primary data source",
+          "quote": "ThetaData is recommended as the primary data source (use promo code BotSpot10 for 10% discount)",
+          "implementation_relevance": "Budget for ThetaData subscription if options trading is required"
+        },
+        {
+          "category": "Strategy Development",
+          "fact": "Inheritance-based strategy pattern",
+          "detail": "Developers create strategy subclasses inheriting from core Lumibot classes",
+          "example": "python -m lumibot.example_strategies.stock_buy_and_hold",
+          "implementation_relevance": "Follow object-oriented patterns for strategy development"
+        },
+        {
+          "category": "Broker Support",
+          "fact": "Multiple broker integrations beyond Alpaca",
+          "brokers": [
+            "Alpaca",
+            "Interactive Brokers (IBKR)",
+            "Tradier",
+            "CCXT exchanges (crypto routing)"
+          ],
+          "data_providers": [
+            "Yahoo",
+            "Polygon",
+            "ThetaData"
+          ],
+          "implementation_relevance": "Not locked into single broker - can switch or multi-broker setup"
+        },
+        {
+          "category": "Repository Activity",
+          "fact": "Active development with recent releases",
+          "metrics": {
+            "latest_release": "v4.4.39 (Jan 27, 2026)",
+            "commits": "4,555",
+            "contributors": "40+"
+          },
+          "implementation_relevance": "Well-maintained project with regular updates and bug fixes"
+        },
+        {
+          "category": "Key Components",
+          "fact": "Modular architecture",
+          "components": [
+            "Data management: Caching, source routing, adjustment logic",
+            "Backtesting engine: Historical simulation with configurable parameters",
+            "Strategy framework: Abstracted trading logic interface",
+            "Broker abstraction: Unified API across multiple brokers",
+            "Remote cache: Optional S3 integration for distributed systems"
+          ],
+          "implementation_relevance": "Each component can be customized or extended independently"
+        },
+        {
+          "category": "Critical Operational Note",
+          "fact": "ThetaTerminal session protection",
+          "quote": "never launch ThetaTerminal or the shared downloader locally, always point LumiBot at the AWS-hosted downloader",
+          "source_file": "AGENTS.md",
+          "implementation_relevance": "Important for team environments - avoid multiple ThetaData sessions conflicts"
+        }
+      ]
+    },
+    {
+      "source_id": 2,
+      "url": "https://lumibot.lumiwealth.com/",
+      "source_type": "Official Documentation",
+      "accessed_date": "2026-01-29",
+      "metadata": {
+        "documentation_type": "Main landing and API reference",
+        "coverage": "Installation, API, examples, broker setup"
+      },
+      "key_facts": [
+        {
+          "category": "Installation",
+          "fact": "Simple pip installation",
+          "command": "pip install lumibot --upgrade",
+          "implementation_relevance": "Easy onboarding for new developers"
+        },
+        {
+          "category": "Core Architecture",
+          "fact": "Event-based lifecycle methods",
+          "detail": "Framework uses event-based lifecycle methods rather than vector-based calculations, allowing strategies to execute as if live trading",
+          "implementation_relevance": "Different from vectorized frameworks like pandas/numpy - think event-driven programming"
+        },
+        {
+          "category": "Strategy Lifecycle Methods",
+          "fact": "Comprehensive lifecycle hooks",
+          "methods": [
+            "on_trading_iteration() - Primary trading logic execution point",
+            "initialize() - Setup and configuration",
+            "before_market_opens() - Pre-market preparation",
+            "before_market_closes() - End-of-day logic",
+            "after_market_closes() - Post-market analysis",
+            "on_new_order() - Order placement callback",
+            "on_filled_order() - Execution confirmation callback",
+            "on_canceled_order() - Cancellation callback"
+          ],
+          "implementation_relevance": "Use appropriate lifecycle hooks for different strategy logic timing"
+        },
+        {
+          "category": "Order Management API",
+          "fact": "Complete order lifecycle control",
+          "methods": [
+            "create_order()",
+            "submit_order()",
+            "cancel_order()",
+            "submit_orders()",
+            "cancel_open_orders()",
+            "get_orders()"
+          ],
+          "implementation_relevance": "Full order management without direct broker API calls"
+        },
+        {
+          "category": "Account Data API",
+          "fact": "Account state access methods",
+          "methods": [
+            "get_portfolio_value()",
+            "get_cash()",
+            "get_position()",
+            "get_positions()"
+          ],
+          "implementation_relevance": "Real-time portfolio monitoring within strategy code"
+        },
+        {
+          "category": "Market Data API",
+          "fact": "Historical and real-time data access",
+          "methods": [
+            "get_last_price()",
+            "get_historical_prices()",
+            "get_quote()",
+            "get_yesterday_dividend()"
+          ],
+          "implementation_relevance": "No need for separate data pipeline - integrated data access"
+        },
+        {
+          "category": "Options Support",
+          "fact": "Advanced options trading methods",
+          "methods": [
+            "get_chain()",
+            "get_greeks()",
+            "get_strikes()",
+            "get_expiration()",
+            "get_multiplier()"
+          ],
+          "implementation_relevance": "Native options support without external libraries"
+        },
+        {
+          "category": "DateTime Management",
+          "fact": "Built-in timezone handling",
+          "methods": [
+            "get_datetime()",
+            "get_timestamp()",
+            "localize_datetime()",
+            "timezone management"
+          ],
+          "implementation_relevance": "Critical for multi-timezone trading and accurate time-based logic"
+        },
+        {
+          "category": "Backtesting Data Sources",
+          "fact": "Multiple data source integrations",
+          "sources": [
+            "Yahoo Finance (free)",
+            "Pandas/CSV data",
+            "Polygon.io",
+            "DataBento",
+            "ThetaData",
+            "Interactive Brokers REST",
+            "Custom data sources"
+          ],
+          "implementation_relevance": "Choose data source based on budget, asset class, and data quality needs"
+        },
+        {
+          "category": "Backtesting Output",
+          "fact": "Comprehensive analysis artifacts",
+          "outputs": [
+            "Tearsheets",
+            "Trade files",
+            "Indicator logs"
+          ],
+          "implementation_relevance": "Automated reporting reduces manual analysis work"
+        },
+        {
+          "category": "Supported Brokers",
+          "fact": "Extensive broker coverage",
+          "brokers": [
+            "Alpaca",
+            "Interactive Brokers",
+            "Schwab",
+            "Tradier",
+            "Tradovate",
+            "Bitunix",
+            "ProjectX",
+            "Crypto brokers via CCXT (Binance, Coinbase, Kraken, etc.)"
+          ],
+          "implementation_relevance": "Multi-broker support enables broker arbitrage and redundancy"
+        },
+        {
+          "category": "Alpaca Configuration",
+          "fact": "Simple credential-based setup",
+          "example_code": "ALPACA_CONFIG = {\n    \"API_KEY\": \"YOUR_API_KEY\",\n    \"API_SECRET\": \"YOUR_SECRET\",\n    \"PAPER\": True\n}",
+          "implementation_relevance": "Store credentials in environment variables per project guidelines"
+        },
+        {
+          "category": "Asset Classes",
+          "fact": "Universal asset class support",
+          "quote": "Works with Crypto, Options, Futures, Stocks, and FOREX!",
+          "implementation_relevance": "Single framework for multi-asset strategies"
+        },
+        {
+          "category": "Live Trading Best Practice",
+          "fact": "Paper trading validation recommended",
+          "quote": "Remember to start with a paper trading account to ensure everything works as expected before moving to live trading",
+          "implementation_relevance": "Always test in paper mode first - critical risk management"
+        },
+        {
+          "category": "Strategy Properties",
+          "fact": "Direct state access via properties",
+          "properties": [
+            "self.cash",
+            "self.portfolio_value",
+            "self.first_iteration",
+            "self.is_backtesting",
+            "self.sleeptime",
+            "self.timezone"
+          ],
+          "implementation_relevance": "Use properties for cleaner code vs getter methods"
+        },
+        {
+          "category": "Code Example",
+          "fact": "Minimal buy-and-hold strategy",
+          "example_code": "class MyStrategy(Strategy):\n    def on_trading_iteration(self):\n        if self.first_iteration:\n            price = self.get_last_price(\"AAPL\")\n            quantity = self.portfolio_value // price\n            order = self.create_order(\"AAPL\", quantity, \"buy\")\n            self.submit_order(order)",
+          "implementation_relevance": "Shows minimal code needed for working strategy"
+        },
+        {
+          "category": "Configuration",
+          "fact": "Dynamic parameter support",
+          "detail": "Strategies support dynamic parameters via get_parameters() and set_parameters()",
+          "implementation_relevance": "Enable parameter optimization and A/B testing"
+        },
+        {
+          "category": "Trading Costs",
+          "fact": "Built-in slippage and fee modeling",
+          "detail": "Library includes slippage and trading fee configuration through TradingFee and TradingSlippage entities",
+          "implementation_relevance": "Realistic backtesting requires proper cost modeling"
+        },
+        {
+          "category": "Analytics",
+          "fact": "Advanced built-in analytics",
+          "quote": "Advanced Analytics Out of the Box",
+          "features": [
+            "Interactive charts",
+            "Profiling tools for performance optimization",
+            "Markers and lines for strategy visualization"
+          ],
+          "implementation_relevance": "Reduces need for custom analytics infrastructure"
+        },
+        {
+          "category": "Ecosystem",
+          "fact": "Supporting platforms and resources",
+          "resources": [
+            "GitHub repository with example strategies",
+            "Discord community support",
+            "Lumiwealth educational platform (courses and pre-built strategies)",
+            "BotSpot platform for AI-assisted strategy creation"
+          ],
+          "implementation_relevance": "Active community for troubleshooting and learning"
+        }
+      ]
+    },
+    {
+      "source_id": 3,
+      "url": "https://lumibot.lumiwealth.com/backtesting.how_to_backtest.html",
+      "source_type": "Documentation - Backtesting Guide",
+      "accessed_date": "2026-01-29",
+      "metadata": {
+        "documentation_section": "Backtesting",
+        "page_title": "How to Backtest",
+        "coverage": "Backtesting setup, configuration, data sources, workflow"
+      },
+      "key_facts": [
+        {
+          "category": "Installation",
+          "fact": "Same installation as main library",
+          "commands": [
+            "pip install lumibot",
+            "pip install lumibot --upgrade"
+          ],
+          "additional_note": "Use an IDE like VS Code or PyCharm for development",
+          "implementation_relevance": "No separate backtesting module installation needed"
+        },
+        {
+          "category": "Backtesting Parameters",
+          "fact": "Core configuration options",
+          "parameters": [
+            "Start/End dates: Specify the historical period to test",
+            "Data source: Choose from ThetaData, Polygon.io, Yahoo, or Pandas",
+            "Strategy parameters: Custom variables for your trading logic",
+            "Benchmark asset: Compare performance against a reference (e.g., SPY)"
+          ],
+          "implementation_relevance": "All parameters configurable for comprehensive testing scenarios"
+        },
+        {
+          "category": "Environment Variables",
+          "fact": "Environment-based backtesting configuration",
+          "variables": [
+            "IS_BACKTESTING: Set to 'True' for backtesting mode",
+            "BACKTESTING_START: Format 'YYYY-MM-DD'",
+            "BACKTESTING_END: Format 'YYYY-MM-DD'",
+            "BACKTESTING_DATA_SOURCE: Polygon, ThetaData, Yahoo, Alpaca, CCXT, or DataBento"
+          ],
+          "implementation_relevance": "Use .env files per project guidelines - no hardcoded dates"
+        },
+        {
+          "category": "ThetaData Details",
+          "fact": "Recommended premium data source",
+          "quote": "Deep historical coverage for U.S. equities and options with SIP-quality filtering",
+          "pricing": "Free tiers plus paid plans; use promo code BotSpot10 for 10% discount",
+          "implementation_relevance": "Best for options strategies requiring accurate historical greeks"
+        },
+        {
+          "category": "Yahoo Finance Details",
+          "fact": "Free data with limitations",
+          "detail": "Free stock/ETF data for daily backtests; not ideal for intraday testing",
+          "implementation_relevance": "Good for EOD stock strategies, avoid for intraday or options"
+        },
+        {
+          "category": "Polygon.io Details",
+          "fact": "Versatile data source",
+          "detail": "Supports intraday and end-of-day data across stocks, options, forex, and crypto. Two years free data; paid plans available",
+          "implementation_relevance": "Good balance of cost and capabilities for multi-asset strategies"
+        },
+        {
+          "category": "Custom Data",
+          "fact": "Pandas/CSV support",
+          "detail": "Custom datasets for advanced users requiring flexibility",
+          "implementation_relevance": "Use for proprietary data sources or alternative data integration"
+        },
+        {
+          "category": "Performance Metrics",
+          "fact": "Comprehensive tearsheet analytics",
+          "metrics": [
+            "Equity curve visualization",
+            "Sharpe ratio",
+            "Drawdown analysis",
+            "Benchmark comparisons",
+            "Statistical performance analysis"
+          ],
+          "implementation_relevance": "Standard metrics for strategy evaluation and comparison"
+        },
+        {
+          "category": "Backtesting Purpose",
+          "fact": "Pre-deployment validation",
+          "quote": "Backtesting uses historical data to validate strategies before deployment, allowing you to see how your strategies would have performed in the past, helping you identify weaknesses or strengths",
+          "implementation_relevance": "Critical risk management step before live deployment"
+        },
+        {
+          "category": "Complete Code Example",
+          "fact": "Full backtesting workflow",
+          "example_code": "from datetime import datetime\nfrom lumibot.backtesting import PolygonDataBacktesting\nfrom lumibot.strategies import Strategy\n\nclass MyStrategy(Strategy):\n    parameters = {\"symbol\": \"AAPL\"}\n    \n    def initialize(self):\n        self.sleeptime = \"1D\"\n    \n    def on_trading_iteration(self):\n        if self.first_iteration:\n            symbol = self.parameters[\"symbol\"]\n            price = self.get_last_price(symbol)\n            qty = self.portfolio_value / price\n            order = self.create_order(symbol, quantity=qty, side=\"buy\")\n            self.submit_order(order)\n\nif __name__ == \"__main__\":\n    result = MyStrategy.run_backtest(\n        PolygonDataBacktesting,\n        datetime(2025, 1, 1),\n        datetime(2025, 5, 1),\n        benchmark_asset=\"SPY\",\n        polygon_api_key=\"YOUR_KEY\"\n    )",
+          "implementation_relevance": "Template for implementing backtesting in any strategy"
+        },
+        {
+          "category": "Historical Data Coverage",
+          "fact": "Varies by provider",
+          "coverage": [
+            "ThetaData: Deep multi-year coverage available",
+            "Yahoo: Daily data suitable for longer-term strategies",
+            "Polygon.io: Up to two years free; intraday available",
+            "Custom data: User-defined via CSV or database"
+          ],
+          "implementation_relevance": "Choose provider based on required historical depth"
+        },
+        {
+          "category": "Generated Artifacts",
+          "fact": "Comprehensive output files",
+          "files": [
+            "Tearsheet HTML: Visual performance analysis with equity curves and metrics",
+            "Trades Files: Logs all executed trades with asset, quantity, price, timestamp",
+            "Indicators Files: Technical indicators used during backtesting",
+            "Logs CSV: Detailed execution logs"
+          ],
+          "implementation_relevance": "Automated audit trail for strategy analysis and debugging"
+        },
+        {
+          "category": "Limitations",
+          "fact": "Known constraints by data source",
+          "limitations": [
+            "Yahoo Finance: not ideal for intraday backtesting",
+            "Polygon.io users should verify API key availability",
+            "Custom CSV data requires manual configuration"
+          ],
+          "implementation_relevance": "Plan data source selection based on strategy requirements"
+        },
+        {
+          "category": "Configuration Priority",
+          "fact": "Environment variables override code parameters",
+          "detail": "Environment variables take precedence over code parameters",
+          "implementation_relevance": "Use env vars for deployment-specific configs, code params for defaults"
+        },
+        {
+          "category": "Data Provider Classes",
+          "fact": "Dedicated backtesting classes per provider",
+          "classes": [
+            "PolygonDataBacktesting",
+            "ThetaDataBacktesting",
+            "YahooDataBacktesting",
+            "PandasDataBacktesting"
+          ],
+          "note": "API keys required for proprietary sources",
+          "implementation_relevance": "Import appropriate class based on data source selection"
+        },
+        {
+          "category": "Optimization Features",
+          "fact": "Built-in optimization support",
+          "features": [
+            "Parameter tuning through parameters dictionary",
+            "Strategy method access (self.get_last_price, self.get_historical_prices)",
+            "Multi-iteration refinement via on_trading_iteration",
+            "Benchmark comparison for relative performance"
+          ],
+          "implementation_relevance": "Framework supports parameter sweep optimization workflows"
+        }
+      ]
+    }
+  ],
+  "integration_summary": {
+    "key_integration_points": [
+      {
+        "area": "Installation",
+        "approach": "pip install lumibot with optional editable install for customization",
+        "files_to_review": ["requirements.txt", "requirements_dev.txt"]
+      },
+      {
+        "area": "Strategy Development",
+        "approach": "Inherit from Strategy class, implement lifecycle methods",
+        "key_methods": ["on_trading_iteration", "initialize", "before_market_opens", "after_market_closes"],
+        "pattern": "Event-driven rather than vectorized"
+      },
+      {
+        "area": "Alpaca Integration",
+        "approach": "Use Alpaca broker class with API credentials",
+        "config_format": "Dictionary with API_KEY, API_SECRET, PAPER fields",
+        "best_practice": "Store credentials in .env file per project guidelines"
+      },
+      {
+        "area": "Backtesting Setup",
+        "approach": "Use run_backtest method with appropriate data source class",
+        "configuration": "Environment variables or method parameters",
+        "data_source_recommendation": "ThetaData for options, Polygon for multi-asset, Yahoo for free EOD stocks"
+      },
+      {
+        "area": "Data Management",
+        "approach": "Framework handles data fetching, caching, and adjustments",
+        "customization": "Optional S3 remote cache for distributed systems",
+        "architecture_doc": "docs/BACKTESTING_ARCHITECTURE.md"
+      },
+      {
+        "area": "Live Trading Deployment",
+        "approach": "Same code as backtesting, switch broker connection",
+        "critical_step": "Test in paper trading first",
+        "deployment_pattern": "Change broker config, no code changes needed"
+      },
+      {
+        "area": "Multi-Asset Support",
+        "approach": "Use appropriate broker and data source for asset class",
+        "supported_assets": ["stocks", "options", "crypto", "futures", "forex"],
+        "broker_selection": "Alpaca/IB for stocks/options, CCXT for crypto"
+      },
+      {
+        "area": "Performance Monitoring",
+        "approach": "Built-in analytics and tearsheets",
+        "outputs": "HTML tearsheets, trade logs, indicator files",
+        "custom_analytics": "Use profiling tools and visualization markers"
+      }
+    ],
+    "technical_considerations": [
+      {
+        "consideration": "Event-driven architecture",
+        "impact": "Different mental model than vectorized backtesting frameworks",
+        "benefit": "Code runs identically in backtest and live"
+      },
+      {
+        "consideration": "Data source selection affects costs and capabilities",
+        "impact": "Budget planning needed for premium data sources",
+        "recommendation": "Start with Yahoo for POC, upgrade to Polygon/ThetaData for production"
+      },
+      {
+        "consideration": "Multiple broker support",
+        "impact": "Can build multi-broker systems or easily switch brokers",
+        "flexibility": "Not vendor-locked to single broker"
+      },
+      {
+        "consideration": "Environment variable configuration",
+        "impact": "Aligns with project guidelines for .env usage",
+        "benefit": "Separation of config from code"
+      },
+      {
+        "consideration": "GPL-3.0 license",
+        "impact": "Must comply with GPL if distributing modified code",
+        "note": "Standard usage not affected"
+      },
+      {
+        "consideration": "Active development (v4.4.39 as of Jan 27, 2026)",
+        "impact": "Regular updates and bug fixes expected",
+        "benefit": "Community support and ongoing improvements"
+      }
+    ],
+    "recommended_review_files": [
+      "docs/BACKTESTING_ARCHITECTURE.md - Data flow and caching",
+      "docs/ACCEPTANCE_BACKTESTS.md - Performance validation tests",
+      "AGENTS.md - Operational notes for team environment",
+      "example_strategies/ - Reference implementations"
+    ],
+    "cost_considerations": [
+      {
+        "item": "ThetaData subscription",
+        "cost_type": "Variable",
+        "note": "Free tier available, promo code BotSpot10 for 10% off paid plans",
+        "required_for": "Options trading with accurate historical data"
+      },
+      {
+        "item": "Polygon.io API",
+        "cost_type": "Free tier (2 years data) or paid",
+        "required_for": "Intraday data, multi-asset backtesting"
+      },
+      {
+        "item": "Yahoo Finance",
+        "cost_type": "Free",
+        "limitations": "Daily data only, not ideal for intraday",
+        "suitable_for": "EOD stock strategies"
+      },
+      {
+        "item": "Alpaca account",
+        "cost_type": "Free (paper trading always free)",
+        "required_for": "Live trading with Alpaca broker"
+      }
+    ]
+  },
+  "next_steps_for_integration": [
+    "Install lumibot in project virtual environment",
+    "Review example strategies in lumibot repository",
+    "Set up .env file with Alpaca credentials (paper trading)",
+    "Implement simple buy-and-hold strategy as POC",
+    "Test backtesting with Yahoo Finance data (free)",
+    "Review docs/BACKTESTING_ARCHITECTURE.md for data pipeline understanding",
+    "Evaluate data source needs based on asset classes and strategy requirements",
+    "Budget for ThetaData/Polygon.io if needed for production strategies",
+    "Implement strategy lifecycle methods appropriate for use case",
+    "Set up paper trading validation workflow",
+    "Review tearsheet outputs and performance metrics",
+    "Plan live deployment workflow with proper risk controls"
+  ]
+}

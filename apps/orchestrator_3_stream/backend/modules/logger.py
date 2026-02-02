@@ -12,6 +12,7 @@ from rich.panel import Panel
 from rich.logging import RichHandler
 from rich.text import Text
 import sys
+import re
 
 # Create logs directory
 LOGS_DIR = Path(__file__).parent.parent / "logs"
@@ -19,6 +20,76 @@ LOGS_DIR.mkdir(exist_ok=True)
 
 # Rich console for formatted output
 console = Console()
+
+
+class CredentialRedactionFilter(logging.Filter):
+    """
+    Redacts API credentials from log records to prevent accidental exposure.
+    Matches common credential formats and replaces with masked values.
+    """
+
+    # Patterns to match various credential formats
+    REDACTION_PATTERNS = [
+        # Environment variable formats
+        (r'ALPACA_API_KEY\s*=\s*[\w\-\.]+', 'ALPACA_API_KEY=***'),
+        (r'ALPACA_SECRET_KEY\s*=\s*[\w\-\.]+', 'ALPACA_SECRET_KEY=***'),
+        (r'API_KEY\s*=\s*[\w\-\.]+', 'API_KEY=***'),
+        (r'SECRET_KEY\s*=\s*[\w\-\.]+', 'SECRET_KEY=***'),
+        (r'ENCRYPTION_KEY\s*=\s*[\w\-\.\/\+]+', 'ENCRYPTION_KEY=***'),
+
+        # JSON/dict formats
+        (r'"api[_-]?key"\s*:\s*"[^"]*"', '"api_key":"***"'),
+        (r'"secret[_-]?key"\s*:\s*"[^"]*"', '"secret_key":"***"'),
+        (r"'api[_-]?key'\s*:\s*'[^']*'", "'api_key':'***'"),
+        (r"'secret[_-]?key'\s*:\s*'[^']*'", "'secret_key':'***'"),
+
+        # Query string and URL formats
+        (r'[?&]api[_-]?key=[^&\s]*', '?api_key=***'),
+        (r'Bearer\s+[\w\-\.]+', 'Bearer ***'),
+
+        # Alpaca-specific key formats (PK... for API key, sp... for secret)
+        (r'\bPK[\w]{17,}\b', 'PK***'),
+        (r'\bsp[\w]{28,}\b', 'sp***'),
+
+        # Generic high-entropy strings that look like API keys (20+ alphanumeric)
+        (r'["\'][\w\-]{32,}["\']', '"***"'),
+    ]
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """
+        Filter a log record to redact credentials.
+
+        Args:
+            record: LogRecord to filter
+
+        Returns:
+            True (always allow record to be logged, but redacted)
+        """
+        # Redact message
+        if record.msg:
+            record.msg = self._redact_string(str(record.msg))
+
+        # Redact formatted args
+        try:
+            if record.args:
+                if isinstance(record.args, dict):
+                    record.args = {k: self._redact_string(str(v)) for k, v in record.args.items()}
+                else:
+                    record.args = tuple(self._redact_string(str(arg)) for arg in record.args)
+        except Exception:
+            pass  # Don't break logging if args redaction fails
+
+        # Redact exception traceback
+        if record.exc_text:
+            record.exc_text = self._redact_string(record.exc_text)
+
+        return True
+
+    def _redact_string(self, text: str) -> str:
+        """Apply all redaction patterns to text"""
+        for pattern, replacement in self.REDACTION_PATTERNS:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+        return text
 
 
 class HourlyRotatingFileHandler(logging.Handler):
@@ -104,6 +175,11 @@ class OrchestratorLogger:
         )
         file_handler.setFormatter(file_formatter)
         self.logger.addHandler(file_handler)
+
+        # Add credential redaction filter to all handlers
+        redaction_filter = CredentialRedactionFilter()
+        for handler in self.logger.handlers:
+            handler.addFilter(redaction_filter)
 
     def debug(self, message: str, **kwargs):
         """Log debug message"""

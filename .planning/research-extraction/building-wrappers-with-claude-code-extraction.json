@@ -1,0 +1,727 @@
+{
+  "extraction_report": {
+    "extraction_date": "2026-01-31",
+    "sources_processed": 4,
+    "total_facts_extracted": 87,
+    "fetcher_agent": "research-fetcher",
+    "extraction_method": "WebFetch",
+    "focus_areas": [
+      "Tool definition patterns",
+      "Python implementation examples",
+      "Best practices for function calling",
+      "Error handling approaches",
+      "Wrapper library patterns"
+    ]
+  },
+  "sources": [
+    {
+      "source": {
+        "title": "Advanced Tool Use on Claude Developer Platform",
+        "url": "https://www.anthropic.com/engineering/advanced-tool-use",
+        "authors": "Bin Wu (lead), Adam Jones, Artur Renault, Henry Tay, Jake Noble, Nathan McCandlish, Noah Picard, Sam Jiang, and the Claude Developer Platform team",
+        "date": "2025-11-24",
+        "credibility": 5,
+        "type": "Official Anthropic Engineering Blog"
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Tool definitions can consume 134K tokens before optimization in production systems",
+          "type": "statistic",
+          "context": "Tool Search Tool section - Challenge subsection",
+          "exact_quote": "At Anthropic, we've seen tool definitions consume 134K tokens before optimization.",
+          "verifiable": true,
+          "section": "Tool Search Tool"
+        },
+        {
+          "claim": "A five-server setup (GitHub, Slack, Sentry, Grafana, Splunk) consumes approximately 55K tokens before conversation starts",
+          "type": "statistic",
+          "context": "Tool Search Tool section - explaining the token bloat problem",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Tool Search Tool"
+        },
+        {
+          "claim": "Tool Search Tool preserves 95% of context by reducing token usage from ~77K to ~8.7K tokens",
+          "type": "statistic",
+          "context": "Tool Search Tool section - Token preservation subsection",
+          "exact_quote": "Traditional approach uses ~77K tokens; Tool Search Tool uses ~8.7K tokens, preserving 95% of context.",
+          "verifiable": true,
+          "section": "Tool Search Tool - Solution"
+        },
+        {
+          "claim": "Tool Search Tool improved Opus 4 accuracy from 49% to 74% and Opus 4.5 from 79.5% to 88.1%",
+          "type": "statistic",
+          "context": "Tool Search Tool section - Accuracy improvements",
+          "exact_quote": "Opus 4 improved from 49% to 74%; Opus 4.5 from 79.5% to 88.1%.",
+          "verifiable": true,
+          "section": "Tool Search Tool - Accuracy improvements"
+        },
+        {
+          "claim": "Mark tools with defer_loading: true to load on-demand rather than upfront",
+          "type": "definition",
+          "context": "Tool Search Tool implementation pattern",
+          "exact_quote": "Mark tools with `defer_loading: true` to load on-demand rather than upfront.",
+          "verifiable": true,
+          "section": "Tool Search Tool - Solution"
+        },
+        {
+          "claim": "Tool Search Tool only sees the search tool initially (~500 tokens), discovering relevant tools as needed (3-5 tools, ~3K tokens)",
+          "type": "statistic",
+          "context": "Tool Search Tool mechanism explanation",
+          "exact_quote": "Claude only sees the search tool initially (~500 tokens), discovering relevant tools as needed (3-5 tools, ~3K tokens).",
+          "verifiable": true,
+          "section": "Tool Search Tool - Solution"
+        },
+        {
+          "claim": "Programmatic Tool Calling provides 37% token reduction (43,588 to 27,297 tokens on complex research)",
+          "type": "statistic",
+          "context": "Programmatic Tool Calling - Performance Gains",
+          "exact_quote": "37% reduction (43,588 to 27,297 tokens on complex research)",
+          "verifiable": true,
+          "section": "Programmatic Tool Calling - Performance Gains"
+        },
+        {
+          "claim": "Programmatic Tool Calling eliminates 19+ inference passes in 20+ tool workflows",
+          "type": "statistic",
+          "context": "Programmatic Tool Calling - Latency improvements",
+          "exact_quote": "Eliminates 19+ inference passes in 20+ tool workflows",
+          "verifiable": true,
+          "section": "Programmatic Tool Calling - Performance Gains"
+        },
+        {
+          "claim": "Internal knowledge retrieval accuracy improved 25.6% to 28.5% with Programmatic Tool Calling; GIA benchmarks 46.5% to 51.2%",
+          "type": "statistic",
+          "context": "Programmatic Tool Calling - Accuracy improvements",
+          "exact_quote": "Internal knowledge retrieval improved 25.6% to 28.5%; GIA benchmarks 46.5% to 51.2%",
+          "verifiable": true,
+          "section": "Programmatic Tool Calling - Performance Gains"
+        },
+        {
+          "claim": "Mark tools callable from code using allowed_callers field set to code_execution_20250825",
+          "type": "definition",
+          "context": "Programmatic Tool Calling implementation - Step 1",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Programmatic Tool Calling - Implementation"
+        },
+        {
+          "claim": "When you return tool results via the API, they're processed by the script rather than consumed by the model",
+          "type": "definition",
+          "context": "Programmatic Tool Calling - Step 3 explanation",
+          "exact_quote": "When you return tool results via the API, they're processed by the script rather than consumed by the model.",
+          "verifiable": true,
+          "section": "Programmatic Tool Calling - Tool execution flow"
+        },
+        {
+          "claim": "Programmatic Tool Calling reduces consumption from 200KB raw data to 1KB results",
+          "type": "statistic",
+          "context": "Final output only - demonstrating data reduction",
+          "exact_quote": "reducing consumption from 200KB raw data to 1KB results.",
+          "verifiable": true,
+          "section": "Programmatic Tool Calling - Step 4"
+        },
+        {
+          "claim": "JSON Schema defines structure but cannot express usage patterns: when to include optional parameters, valid combinations, or API conventions",
+          "type": "definition",
+          "context": "Tool Use Examples - Challenge",
+          "exact_quote": "JSON Schema defines structure but cannot express usage patterns: when to include optional parameters, valid combinations, or API conventions.",
+          "verifiable": true,
+          "section": "Tool Use Examples"
+        },
+        {
+          "claim": "Tool Use Examples improved accuracy from 72% to 90% on complex parameter handling",
+          "type": "statistic",
+          "context": "Tool Use Examples - Impact section",
+          "exact_quote": "Accuracy improved from 72% to 90% on complex parameter handling.",
+          "verifiable": true,
+          "section": "Tool Use Examples"
+        },
+        {
+          "claim": "Enable beta features with header betas=['advanced-tool-use-2025-11-20']",
+          "type": "definition",
+          "context": "Getting Started section - showing how to enable advanced features",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Getting Started"
+        },
+        {
+          "claim": "Use clear, descriptive names and descriptions for Tool Search setup",
+          "type": "best-practice",
+          "context": "Best Practices - Tool Search Setup",
+          "exact_quote": "Use clear, descriptive names and descriptions",
+          "verifiable": true,
+          "section": "Best Practices - Tool Search Setup"
+        },
+        {
+          "claim": "Keep 3-5 most-used tools always loaded for Tool Search",
+          "type": "best-practice",
+          "context": "Best Practices - Tool Search Setup",
+          "exact_quote": "Keep 3-5 most-used tools always loaded",
+          "verifiable": true,
+          "section": "Best Practices - Tool Search Setup"
+        },
+        {
+          "claim": "Document return formats explicitly for Programmatic Tool Calling setup",
+          "type": "best-practice",
+          "context": "Best Practices - Programmatic Tool Calling Setup",
+          "exact_quote": "Document return formats explicitly",
+          "verifiable": true,
+          "section": "Best Practices - Programmatic Tool Calling Setup"
+        },
+        {
+          "claim": "Opt-in tools safe for parallel execution for Programmatic Tool Calling",
+          "type": "best-practice",
+          "context": "Best Practices - Programmatic Tool Calling Setup",
+          "exact_quote": "Opt-in tools safe for parallel execution",
+          "verifiable": true,
+          "section": "Best Practices - Programmatic Tool Calling Setup"
+        },
+        {
+          "claim": "Prioritize idempotent operations for Programmatic Tool Calling",
+          "type": "best-practice",
+          "context": "Best Practices - Programmatic Tool Calling Setup",
+          "exact_quote": "Prioritize idempotent operations",
+          "verifiable": true,
+          "section": "Best Practices - Programmatic Tool Calling Setup"
+        },
+        {
+          "claim": "Use realistic data, not placeholder values for Tool Use Examples",
+          "type": "best-practice",
+          "context": "Best Practices - Tool Use Examples Best Practices",
+          "exact_quote": "Use realistic data, not placeholder values",
+          "verifiable": true,
+          "section": "Best Practices - Tool Use Examples"
+        },
+        {
+          "claim": "Show minimal, partial, and full specification patterns for Tool Use Examples",
+          "type": "best-practice",
+          "context": "Best Practices - Tool Use Examples Best Practices",
+          "exact_quote": "Show minimal, partial, and full specification patterns",
+          "verifiable": true,
+          "section": "Best Practices - Tool Use Examples"
+        },
+        {
+          "claim": "Limit to 1-5 examples per tool for Tool Use Examples",
+          "type": "best-practice",
+          "context": "Best Practices - Tool Use Examples Best Practices",
+          "exact_quote": "Limit to 1-5 examples per tool",
+          "verifiable": true,
+          "section": "Best Practices - Tool Use Examples"
+        }
+      ],
+      "summary": "Anthropic's official engineering blog post introduces three beta features for advanced tool use: Tool Search Tool (deferred loading to preserve 95% of context), Programmatic Tool Calling (37% token reduction by executing tools in code), and Tool Use Examples (90% accuracy on complex parameters). Includes production statistics, implementation patterns, and best practices for each feature."
+    },
+    {
+      "source": {
+        "title": "How to implement tool use - Claude Platform Documentation",
+        "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use",
+        "author": "Anthropic",
+        "date": "Current documentation (accessed 2026-01-31)",
+        "credibility": 5,
+        "type": "Official Platform Documentation"
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Tool name must match the regex ^[a-zA-Z0-9_-]{1,64}$",
+          "type": "definition",
+          "context": "Specifying client tools - Parameter table",
+          "exact_quote": "Must match the regex `^[a-zA-Z0-9_-]{1,64}$`.",
+          "verifiable": true,
+          "section": "Specifying client tools"
+        },
+        {
+          "claim": "Tool definition requires name, description, and input_schema fields",
+          "type": "definition",
+          "context": "Specifying client tools - Parameter table",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Specifying client tools"
+        },
+        {
+          "claim": "input_schema is a JSON Schema object defining the expected parameters for the tool",
+          "type": "definition",
+          "context": "Specifying client tools - Parameter table",
+          "exact_quote": "A [JSON Schema](https://json-schema.org/) object defining the expected parameters for the tool.",
+          "verifiable": true,
+          "section": "Specifying client tools"
+        },
+        {
+          "claim": "Provide extremely detailed descriptions - this is by far the most important factor in tool performance",
+          "type": "best-practice",
+          "context": "Best practices for tool definitions",
+          "exact_quote": "Provide extremely detailed descriptions. This is by far the most important factor in tool performance.",
+          "verifiable": true,
+          "section": "Best practices for tool definitions"
+        },
+        {
+          "claim": "Tool descriptions should explain: what the tool does, when it should be used (and when it shouldn't), what each parameter means and how it affects the tool's behavior, and any important caveats or limitations",
+          "type": "best-practice",
+          "context": "Best practices for tool definitions - detailed explanation",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Best practices for tool definitions"
+        },
+        {
+          "claim": "Aim for at least 3-4 sentences per tool description, more if the tool is complex",
+          "type": "best-practice",
+          "context": "Best practices for tool definitions",
+          "exact_quote": "Aim for at least 3-4 sentences per tool description, more if the tool is complex.",
+          "verifiable": true,
+          "section": "Best practices for tool definitions"
+        },
+        {
+          "claim": "Tool use examples beta header is advanced-tool-use-2025-11-20 for Claude API and Microsoft Foundry, tool-examples-2025-10-29 for Vertex AI and Amazon Bedrock",
+          "type": "definition",
+          "context": "Providing tool use examples - Beta header table",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Providing tool use examples"
+        },
+        {
+          "claim": "Each example in input_examples must be valid according to the tool's input_schema",
+          "type": "definition",
+          "context": "Providing tool use examples - Requirements and limitations",
+          "exact_quote": "Each example must be valid according to the tool's `input_schema`. Invalid examples return a 400 error",
+          "verifiable": true,
+          "section": "Providing tool use examples - Requirements and limitations"
+        },
+        {
+          "claim": "Examples add ~20-50 tokens for simple examples, ~100-200 tokens for complex nested objects",
+          "type": "statistic",
+          "context": "Providing tool use examples - Requirements and limitations - Token cost",
+          "exact_quote": "~20-50 tokens for simple examples, ~100-200 tokens for complex nested objects",
+          "verifiable": true,
+          "section": "Providing tool use examples - Requirements and limitations"
+        },
+        {
+          "claim": "Tool runner provides automatic compaction which generates summaries when token usage exceeds a threshold",
+          "type": "definition",
+          "context": "Tool runner (beta) - Automatic context management with compaction",
+          "exact_quote": "The tool runner supports automatic [compaction](/docs/en/build-with-claude/context-editing#client-side-compaction-sdk), which generates summaries when token usage exceeds a threshold.",
+          "verifiable": true,
+          "section": "Tool runner (beta)"
+        },
+        {
+          "claim": "Python uses @beta_tool decorator for synchronous tools and @beta_async_tool for async tools",
+          "type": "definition",
+          "context": "Tool runner - Basic usage - Python tab",
+          "exact_quote": "Use the `@beta_tool` decorator to define tools with type hints and docstrings. If you're using the async client, replace `@beta_tool` with `@beta_async_tool` and define the function with `async def`.",
+          "verifiable": true,
+          "section": "Tool runner (beta) - Basic usage"
+        },
+        {
+          "claim": "The @beta_tool decorator inspects the function arguments and docstring to extract a JSON schema representation",
+          "type": "definition",
+          "context": "Tool runner - Basic usage - Python example explanation",
+          "exact_quote": "The `@beta_tool` decorator inspects the function arguments and docstring to extract a JSON schema representation.",
+          "verifiable": true,
+          "section": "Tool runner (beta) - Basic usage"
+        },
+        {
+          "claim": "TypeScript offers betaZodTool() for type-safe tool definitions with Zod validation (requires Zod 3.25.0 or higher)",
+          "type": "definition",
+          "context": "Tool runner - Basic usage - TypeScript tab",
+          "exact_quote": "Use `betaZodTool()` for type-safe tool definitions with Zod validation (requires Zod 3.25.0 or higher)",
+          "verifiable": true,
+          "section": "Tool runner (beta) - Basic usage"
+        },
+        {
+          "claim": "The tool function must return a content block or content block array, including text, images, or document blocks",
+          "type": "definition",
+          "context": "Tool runner - Basic usage - Return value explanation",
+          "exact_quote": "The tool function must return a content block or content block array, including text, images, or document blocks.",
+          "verifiable": true,
+          "section": "Tool runner (beta) - Basic usage"
+        },
+        {
+          "claim": "If you want to return a structured JSON object to Claude, encode it to a JSON string before returning it",
+          "type": "best-practice",
+          "context": "Tool runner - Basic usage - Return value requirements",
+          "exact_quote": "If you want to return a structured JSON object to Claude, encode it to a JSON string before returning it.",
+          "verifiable": true,
+          "section": "Tool runner (beta) - Basic usage"
+        },
+        {
+          "claim": "Set ANTHROPIC_LOG environment variable to info or debug to view full stack traces when a tool throws an exception",
+          "type": "definition",
+          "context": "Tool runner - Advanced usage - Debugging tool execution",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Tool runner (beta) - Advanced usage - Debugging"
+        },
+        {
+          "claim": "By default, tool errors are passed back to Claude, which can then respond appropriately",
+          "type": "definition",
+          "context": "Tool runner - Advanced usage - Intercepting tool errors",
+          "exact_quote": "By default, tool errors are passed back to Claude, which can then respond appropriately.",
+          "verifiable": true,
+          "section": "Tool runner (beta) - Advanced usage - Intercepting tool errors"
+        },
+        {
+          "claim": "tool_choice parameter has four possible options: auto, any, tool, and none",
+          "type": "definition",
+          "context": "Controlling Claude's output - Forcing tool use",
+          "exact_quote": "When working with the tool_choice parameter, we have four possible options: `auto` allows Claude to decide whether to call any provided tools or not. This is the default value when `tools` are provided. `any` tells Claude that it must use one of the provided tools, but doesn't force a particular tool. `tool` allows us to force Claude to always use a particular tool. `none` prevents Claude from using any tools.",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Forcing tool use"
+        },
+        {
+          "claim": "Changes to the tool_choice parameter will invalidate cached message blocks when using prompt caching",
+          "type": "risk",
+          "context": "Controlling Claude's output - Forcing tool use - Note about prompt caching",
+          "exact_quote": "When using [prompt caching](/docs/en/build-with-claude/prompt-caching#what-invalidates-the-cache), changes to the `tool_choice` parameter will invalidate cached message blocks.",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Forcing tool use"
+        },
+        {
+          "claim": "When you have tool_choice as any or tool, models will not emit a natural language response or explanation before tool_use content blocks",
+          "type": "definition",
+          "context": "Controlling Claude's output - Forcing tool use - Note section",
+          "exact_quote": "When you have `tool_choice` as `any` or `tool`, we will prefill the assistant message to force a tool to be used. This means that the models will not emit a natural language response or explanation before `tool_use` content blocks, even if explicitly asked to do so.",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Forcing tool use"
+        },
+        {
+          "claim": "tool_choice: {\"type\": \"any\"} and tool_choice: {\"type\": \"tool\", \"name\": \"...\"} are not supported with extended thinking",
+          "type": "risk",
+          "context": "Controlling Claude's output - Forcing tool use - Extended thinking note",
+          "exact_quote": "When using [extended thinking](/docs/en/build-with-claude/extended-thinking) with tool use, `tool_choice: {\"type\": \"any\"}` and `tool_choice: {\"type\": \"tool\", \"name\": \"...\"}` are not supported and will result in an error.",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Forcing tool use"
+        },
+        {
+          "claim": "Combine tool_choice: {\"type\": \"any\"} with strict tool use to guarantee both that one of your tools will be called AND that the tool inputs strictly follow your schema",
+          "type": "best-practice",
+          "context": "Controlling Claude's output - Forcing tool use - Guaranteed tool calls tip",
+          "exact_quote": "Combine `tool_choice: {\"type\": \"any\"}` with [strict tool use](/docs/en/build-with-claude/structured-outputs) to guarantee both that one of your tools will be called AND that the tool inputs strictly follow your schema.",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Forcing tool use"
+        },
+        {
+          "claim": "You can disable parallel tool use by setting disable_parallel_tool_use=true",
+          "type": "definition",
+          "context": "Controlling Claude's output - Parallel tool use",
+          "exact_quote": "Setting `disable_parallel_tool_use=true` when tool_choice type is `auto`, which ensures that Claude uses **at most one** tool. Setting `disable_parallel_tool_use=true` when tool_choice type is `any` or `tool`, which ensures that Claude uses **exactly one** tool",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Parallel tool use"
+        },
+        {
+          "claim": "Tool results must immediately follow their corresponding tool use blocks in the message history",
+          "type": "definition",
+          "context": "Handling tool use and tool result content blocks - Important formatting requirements",
+          "exact_quote": "Tool result blocks must immediately follow their corresponding tool use blocks in the message history. You cannot include any messages between the assistant's tool use message and the user's tool result message.",
+          "verifiable": true,
+          "section": "Handling tool use and tool result content blocks"
+        },
+        {
+          "claim": "In the user message containing tool results, the tool_result blocks must come FIRST in the content array. Any text must come AFTER all tool results",
+          "type": "definition",
+          "context": "Handling tool use and tool result content blocks - Important formatting requirements",
+          "exact_quote": "In the user message containing tool results, the tool_result blocks must come FIRST in the content array. Any text must come AFTER all tool results.",
+          "verifiable": true,
+          "section": "Handling tool use and tool result content blocks"
+        },
+        {
+          "claim": "For Claude 4 models (Opus 4, and Sonnet 4), add this to your system prompt to maximize parallel tool use: 'For maximum efficiency, whenever you need to perform multiple independent operations, invoke all relevant tools simultaneously rather than sequentially.'",
+          "type": "best-practice",
+          "context": "Controlling Claude's output - Maximizing parallel tool use - System prompts",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Controlling Claude's output - Maximizing parallel tool use"
+        },
+        {
+          "claim": "Claude Sonnet 3.7 may be less likely to make parallel tool calls in a response, even when you have not set disable_parallel_tool_use",
+          "type": "risk",
+          "context": "Controlling Claude's output - Parallel tool use with Claude Sonnet 3.7 warning",
+          "exact_quote": "Claude Sonnet 3.7 may be less likely to make make parallel tool calls in a response, even when you have not set `disable_parallel_tool_use`.",
+          "verifiable": true,
+          "section": "Controlling Claude's output - Parallel tool use"
+        },
+        {
+          "claim": "If Claude's response is cut off due to hitting the max_tokens limit during tool use, you need to retry the request with a higher max_tokens value",
+          "type": "definition",
+          "context": "Handling tool use and tool result content blocks - Handling the max_tokens stop reason",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Handling tool use and tool result content blocks"
+        },
+        {
+          "claim": "When server tools encounter errors, Claude will transparently handle these errors and attempt to provide an alternative response or explanation",
+          "type": "definition",
+          "context": "Troubleshooting errors - Server tool errors",
+          "exact_quote": "When server tools encounter errors (e.g., network issues with Web Search), Claude will transparently handle these errors and attempt to provide an alternative response or explanation to the user.",
+          "verifiable": true,
+          "section": "Troubleshooting errors"
+        },
+        {
+          "claim": "If Claude's attempted use of a tool is invalid (e.g. missing required parameters), Claude will retry 2-3 times with corrections before apologizing to the user",
+          "type": "definition",
+          "context": "Troubleshooting errors - Invalid tool name",
+          "exact_quote": "If a tool request is invalid or missing parameters, Claude will retry 2-3 times with corrections before apologizing to the user.",
+          "verifiable": true,
+          "section": "Troubleshooting errors"
+        },
+        {
+          "claim": "To eliminate invalid tool calls entirely, use strict tool use with strict: true on your tool definitions",
+          "type": "best-practice",
+          "context": "Troubleshooting errors - Invalid tool name - Tip",
+          "exact_quote": "To eliminate invalid tool calls entirely, use [strict tool use](/docs/en/build-with-claude/structured-outputs) with `strict: true` on your tool definitions.",
+          "verifiable": true,
+          "section": "Troubleshooting errors"
+        }
+      ],
+      "summary": "Official Claude platform documentation covering complete tool use implementation: tool definition requirements (regex pattern, JSON Schema), best practices (extremely detailed descriptions are the most important factor), tool runner API with @beta_tool decorator, forcing tool use with tool_choice parameter, parallel tool execution patterns, message formatting requirements, and comprehensive error handling strategies including retries and strict validation."
+    },
+    {
+      "source": {
+        "title": "claudetools - Claude 3 Function Calling Wrapper",
+        "url": "https://github.com/vatsalsaglani/claudetools",
+        "author": "Vatsal Saglani (vatsalsaglani)",
+        "date": "GitHub repository (accessed 2026-01-31)",
+        "credibility": 4,
+        "type": "Community Wrapper Library"
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "claudetools requires Python 3.7 or higher",
+          "type": "definition",
+          "context": "Installation section - requirements",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Installation"
+        },
+        {
+          "claim": "Tools are defined using Pydantic models with Field descriptors for type safety",
+          "type": "definition",
+          "context": "Core Tool Definition Pattern section - showing the pattern",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Core Tool Definition Pattern"
+        },
+        {
+          "claim": "Function specifications use model_json_schema() method to extract parameters from Pydantic models",
+          "type": "definition",
+          "context": "Core Tool Definition Pattern - showing how to structure function specs",
+          "exact_quote": "\"parameters\": AddTodo.model_json_schema()",
+          "verifiable": true,
+          "section": "Core Tool Definition Pattern"
+        },
+        {
+          "claim": "The library provides both synchronous Tool and asynchronous AsyncTool classes",
+          "type": "definition",
+          "context": "API Design section - showing both import patterns",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "API Design"
+        },
+        {
+          "claim": "tool_choice parameter accepts None for auto-select or {\"name\": \"function_name\"} to force a specific tool",
+          "type": "definition",
+          "context": "API Design - Key Parameters section",
+          "exact_quote": "**tool_choice**: `None` (auto-select) or `{\"name\": \"function_name\"}`",
+          "verifiable": true,
+          "section": "Key Parameters"
+        },
+        {
+          "claim": "multiple_tools parameter is a Boolean enabling multiple function calls per prompt",
+          "type": "definition",
+          "context": "API Design - Key Parameters section",
+          "exact_quote": "**multiple_tools**: Boolean enabling multiple function calls per prompt",
+          "verifiable": true,
+          "section": "Key Parameters"
+        },
+        {
+          "claim": "No default value of max_tokens is assumed hence, please provide max_tokens to avoid getting an error from the Claude APIs",
+          "type": "risk",
+          "context": "Important Notes section - warning about max_tokens",
+          "exact_quote": "No default value of `max_tokens` is assumed hence, please provide `max_tokens` to avoid getting an error from the Claude APIs.",
+          "verifiable": true,
+          "section": "Important Notes"
+        },
+        {
+          "claim": "Multiple tools require setting multiple_tools=True for sequential function calls",
+          "type": "definition",
+          "context": "Important Notes section",
+          "exact_quote": "Multiple tools require setting `multiple_tools=True` for sequential function calls.",
+          "verifiable": true,
+          "section": "Important Notes"
+        },
+        {
+          "claim": "The synchronous client supports AWS Bedrock with aws_access_key, aws_secret_key, and aws_region parameters",
+          "type": "definition",
+          "context": "AWS Bedrock Support section - showing initialization pattern",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "AWS Bedrock Support"
+        },
+        {
+          "claim": "The library supports structured data generation for function calling with type-safe parameter definition via Pydantic",
+          "type": "definition",
+          "context": "Key Features section",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Key Features"
+        },
+        {
+          "claim": "The library provides both sync and async execution modes",
+          "type": "definition",
+          "context": "Key Features section",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Key Features"
+        },
+        {
+          "claim": "The library supports custom system prompt injection via attach_system parameter",
+          "type": "definition",
+          "context": "Key Parameters and Key Features sections",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Key Parameters / Key Features"
+        }
+      ],
+      "summary": "Community-maintained Python wrapper for Claude 3 function calling using Pydantic models for type-safe tool definitions. Provides synchronous and asynchronous execution modes, AWS Bedrock integration, and multiple tool invocation support. Key architectural pattern: define tools as Pydantic BaseModel classes, extract schemas with model_json_schema(), and pass to Tool/AsyncTool class. Requires explicit max_tokens parameter."
+    },
+    {
+      "source": {
+        "title": "Claudette - Anthropic Python SDK Wrapper",
+        "url": "https://claudette.answer.ai/",
+        "author": "Answer.AI",
+        "date": "Documentation (accessed 2026-01-31)",
+        "credibility": 4,
+        "type": "Community Wrapper Library"
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Claudette is a wrapper for Anthropic's Python SDK that automates pretty much everything that can be automated, whilst providing full control",
+          "type": "definition",
+          "context": "Core Purpose section - library description",
+          "exact_quote": "a wrapper for Anthropic's Python SDK\" that \"automates pretty much everything that can be automated, whilst providing full control.",
+          "verifiable": true,
+          "section": "Core Purpose"
+        },
+        {
+          "claim": "Claudette employs docments-based tool definitions using type hints and docstring comments",
+          "type": "definition",
+          "context": "Tool Use Patterns - Function Definition Approach",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Tool Use Patterns - Function Definition Approach"
+        },
+        {
+          "claim": "The library automatically converts Python functions with type hints and docstrings into Claude's tool format",
+          "type": "definition",
+          "context": "Tool Use Patterns - Function Definition Approach",
+          "exact_quote": "The library \"automatically converts them into Claude's tool format.\"",
+          "verifiable": true,
+          "section": "Tool Use Patterns - Function Definition Approach"
+        },
+        {
+          "claim": "Claudette automatically detects the tool_use response, calls your Python function with the parameters, sends the result back to Claude, and returns the final answer",
+          "type": "definition",
+          "context": "Tool Use Patterns - Execution Pattern",
+          "exact_quote": "Claudette automatically detects the tool_use response, calls your Python function with the parameters, sends the result back to Claude, and returns the final answer.",
+          "verifiable": true,
+          "section": "Tool Use Patterns - Execution Pattern"
+        },
+        {
+          "claim": "The toolloop method automatically handles multiple tool invocations in one call without manual back-and-forth management",
+          "type": "definition",
+          "context": "Tool Use Patterns - Multi-Tool Solving",
+          "exact_quote": "The `toolloop` method \"automatically handles multiple tool invocations in one call\" without manual back-and-forth management.",
+          "verifiable": true,
+          "section": "Tool Use Patterns - Multi-Tool Solving"
+        },
+        {
+          "claim": "Chat Class creates stateful dialogs maintaining conversation context across multiple calls",
+          "type": "definition",
+          "context": "Key API Components section",
+          "exact_quote": "Creates \"stateful dialogs\" maintaining conversation context across multiple calls.",
+          "verifiable": true,
+          "section": "Key API Components"
+        },
+        {
+          "claim": "Client.structured() method gives you immediate output without conversation management for single-tool results",
+          "type": "definition",
+          "context": "Key API Components - Structured Output",
+          "exact_quote": "The `Client.structured()` method \"gives you immediate output without conversation management\" for single-tool results.",
+          "verifiable": true,
+          "section": "Key API Components - Structured Output"
+        },
+        {
+          "claim": "Cache writes cost 25% more tokens; reads cost 90% less with prompt caching",
+          "type": "statistic",
+          "context": "Advanced Features - Prompt Caching",
+          "exact_quote": "Cache writes cost 25% more tokens; reads cost 90% less",
+          "verifiable": true,
+          "section": "Advanced Features - Prompt Caching"
+        },
+        {
+          "claim": "Extended Thinking is available for Claude 3.7+ Sonnet and Opus models",
+          "type": "definition",
+          "context": "Advanced Features section",
+          "exact_quote": true,
+          "verifiable": true,
+          "section": "Advanced Features - Extended Thinking"
+        },
+        {
+          "claim": "The library supports Web Search via search_conf() for server-side tool integration",
+          "type": "definition",
+          "context": "Advanced Features section",
+          "exact_quote": "**Web Search**: Via `search_conf()` for server-side tool integration",
+          "verifiable": true,
+          "section": "Advanced Features - Web Search"
+        },
+        {
+          "claim": "Text Editor Tool provides schema-less file manipulation through str_replace_based_edit_tool dispatcher",
+          "type": "definition",
+          "context": "Advanced Features section",
+          "exact_quote": "Schema-less file manipulation through `str_replace_based_edit_tool` dispatcher",
+          "verifiable": true,
+          "section": "Advanced Features - Text Editor Tool"
+        },
+        {
+          "claim": "The project practices literate programming with source code as a rendered Jupyter Notebook which includes callout notes and tips, HTML tables and images, detailed explanations",
+          "type": "definition",
+          "context": "Design Philosophy section",
+          "exact_quote": "The project practices \"literate programming\"—source code is \"a rendered Jupyter Notebook which includes callout notes and tips, HTML tables and images, detailed explanations.\"",
+          "verifiable": true,
+          "section": "Design Philosophy"
+        },
+        {
+          "claim": "Prefill Support allows specification of what to use as the first few words of Claude's response",
+          "type": "definition",
+          "context": "Key API Components section",
+          "exact_quote": "Allows specification of \"what to use as the first few words of its response.\"",
+          "verifiable": true,
+          "section": "Key API Components - Prefill Support"
+        }
+      ],
+      "summary": "Answer.AI's Claudette is a highly automated wrapper for Anthropic's Python SDK that converts Python functions with type hints and docstrings directly into Claude tool definitions. Key differentiators: automatic tool execution loop via toolloop() method, stateful Chat class for conversation management, Client.structured() for immediate structured output, and literate programming documentation style. Supports advanced features including prompt caching (90% cost reduction on reads), extended thinking, web search integration, and schema-less text editing."
+    }
+  ],
+  "extraction_summary": {
+    "sources_processed_successfully": 4,
+    "sources_requiring_firecrawl_fallback": 0,
+    "total_facts_extracted": 87,
+    "facts_by_type": {
+      "statistic": 19,
+      "definition": 43,
+      "best-practice": 18,
+      "risk": 7
+    },
+    "key_patterns_identified": [
+      "Tool definitions universally use JSON Schema format",
+      "Detailed descriptions are consistently cited as the most important factor",
+      "Three main wrapper approaches: decorators (official SDK), Pydantic models (claudetools), type hints+docstrings (Claudette)",
+      "Parallel tool use is a major optimization strategy across all sources",
+      "Error handling patterns: retry with corrections (official), pass errors to Claude with is_error flag",
+      "Token optimization is a recurring theme (Tool Search: 95% savings, Programmatic Calling: 37% savings, Caching: 90% savings)",
+      "Message formatting is critical: tool results must come before text in content arrays"
+    ],
+    "sources_failed_completely": 0
+  }
+}

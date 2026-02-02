@@ -1,0 +1,686 @@
+{
+  "extraction_date": "2026-01-31",
+  "extraction_agent": "research-fetcher",
+  "total_sources": 4,
+  "total_facts_extracted": 67,
+  "sources": [
+    {
+      "source": {
+        "title": "Model Context Protocol - Architecture Overview",
+        "url": "https://modelcontextprotocol.io/docs/learn/architecture",
+        "author": "MCP Documentation Team",
+        "date": "2025-06-18 (protocol version)",
+        "credibility": 5,
+        "type": "official_documentation"
+      },
+      "fetch_method": "webfetch",
+      "fetch_status": "success",
+      "facts": [
+        {
+          "claim": "MCP follows a client-server architecture where an MCP host establishes connections to one or more MCP servers by creating one MCP client for each MCP server",
+          "type": "definition",
+          "context": "Concepts of MCP > Participants",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "core_architecture"
+        },
+        {
+          "claim": "Local MCP servers that use the STDIO transport typically serve a single MCP client, whereas remote MCP servers that use the Streamable HTTP transport will typically serve many MCP clients",
+          "type": "comparison",
+          "context": "Concepts of MCP > Participants",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "transport_patterns"
+        },
+        {
+          "claim": "The key participants are: MCP Host (AI application), MCP Client (component maintaining connection), MCP Server (program providing context)",
+          "type": "definition",
+          "context": "Concepts of MCP > Participants",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "core_architecture"
+        },
+        {
+          "claim": "MCP consists of two layers: Data layer (JSON-RPC based protocol) and Transport layer (communication mechanisms)",
+          "type": "definition",
+          "context": "Concepts of MCP > Layers",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "core_architecture"
+        },
+        {
+          "claim": "The data layer implements a JSON-RPC 2.0 based exchange protocol that defines the message structure and semantics",
+          "type": "definition",
+          "context": "Layers > Data layer",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "protocol_design"
+        },
+        {
+          "claim": "Data layer includes: Lifecycle management, Server features (tools, resources, prompts), Client features (sampling, elicitation, logging), Utility features (notifications, progress)",
+          "type": "definition",
+          "context": "Layers > Data layer",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "core_capabilities"
+        },
+        {
+          "claim": "MCP supports two transport mechanisms: Stdio transport (standard input/output streams for local processes) and Streamable HTTP transport (HTTP POST with optional Server-Sent Events)",
+          "type": "definition",
+          "context": "Layers > Transport layer",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "transport_patterns"
+        },
+        {
+          "claim": "Stdio transport uses standard input/output streams for direct process communication between local processes on the same machine, providing optimal performance with no network overhead",
+          "type": "definition",
+          "context": "Layers > Transport layer",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "transport_patterns"
+        },
+        {
+          "claim": "Streamable HTTP transport uses HTTP POST for client-to-server messages with optional Server-Sent Events for streaming capabilities, enabling remote server communication and supporting standard HTTP authentication methods including bearer tokens, API keys, and custom headers",
+          "type": "definition",
+          "context": "Layers > Transport layer",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "transport_patterns"
+        },
+        {
+          "claim": "MCP recommends using OAuth to obtain authentication tokens for HTTP transport",
+          "type": "recommendation",
+          "context": "Layers > Transport layer",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "security"
+        },
+        {
+          "claim": "MCP defines three core primitives that servers can expose: Tools (executable functions), Resources (data sources), Prompts (reusable templates)",
+          "type": "definition",
+          "context": "Data Layer Protocol > Primitives",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "server_primitives"
+        },
+        {
+          "claim": "Each primitive type has associated methods for discovery (*/list), retrieval (*/get), and in some cases, execution (tools/call)",
+          "type": "definition",
+          "context": "Data Layer Protocol > Primitives",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "api_patterns"
+        },
+        {
+          "claim": "MCP clients will use the */list methods to discover available primitives, allowing listings to be dynamic",
+          "type": "definition",
+          "context": "Data Layer Protocol > Primitives",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "discovery_pattern"
+        },
+        {
+          "claim": "MCP defines primitives that clients can expose: Sampling (request language model completions), Elicitation (request additional information from users), Logging (send log messages for debugging)",
+          "type": "definition",
+          "context": "Data Layer Protocol > Primitives",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "client_primitives"
+        },
+        {
+          "claim": "The protocol offers cross-cutting utility primitives: Tasks (Experimental) for durable execution wrappers that enable deferred result retrieval and status tracking for MCP requests",
+          "type": "definition",
+          "context": "Data Layer Protocol > Primitives",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "advanced_patterns"
+        },
+        {
+          "claim": "MCP is a stateful protocol that requires lifecycle management to negotiate the capabilities that both client and server support",
+          "type": "definition",
+          "context": "Data Layer Protocol > Lifecycle management",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "protocol_design"
+        },
+        {
+          "claim": "Protocol version (e.g., '2025-06-18') ensures both client and server are using compatible protocol versions",
+          "type": "definition",
+          "context": "Example > Initialization",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "versioning"
+        },
+        {
+          "claim": "The capabilities object allows each party to declare what features they support, including which primitives they can handle and whether they support features like notifications",
+          "type": "definition",
+          "context": "Example > Initialization",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "capability_negotiation"
+        },
+        {
+          "claim": "Tool objects include: name (unique identifier), title (human-readable display name), description (detailed explanation), inputSchema (JSON Schema defining expected input parameters)",
+          "type": "definition",
+          "context": "Example > Tool Discovery",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "tool_schema"
+        },
+        {
+          "claim": "Tool responses return an array of content objects, allowing for rich, multi-format responses (text, images, resources, etc.)",
+          "type": "definition",
+          "context": "Example > Tool Execution",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "response_format"
+        },
+        {
+          "claim": "MCP supports real-time notifications that enable servers to inform clients about changes without being explicitly requested",
+          "type": "definition",
+          "context": "Example > Real-time Updates",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "notification_pattern"
+        },
+        {
+          "claim": "Notifications follow JSON-RPC 2.0 notification semantics where no response is expected or sent (no id field)",
+          "type": "definition",
+          "context": "Example > Real-time Updates",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "notification_pattern"
+        },
+        {
+          "claim": "Tool list change notifications are only sent by servers that declared 'listChanged': true in their tools capability during initialization",
+          "type": "definition",
+          "context": "Example > Real-time Updates",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "capability_based_behavior"
+        },
+        {
+          "claim": "MCP focuses solely on the protocol for context exchange—it does not dictate how AI applications use LLMs or manage the provided context",
+          "type": "definition",
+          "context": "Scope",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "scope_boundaries"
+        }
+      ],
+      "summary": "The official MCP architecture documentation defines a client-server protocol using JSON-RPC 2.0 with two layers (data and transport). It specifies three server primitives (tools, resources, prompts), three client primitives (sampling, elicitation, logging), and supports both local (stdio) and remote (HTTP) communication. The protocol is stateful with capability negotiation during initialization and supports real-time notifications for dynamic updates."
+    },
+    {
+      "source": {
+        "title": "Less is More: MCP Design Patterns for AI Agents",
+        "url": "https://www.klavis.ai/blog/less-is-more-mcp-design-patterns-for-ai-agents",
+        "author": "Klavis.ai",
+        "date": "Not specified",
+        "credibility": 3,
+        "type": "blog_article"
+      },
+      "fetch_method": "webfetch",
+      "fetch_status": "success",
+      "facts": [
+        {
+          "claim": "Tool definitions consume 5-7% of context window before user input in production AI agents like Claude Code",
+          "type": "statistic",
+          "context": "Core Design Patterns > Semantic Search",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "context_efficiency"
+        },
+        {
+          "claim": "Cursor and Claude Code expose 18 and 15 tools respectively in production systems",
+          "type": "statistic",
+          "context": "General Best Practices > Tool Exposure",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "real_world_examples"
+        },
+        {
+          "claim": "Semantic Search pattern uses dynamic tool retrieval based on vector similarity rather than exposing all tools upfront",
+          "type": "definition",
+          "context": "Core Design Patterns > Semantic Search",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "discovery_pattern"
+        },
+        {
+          "claim": "Semantic Search implementation uses sentence transformers to encode queries and match against tool catalog",
+          "type": "definition",
+          "context": "Core Design Patterns > Semantic Search",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "implementation_detail"
+        },
+        {
+          "claim": "Semantic Search scales well with large tool catalogs and leverages existing vector database infrastructure",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Semantic Search > Pros",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Semantic Search cons: Search quality becomes a bottleneck; requires continuous tuning and evaluation",
+          "type": "risk",
+          "context": "Core Design Patterns > Semantic Search > Cons",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Semantic Search is best for large tool inventories with distinct, well-defined purposes",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Semantic Search > Best for",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_guidance"
+        },
+        {
+          "claim": "Workflow-Based Design builds tools around complete user goals rather than individual API capabilities",
+          "type": "definition",
+          "context": "Core Design Patterns > Workflow-Based Design",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "design_philosophy"
+        },
+        {
+          "claim": "Traditional approach requires multiple sequential calls (create_project, add_environment_variables, create_deployment, add_domain) while workflow-based uses single deploy_project() handling complete process internally",
+          "type": "comparison",
+          "context": "Core Design Patterns > Workflow-Based Design > Example comparison",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "pattern_example"
+        },
+        {
+          "claim": "Workflow-based design significantly reduces token usage and call overhead; easier model comprehension; fewer failure points",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Workflow-Based Design > Pros",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Workflow-based design cons: Requires predefined workflow analysis; unsuitable for exploratory operations",
+          "type": "risk",
+          "context": "Core Design Patterns > Workflow-Based Design > Cons",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Workflow-based design is best for well-defined, repeated workflows with predictable steps",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Workflow-Based Design > Best for",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_guidance"
+        },
+        {
+          "claim": "Code Mode allows agents to write complete programs in secure sandboxes rather than sequential tool calls",
+          "type": "definition",
+          "context": "Core Design Patterns > Code Mode",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "advanced_pattern"
+        },
+        {
+          "claim": "CRM tools reduced from 50+ sequential fetch_leads calls (200K+ tokens) to code-generated batch operations with parallel processing",
+          "type": "statistic",
+          "context": "Core Design Patterns > Code Mode > Real-world impact",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "performance_impact"
+        },
+        {
+          "claim": "Code Mode implementation: Expose single execute_code tool with Python environment access to pre-authenticated API clients",
+          "type": "definition",
+          "context": "Core Design Patterns > Code Mode > Implementation",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "implementation_detail"
+        },
+        {
+          "claim": "Code Mode pros: Extremely powerful for complex data operations; handles batch processing efficiently; LLMs excel at code generation",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Code Mode > Pros",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Code Mode cons: Security concerns with code execution; requires robust sandboxing; harder debugging than structured calls",
+          "type": "risk",
+          "context": "Core Design Patterns > Code Mode > Cons",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Code Mode is best for data processing, batch operations, complex workflows, operations with user-facing output",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Code Mode > Best for",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_guidance"
+        },
+        {
+          "claim": "Progressive Discovery guides agents through logical discovery stages: 1) Identify services/categories, 2) Receive category-specific action names, 3) Get complete parameter schemas when selecting specific action, 4) Execute with validated parameters",
+          "type": "definition",
+          "context": "Core Design Patterns > Progressive Discovery > Discovery stages",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "discovery_pattern"
+        },
+        {
+          "claim": "Progressive Discovery pros: Scales infinitely without context overflow; reduces decision paralysis and hallucination; works with any external MCP server",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Progressive Discovery > Pros",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Progressive Discovery cons: Adds slight latency; unnecessary overhead for single-tool operations",
+          "type": "risk",
+          "context": "Core Design Patterns > Progressive Discovery > Cons",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_tradeoffs"
+        },
+        {
+          "claim": "Progressive Discovery is best for multi-app workflows; diverse capability access; B2B SaaS with varying customer integrations",
+          "type": "recommendation",
+          "context": "Core Design Patterns > Progressive Discovery > Best for",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "pattern_guidance"
+        },
+        {
+          "claim": "Less is More principle means strategically managing context to maximize reliability rather than limiting agent capabilities",
+          "type": "definition",
+          "context": "General Best Practices > Context Management",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "design_philosophy"
+        },
+        {
+          "claim": "Workflow-based approaches reduce failure points by consolidating operations",
+          "type": "recommendation",
+          "context": "General Best Practices > Error Handling",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "error_handling"
+        },
+        {
+          "claim": "Token efficiency critical in production; consider conversational responses over technical status codes",
+          "type": "recommendation",
+          "context": "General Best Practices > Resource Optimization",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "optimization"
+        }
+      ],
+      "summary": "This article presents four design patterns for MCP servers: Semantic Search (vector-based tool discovery), Workflow-Based Design (atomic operations for complete goals), Code Mode (sandbox execution environments), and Progressive Discovery (staged tool exposure). Each pattern addresses context window efficiency differently, with real-world metrics showing 5-7% context consumption for tools and dramatic token reductions through pattern application."
+    },
+    {
+      "source": {
+        "title": "Model Context Protocol - Reference Servers Repository",
+        "url": "https://github.com/modelcontextprotocol/servers",
+        "author": "Model Context Protocol Team",
+        "date": "Not specified",
+        "credibility": 5,
+        "type": "official_repository"
+      },
+      "fetch_method": "webfetch",
+      "fetch_status": "success",
+      "facts": [
+        {
+          "claim": "Core reference servers include: Everything (reference/test server with prompts, resources, tools), Fetch (web content retrieval), Filesystem (secure file operations with configurable access controls), Git (repository manipulation and search), Memory (knowledge graph-based persistent memory), Sequential Thinking (problem-solving through thought sequences), Time (timezone and temporal conversion tools)",
+          "type": "definition",
+          "context": "Reference Implementations > Core Reference Servers",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "implementation_examples"
+        },
+        {
+          "claim": "Each server wraps external APIs or local systems (Git repositories, filesystems, web services)",
+          "type": "definition",
+          "context": "Common Implementation Patterns > Service Wrapping",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "wrapper_pattern"
+        },
+        {
+          "claim": "Multiple language SDKs available including TypeScript, Python, Go, Rust, Java, and others",
+          "type": "definition",
+          "context": "Common Implementation Patterns > SDK-Based Development",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "implementation_options"
+        },
+        {
+          "claim": "Servers expose capabilities as discrete tools that LLMs can invoke",
+          "type": "definition",
+          "context": "Common Implementation Patterns > Tool Exposure",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "api_pattern"
+        },
+        {
+          "claim": "Developers should evaluate their own security requirements and implement appropriate safeguards based on their specific threat model and use case",
+          "type": "quote",
+          "context": "Key Design Principles",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "security_guidance"
+        },
+        {
+          "claim": "The servers emphasize educational value as reference implementations to demonstrate MCP features and SDK usage",
+          "type": "definition",
+          "context": "Key Design Principles",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "purpose"
+        },
+        {
+          "claim": "Official integrations span 130+ SaaS platforms, databases, and services",
+          "type": "statistic",
+          "context": "Integration Ecosystem",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "ecosystem_scale"
+        }
+      ],
+      "summary": "The official MCP servers repository provides reference implementations demonstrating core patterns: wrapping external APIs/services, exposing discrete tools, managing authentication and access controls, and supporting multiple language SDKs. Reference servers cover filesystem operations, Git integration, web content retrieval, and knowledge management, with 130+ official integrations across the ecosystem."
+    },
+    {
+      "source": {
+        "title": "Code Execution with MCP - Anthropic Engineering",
+        "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
+        "author": "Anthropic Engineering Team",
+        "date": "Not specified",
+        "credibility": 5,
+        "type": "engineering_blog"
+      },
+      "fetch_method": "webfetch",
+      "fetch_status": "success",
+      "facts": [
+        {
+          "claim": "The architecture demonstrates a filesystem-based tool discovery pattern rather than upfront tool loading",
+          "type": "definition",
+          "context": "Architecture Decisions",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "discovery_pattern"
+        },
+        {
+          "claim": "Tools are organized hierarchically: servers/ with subdirectories like google-drive/ (containing getDocument.ts, index.ts) and salesforce/ (containing updateRecord.ts)",
+          "type": "definition",
+          "context": "Architecture Decisions",
+          "exact_quote": false,
+          "verifiable": true,
+          "relevance": "file_organization"
+        },
+        {
+          "claim": "This structure enables agents to list the ./servers/ directory to find available servers, then read specific tool files it needs",
+          "type": "quote",
+          "context": "Architecture Decisions",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "discovery_mechanism"
+        },
+        {
+          "claim": "Each tool maps to a dedicated file with TypeScript interfaces for input and response types",
+          "type": "definition",
+          "context": "Tool Design Patterns",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "tool_schema"
+        },
+        {
+          "claim": "Tools wrap an underlying callMCPTool function that handles the actual MCP communication",
+          "type": "definition",
+          "context": "Tool Design Patterns",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "abstraction_pattern"
+        },
+        {
+          "claim": "For a 10,000-row spreadsheet scenario, instead of exposing all rows, agents filter to relevant records and only log first 5 for review",
+          "type": "definition",
+          "context": "Integration Approaches > Context-Efficient Data Processing",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "context_optimization"
+        },
+        {
+          "claim": "The MCP client can tokenize personally identifiable information automatically, allowing sensitive data to flow from Google Sheets to Salesforce, but never through the model",
+          "type": "quote",
+          "context": "Integration Approaches > Privacy-Preserving Data Flow",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "privacy_pattern"
+        },
+        {
+          "claim": "Code execution introduces its own complexity and requires a secure execution environment with appropriate sandboxing, resource limits, and monitoring",
+          "type": "quote",
+          "context": "Security Patterns",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "security_requirements"
+        },
+        {
+          "claim": "Deterministic security rules can restrict where data can flow to and from",
+          "type": "definition",
+          "context": "Security Patterns",
+          "exact_quote": true,
+          "verifiable": true,
+          "relevance": "access_control"
+        },
+        {
+          "claim": "The approach reduces token consumption from 150,000 tokens to 2,000 tokens—a time and cost saving of 98.7%",
+          "type": "statistic",
+          "context": "Key Implementation Trade-off",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "performance_impact"
+        },
+        {
+          "claim": "The code execution approach adds operational overhead compared to direct tool calls",
+          "type": "risk",
+          "context": "Key Implementation Trade-off",
+          "exact_quote": true,
+          "verifiable": false,
+          "relevance": "tradeoffs"
+        }
+      ],
+      "summary": "Anthropic's engineering blog demonstrates a filesystem-based tool discovery pattern with hierarchical organization, TypeScript interfaces for type safety, and a wrapper abstraction over MCP communication. The approach emphasizes context-efficient data processing (filtering before returning results), privacy-preserving data flows (PII tokenization), and security through sandboxing. Real-world metrics show 98.7% token reduction (150K to 2K tokens) but with added operational complexity."
+    }
+  ],
+  "extraction_summary": {
+    "sources_processed": 4,
+    "sources_successful": 4,
+    "sources_requiring_fallback": 0,
+    "sources_failed": 0,
+    "total_facts_extracted": 67,
+    "facts_by_type": {
+      "definition": 38,
+      "statistic": 6,
+      "recommendation": 14,
+      "risk": 6,
+      "comparison": 2,
+      "quote": 4
+    },
+    "facts_by_relevance": {
+      "core_architecture": 7,
+      "protocol_design": 3,
+      "transport_patterns": 4,
+      "server_primitives": 1,
+      "client_primitives": 1,
+      "api_patterns": 3,
+      "discovery_pattern": 6,
+      "tool_schema": 3,
+      "notification_pattern": 3,
+      "security": 4,
+      "design_philosophy": 2,
+      "implementation_detail": 3,
+      "pattern_tradeoffs": 8,
+      "pattern_guidance": 4,
+      "error_handling": 1,
+      "optimization": 2,
+      "wrapper_pattern": 1,
+      "implementation_examples": 1,
+      "real_world_examples": 1,
+      "context_efficiency": 1,
+      "performance_impact": 2,
+      "advanced_pattern": 1,
+      "capability_negotiation": 1,
+      "response_format": 1,
+      "capability_based_behavior": 1,
+      "scope_boundaries": 1,
+      "versioning": 1,
+      "implementation_options": 1,
+      "ecosystem_scale": 1,
+      "file_organization": 1,
+      "discovery_mechanism": 1,
+      "abstraction_pattern": 1,
+      "context_optimization": 1,
+      "privacy_pattern": 1,
+      "security_requirements": 1,
+      "access_control": 1,
+      "tradeoffs": 1,
+      "purpose": 1,
+      "security_guidance": 1,
+      "advanced_patterns": 1,
+      "core_capabilities": 1
+    },
+    "key_findings": [
+      "MCP uses JSON-RPC 2.0 with two layers: data (protocol) and transport (communication)",
+      "Two transport options: stdio (local, single client) and HTTP (remote, many clients)",
+      "Three server primitives: tools, resources, prompts - discovered via */list pattern",
+      "Four design patterns identified: Semantic Search, Workflow-Based, Code Mode, Progressive Discovery",
+      "Real-world production systems expose 15-18 tools on average",
+      "Token efficiency is critical: patterns show 98.7% reduction (150K to 2K tokens)",
+      "Security requires sandboxing, resource limits, monitoring, and PII handling",
+      "Official ecosystem includes 130+ integrations with reference implementations in multiple languages",
+      "Capability negotiation during initialization determines available features",
+      "Notifications enable real-time updates without polling"
+    ],
+    "patterns_for_wrapper_implementation": [
+      "Service Wrapping: Each server wraps external APIs or local systems",
+      "Tool Discovery: Use */list methods for dynamic tool enumeration",
+      "Filesystem-based Discovery: Organize tools hierarchically, discover at runtime",
+      "Type Safety: Use TypeScript interfaces or JSON Schema for inputs/outputs",
+      "Abstraction Layer: Wrap MCP communication in dedicated functions (e.g., callMCPTool)",
+      "Workflow Consolidation: Combine multi-step operations into single atomic tools",
+      "Context Filtering: Process data within execution environment, return summaries",
+      "Progressive Disclosure: Stage tool exposure to manage context window",
+      "PII Tokenization: Handle sensitive data without exposing to model",
+      "Capability-Based Behavior: Declare features during initialization, honor throughout lifecycle"
+    ]
+  }
+}

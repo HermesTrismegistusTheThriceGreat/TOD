@@ -10,7 +10,7 @@ import os
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -45,6 +45,8 @@ from modules.greeks_scheduler import init_greeks_scheduler, shutdown_greeks_sche
 from modules.alpaca_models import (
     GetPositionsResponse,
     GetPositionResponse,
+    Order,
+    GetOrdersResponse,
     SubscribePricesRequest,
     SubscribePricesResponse,
     SubscribeSpotPricesRequest,
@@ -59,6 +61,10 @@ from modules.alpaca_models import (
 )
 from modules.alpaca_agent_service import AlpacaAgentService
 from modules.alpaca_agent_models import AlpacaAgentChatRequest, AlpacaAgentChatResponse
+from modules.database import get_connection_with_rls, log_suspicious_access
+from modules.credential_service import get_decrypted_alpaca_credential
+from routers.credentials import router as credentials_router
+from routers.accounts import router as accounts_router
 
 logger = get_logger()
 ws_manager = get_websocket_manager()
@@ -285,6 +291,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(credentials_router)
+app.include_router(accounts_router)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1231,35 +1241,64 @@ async def get_adw_summary(adw_id: str):
 
 
 @app.get("/api/positions", response_model=GetPositionsResponse, tags=["Alpaca"])
-async def get_positions(request: Request):
+async def get_positions(
+    request: Request,
+    credential_id: str = Query(..., description="UUID of credential to fetch positions for"),
+    user: AuthUser = Depends(get_current_user)
+):
     """
-    Get all iron condor positions from Alpaca.
+    Get all option positions for the selected credential.
 
-    Returns grouped iron condor positions with all leg details.
-    Positions are cached and circuit breaker protects against API failures.
+    Validates credential ownership via RLS, decrypts credentials on-demand,
+    and fetches positions from Alpaca using those credentials.
+
+    Args:
+        credential_id: UUID of the credential (required query parameter)
 
     Returns:
-        GetPositionsResponse with list of iron condor positions
+        GetPositionsResponse with list of option positions
+
+    Raises:
+        403: If credential not found or not owned by user
     """
     try:
         logger.http_request("GET", "/api/positions")
+        logger.info(f"Positions request for credential: {credential_id}")
+
         alpaca_service = get_alpaca_service(request.app)
 
-        if not alpaca_service.is_configured:
-            logger.http_request("GET", "/api/positions", 200)
+        # Get user_id from authenticated user
+        user_id = user.id
+
+        # Validate credential ownership via RLS and get decrypted credentials
+        try:
+            async with get_connection_with_rls(user_id) as conn:
+                async with get_decrypted_alpaca_credential(
+                    conn, credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Credentials validated - fetch positions with these credentials
+                    positions = await alpaca_service.get_all_positions_with_credential(
+                        api_key=api_key,
+                        secret_key=secret_key,
+                        paper=True  # Could be derived from credential_type in future
+                    )
+
+                    logger.http_request("GET", "/api/positions", 200)
+                    return GetPositionsResponse(
+                        status="success",
+                        positions=positions,
+                        total_count=len(positions)
+                    )
+
+        except ValueError as e:
+            # Credential not found or not owned by user
+            logger.error(f"Credential validation failed: {e}")
+            # Log suspicious access attempt with structured format
+            log_suspicious_access(user_id, credential_id, "get_positions", str(e))
             return GetPositionsResponse(
                 status="error",
-                message="Alpaca API not configured. Update ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file with your real API keys from https://alpaca.markets/"
+                message=f"Credential access denied: {str(e)}"
             )
-
-        positions = await alpaca_service.get_all_positions()
-
-        logger.http_request("GET", "/api/positions", 200)
-        return GetPositionsResponse(
-            status="success",
-            positions=positions,
-            total_count=len(positions)
-        )
 
     except Exception as e:
         logger.error(f"Failed to get positions: {e}")
@@ -1309,6 +1348,83 @@ async def get_position(request: Request, position_id: str):
     except Exception as e:
         logger.error(f"Failed to get position {position_id}: {e}")
         return GetPositionResponse(
+            status="error",
+            message=str(e)
+        )
+
+
+@app.get("/api/orders", response_model=GetOrdersResponse, tags=["Alpaca"])
+async def get_orders(
+    request: Request,
+    credential_id: str = Query(..., description="UUID of credential to fetch orders for"),
+    status: str = Query("all", description="Order status filter: 'all', 'open', 'closed'"),
+    limit: int = Query(100, description="Maximum number of orders to return", ge=1, le=500),
+    user: AuthUser = Depends(get_current_user)
+):
+    """
+    Get orders for the selected credential.
+
+    Validates credential ownership via RLS, decrypts credentials on-demand,
+    and fetches orders from Alpaca using those credentials.
+
+    Args:
+        credential_id: UUID of the credential (required query parameter)
+        status: Order status filter ('all', 'open', 'closed')
+        limit: Maximum number of orders to return (1-500)
+
+    Returns:
+        GetOrdersResponse with list of orders
+
+    Raises:
+        403: If credential not found or not owned by user
+    """
+    try:
+        logger.http_request("GET", "/api/orders")
+        logger.info(f"Orders request for credential: {credential_id}, status={status}, limit={limit}")
+
+        alpaca_service = get_alpaca_service(request.app)
+
+        # Get user_id from authenticated user
+        user_id = user.id
+
+        # Validate credential ownership via RLS and get decrypted credentials
+        try:
+            async with get_connection_with_rls(user_id) as conn:
+                async with get_decrypted_alpaca_credential(
+                    conn, credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Credentials validated - fetch orders with these credentials
+                    orders_data = await alpaca_service.get_orders_with_credential(
+                        api_key=api_key,
+                        secret_key=secret_key,
+                        paper=True,  # Could be derived from credential_type in future
+                        status=status,
+                        limit=limit
+                    )
+
+                    # Convert dicts to Order models
+                    orders = [Order(**order_dict) for order_dict in orders_data]
+
+                    logger.http_request("GET", "/api/orders", 200)
+                    return GetOrdersResponse(
+                        status="success",
+                        orders=orders,
+                        total_count=len(orders)
+                    )
+
+        except ValueError as e:
+            # Credential not found or not owned by user
+            logger.error(f"Credential validation failed: {e}")
+            # Log suspicious access attempt with structured format
+            log_suspicious_access(user_id, credential_id, "get_orders", str(e))
+            return GetOrdersResponse(
+                status="error",
+                message=f"Credential access denied: {str(e)}"
+            )
+
+    except Exception as e:
+        logger.error(f"Failed to get orders: {e}")
+        return GetOrdersResponse(
             status="error",
             message=str(e)
         )
@@ -1565,22 +1681,30 @@ async def close_leg(request: Request, position_id: str, close_request: CloseLegR
 
 
 @app.post("/api/alpaca-agent/chat", tags=["Alpaca Agent"])
-async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatRequest):
+async def alpaca_agent_chat(
+    request: Request,
+    chat_request: AlpacaAgentChatRequest,
+    user: AuthUser = Depends(get_current_user)
+):
     """
     Chat with the Alpaca trading agent using natural language.
 
-    Invokes the alpaca-mcp agent via Claude Code subprocess and streams
-    the response back using Server-Sent Events (SSE).
+    Validates credential ownership via RLS, decrypts credentials on-demand,
+    and streams the agent response back using Server-Sent Events (SSE).
 
     Args:
-        chat_request: Request with user message
+        chat_request: Request with user message and credential_id
 
     Returns:
         StreamingResponse with SSE chunks
+
+    Raises:
+        403: If credential not found or not owned by user
+        503: If Alpaca Agent service not initialized
     """
     try:
         logger.http_request("POST", "/api/alpaca-agent/chat")
-        logger.info(f"[ALPACA AGENT] Received chat request: {chat_request.message[:100]}...")
+        logger.info(f"[ALPACA AGENT] Received chat request with credential_id: {chat_request.credential_id}")
 
         # Check if service is available
         if not hasattr(request.app.state, 'alpaca_agent_service') or request.app.state.alpaca_agent_service is None:
@@ -1594,63 +1718,83 @@ async def alpaca_agent_chat(request: Request, chat_request: AlpacaAgentChatReque
             )
 
         alpaca_agent_service: AlpacaAgentService = request.app.state.alpaca_agent_service
-        logger.debug(f"[ALPACA AGENT] Service retrieved, working_dir={alpaca_agent_service.working_dir}")
 
-        # Check if Claude CLI is available
+        # Check if Claude SDK is available
         if not alpaca_agent_service.claude_path:
-            logger.error("[ALPACA AGENT] Claude CLI not found")
+            logger.error("[ALPACA AGENT] Claude SDK not available")
             return JSONResponse(
                 status_code=503,
                 content={
                     "status": "error",
-                    "error": "Claude CLI not available. Please install with: npm install -g @anthropic-ai/claude-cli"
+                    "error": "Claude Agent SDK not available. Check that claude-agent-sdk is installed."
                 }
             )
 
-        # Verify MCP config exists
-        if not alpaca_agent_service.verify_mcp_config():
-            logger.error("[ALPACA AGENT] MCP config not found")
-            # Return JSON error response (not Pydantic model)
+        # Get user_id from authenticated user
+        user_id = user.id
+
+        logger.info(f"[ALPACA AGENT] Validating credential ownership for user: {user_id}, credential_id: {chat_request.credential_id}")
+
+        # Validate credential ownership via RLS and get decrypted credentials
+        try:
+            async with get_connection_with_rls(user_id) as conn:
+                async with get_decrypted_alpaca_credential(
+                    conn, chat_request.credential_id, user_id
+                ) as (api_key, secret_key):
+                    # Credentials validated and decrypted - they exist only in this scope
+                    api_key_fingerprint = api_key[-4:] if len(api_key) >= 4 else "????"
+                    logger.info(f"[ALPACA AGENT] Credential validated, api_key_fingerprint=...{api_key_fingerprint}, starting streaming response")
+
+                    # Determine if paper trading based on credential
+                    # For now default to True, could be stored in credential metadata
+                    paper_trade = True
+
+                    # Stream response using SSE with provided credentials
+                    async def generate_sse():
+                        try:
+                            logger.debug("[ALPACA AGENT] Starting SSE generator with credential context")
+                            chunk_count = 0
+                            async for chunk in alpaca_agent_service.invoke_agent_streaming_with_credential(
+                                chat_request.message,
+                                api_key=api_key,
+                                secret_key=secret_key,
+                                paper_trade=paper_trade
+                            ):
+                                chunk_count += 1
+                                yield chunk
+                            logger.info(f"[ALPACA AGENT] SSE streaming complete, chunks={chunk_count}")
+                        except Exception as e:
+                            logger.error(f"[ALPACA AGENT] Streaming error: {e}", exc_info=True)
+                            error_chunk = json.dumps({"type": "error", "content": str(e)})
+                            yield f"data: {error_chunk}\n\n"
+                            yield "data: [DONE]\n\n"
+
+                    logger.http_request("POST", "/api/alpaca-agent/chat", 200)
+                    return StreamingResponse(
+                        generate_sse(),
+                        media_type="text/event-stream",
+                        headers={
+                            "Cache-Control": "no-cache",
+                            "Connection": "keep-alive",
+                            "X-Accel-Buffering": "no"
+                        }
+                    )
+
+        except ValueError as e:
+            # Credential not found or not owned by user (RLS rejection)
+            logger.error(f"[ALPACA AGENT] Credential validation failed: {e}")
+            # Log suspicious access attempt with structured format
+            log_suspicious_access(user_id, chat_request.credential_id, "chat", str(e))
             return JSONResponse(
-                status_code=400,
+                status_code=403,
                 content={
                     "status": "error",
-                    "error": f"Alpaca MCP configuration not found at {alpaca_agent_service.mcp_config_path}. Ensure .mcp.json.alpaca exists in project root."
+                    "error": f"Credential access denied: {str(e)}"
                 }
             )
-
-        logger.info("[ALPACA AGENT] MCP config verified, starting streaming response")
-
-        # Stream response using SSE
-        async def generate_sse():
-            try:
-                logger.debug("[ALPACA AGENT] Starting SSE generator")
-                chunk_count = 0
-                async for chunk in alpaca_agent_service.invoke_agent_streaming(chat_request.message):
-                    chunk_count += 1
-                    yield chunk
-                logger.info(f"[ALPACA AGENT] SSE streaming complete, chunks={chunk_count}")
-            except Exception as e:
-                logger.error(f"[ALPACA AGENT] Streaming error: {e}", exc_info=True)
-                # Use json.dumps to properly escape the error message
-                error_chunk = json.dumps({"type": "error", "content": str(e)})
-                yield f"data: {error_chunk}\n\n"
-                yield "data: [DONE]\n\n"
-
-        logger.http_request("POST", "/api/alpaca-agent/chat", 200)
-        return StreamingResponse(
-            generate_sse(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
-            }
-        )
 
     except Exception as e:
         logger.error(f"[ALPACA AGENT] Chat endpoint failed: {e}", exc_info=True)
-        # Return JSON error response (not Pydantic model)
         return JSONResponse(
             status_code=500,
             content={

@@ -44,18 +44,31 @@ async def get_session_from_cookie(request: Request) -> Optional[str]:
     """
     Extract session token from Better Auth cookie.
 
+    Better Auth stores tokens in format "tokenId.signature" in cookies,
+    but only the tokenId is stored in the database. We extract the tokenId
+    (part before the dot) for database lookup.
+
     Args:
         request: FastAPI Request object
 
     Returns:
-        Session token string if present, None otherwise
+        Session token ID string if present, None otherwise
 
     Example:
         >>> token = await get_session_from_cookie(request)
         >>> if token:
         ...     print(f"Found session token: {token[:20]}...")
     """
-    return request.cookies.get(SESSION_COOKIE_NAME)
+    cookie_value = request.cookies.get(SESSION_COOKIE_NAME)
+    if not cookie_value:
+        return None
+
+    # Better Auth format: "tokenId.signature" - extract just the tokenId
+    # The signature part is used for cryptographic verification by Better Auth
+    # but we only need the tokenId for database lookup
+    if "." in cookie_value:
+        return cookie_value.split(".")[0]
+    return cookie_value
 
 
 async def validate_session(token: str) -> Optional[Tuple[AuthSession, AuthUser]]:
@@ -84,28 +97,29 @@ async def validate_session(token: str) -> Optional[Tuple[AuthSession, AuthUser]]
     async with get_connection() as conn:
         # Query session with user join
         # IMPORTANT: Use timezone-aware datetime for comparison
+        # NOTE: Better Auth uses camelCase column names (expiresAt, userId, etc.)
         row = await conn.fetchrow(
             """
             SELECT
                 s.id as session_id,
-                s.user_id,
+                s."userId" as user_id,
                 s.token,
-                s.expires_at,
-                s.ip_address,
-                s.user_agent,
-                s.created_at as session_created_at,
-                s.updated_at as session_updated_at,
-                u.id as user_id,
+                s."expiresAt" as expires_at,
+                s."ipAddress" as ip_address,
+                s."userAgent" as user_agent,
+                s."createdAt" as session_created_at,
+                s."updatedAt" as session_updated_at,
+                u.id as uid,
                 u.name,
                 u.email,
-                u.email_verified,
+                u."emailVerified" as email_verified,
                 u.image,
-                u.created_at as user_created_at,
-                u.updated_at as user_updated_at
+                u."createdAt" as user_created_at,
+                u."updatedAt" as user_updated_at
             FROM session s
-            JOIN "user" u ON s.user_id = u.id
+            JOIN "user" u ON s."userId" = u.id
             WHERE s.token = $1
-              AND s.expires_at > $2
+              AND s."expiresAt" > $2
         """,
             token,
             datetime.now(timezone.utc),

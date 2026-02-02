@@ -283,6 +283,36 @@ class GetPositionsResponse(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════
+# ORDER MODELS
+# ═══════════════════════════════════════════════════════════
+
+class Order(BaseModel):
+    """Single order from Alpaca."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    symbol: str
+    qty: Optional[str] = None
+    filled_qty: Optional[str] = None
+    side: Optional[str] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[str] = None
+    filled_at: Optional[str] = None
+    filled_avg_price: Optional[str] = None
+
+
+class GetOrdersResponse(BaseModel):
+    """Response for GET /api/orders"""
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal['success', 'error']
+    orders: List[Order] = []
+    total_count: int = 0
+    message: Optional[str] = None
+
+
+# ═══════════════════════════════════════════════════════════
 # CLOSE POSITION MODELS
 # ═══════════════════════════════════════════════════════════
 
@@ -513,6 +543,8 @@ __all__ = [
     "PositionPriceUpdates",
     "GetPositionsResponse",
     "GetPositionResponse",
+    "Order",
+    "GetOrdersResponse",
     "SubscribePricesRequest",
     "SubscribePricesResponse",
     "SubscribeSpotPricesRequest",

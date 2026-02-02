@@ -134,6 +134,13 @@
 
     <!-- Input Area -->
     <div class="input-area">
+      <!-- Warning when no credential selected -->
+      <div v-if="!accountStore.activeCredentialId" class="no-credential-warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>Select a trading account to start chatting</span>
+      </div>
       <div class="input-wrapper">
         <textarea
           ref="inputRef"
@@ -146,7 +153,7 @@
         <button
           class="send-btn"
           @click="sendMessage"
-          :disabled="!userInput.trim() || isLoading"
+          :disabled="!userInput.trim() || isLoading || !accountStore.activeCredentialId"
           title="Send message (Enter)"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -165,6 +172,13 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { renderMarkdown } from '../utils/markdown'
+import { useAccountStore } from '@/stores/accountStore'
+
+// Get API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:9403'
+
+// Initialize account store for credential context
+const accountStore = useAccountStore()
 
 // Types
 interface ToolUse {
@@ -241,6 +255,25 @@ async function sendMessage() {
   const content = userInput.value.trim()
   if (!content || isLoading.value) return
 
+  // Guard: Require active credential for chat
+  if (!accountStore.activeCredentialId) {
+    connectionStatus.value = 'error'
+    // Add error message to chat
+    const errorMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: 'Please select a trading account before sending messages. Use the account selector in the header.',
+      timestamp: new Date()
+    }
+    messages.value.push(errorMessage)
+    scrollToBottom()
+    // Reset status after showing error
+    setTimeout(() => {
+      connectionStatus.value = 'ready'
+    }, 3000)
+    return
+  }
+
   // Add user message
   const userMessage: ChatMessage = {
     id: crypto.randomUUID(),
@@ -274,16 +307,35 @@ async function sendMessage() {
     currentStreamingMessage.value = assistantMessage
     scrollToBottom()
 
-    // Call the backend API to invoke alpaca-mcp agent
-    const response = await fetch('/api/alpaca-agent/chat', {
+    // Call the backend API to invoke alpaca-mcp agent with credential_id
+    const credentialIdToSend = accountStore.activeCredentialId
+    console.log('[AlpacaAgentChat] Sending request with credential_id:', credentialIdToSend)
+
+    const response = await fetch(`${API_BASE_URL}/api/alpaca-agent/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ message: content })
+      credentials: 'include',  // Required for cookie-based auth
+      body: JSON.stringify({
+        message: content,
+        credential_id: credentialIdToSend
+      })
     })
 
     if (!response.ok) {
+      // Handle 403 specifically - may indicate stale credential
+      if (response.status === 403) {
+        // Clear stale credential from store and localStorage
+        accountStore.activeCredentialId = null
+        try {
+          localStorage.removeItem('activeCredentialId')
+        } catch (e) {
+          console.warn('Failed to clear localStorage:', e)
+        }
+        throw new Error('Credential no longer valid. Please select a trading account.')
+      }
+
       // Try to extract error message from response body
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
       try {
@@ -1128,6 +1180,26 @@ onUnmounted(() => {
   font-size: 0.65rem;
 }
 
+/* No Credential Warning */
+.no-credential-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 16px;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 8px;
+  color: rgb(234, 179, 8);
+  font-size: 0.8125rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.no-credential-warning svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .chat-header {
@@ -1160,6 +1232,63 @@ onUnmounted(() => {
 
   .input-hints {
     display: none;
+  }
+}
+
+/* Small mobile phones */
+@media (max-width: 650px) {
+  .alpaca-chat-container {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height - accounts for mobile browser chrome */
+  }
+
+  .chat-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .header-info h1 {
+    font-size: 0.875rem;
+  }
+
+  /* Wider message bubbles on small screens */
+  .message {
+    max-width: 95%;
+  }
+
+  .message-content {
+    font-size: 0.875rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  /* Touch-friendly input area */
+  .input-area {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .input-wrapper textarea {
+    min-height: 44px;
+    font-size: 1rem; /* Prevents iOS zoom on focus */
+    padding: 0.625rem 0.75rem;
+  }
+
+  .send-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.625rem;
+  }
+
+  /* Compact position indicators */
+  .status-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Scrollable messages area takes remaining space */
+  .messages-area {
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem;
   }
 }
 </style>

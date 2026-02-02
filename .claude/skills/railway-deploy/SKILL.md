@@ -14,14 +14,44 @@ Manages Railway deployments for the Orchestrator 3 Stream application stack (Vue
 - Git repository synced with latest changes
 - The `railway-mcp` subagent available at `.claude/agents/railway-mcp.md`
 
+## Expertise Reference
+
+For detailed configuration, environment variables, and troubleshooting, see the expertise file:
+- **Expertise File**: `.claude/skills/railway-deploy/expertise.yaml`
+
+This expertise file contains:
+- Complete architecture documentation for all 3 services
+- Environment variable mappings (dev vs production)
+- **CRITICAL: Alpaca Elite subscription constraints** (see below)
+- Dev vs Production environment comparison
+- Safe deployment workflow checklists
+- Comprehensive troubleshooting guides
+
+## CRITICAL: Alpaca Elite Subscription Warning
+
+**Production uses Alpaca Elite subscription for OPRA WebSocket feed. Only ONE connection is allowed.**
+
+| Environment | Alpaca Feed | Multi-Credential Testing |
+|-------------|-------------|-------------------------|
+| Development | IEX (safe) | Allowed |
+| Production | OPRA (Elite) | **FORBIDDEN** |
+
+**Rules:**
+1. **NEVER** change `ALPACA_API_KEY` or `ALPACA_SECRET_KEY` in Railway production environment
+2. **NEVER** test Elite credentials in development with `ALPACA_DATA_FEED=opra`
+3. **ALWAYS** use `ALPACA_DATA_FEED=iex` in development
+
+**Risk:** Dev testing can SILENTLY BREAK production WebSocket - see `expertise.yaml` for full details.
+
 ## Configuration
 
 ### Project Structure
 
-| Component | Path | Port |
-|-----------|------|------|
-| Backend (FastAPI) | `apps/orchestrator_3_stream/backend/` | 8002 |
-| Frontend (Vue.js) | `apps/orchestrator_3_stream/frontend/` | 80 |
+| Component | Path | Dev Port | Prod Port |
+|-----------|------|----------|-----------|
+| Backend (FastAPI) | `apps/orchestrator_3_stream/backend/` | 9403 | 8002 |
+| Frontend (Vue.js) | `apps/orchestrator_3_stream/frontend/` | 5175 | 80 |
+| Auth Service (Hono) | `apps/orchestrator_3_stream/auth-service/` | 9404 | 9404 |
 
 ### Docker Images
 
@@ -29,6 +59,7 @@ Manages Railway deployments for the Orchestrator 3 Stream application stack (Vue
 |---------|-----------------|
 | Backend | `apps/orchestrator_3_stream/backend/Dockerfile` |
 | Frontend | `apps/orchestrator_3_stream/frontend/Dockerfile` |
+| Auth Service | `apps/orchestrator_3_stream/auth-service/Dockerfile` |
 
 ### Railway MCP Config
 
@@ -87,12 +118,21 @@ The Dockerfile is at apps/orchestrator_3_stream/frontend/Dockerfile.
 Configure nginx to use Railway's $PORT variable.
 ```
 
+#### Deploy Auth Service
+Delegate to railway-mcp with prompt:
+```
+Deploy the auth service from apps/orchestrator_3_stream/auth-service/ to Railway.
+The Dockerfile is at apps/orchestrator_3_stream/auth-service/Dockerfile.
+Use port 9404 (AUTH_PORT or Railway's $PORT variable).
+```
+
 #### Full Stack Deployment
 Delegate to railway-mcp with prompt:
 ```
-Deploy both services to Railway:
+Deploy all three services to Railway:
 1. Backend from apps/orchestrator_3_stream/backend/ (FastAPI, port 8002)
-2. Frontend from apps/orchestrator_3_stream/frontend/ (Vue.js/nginx)
+2. Frontend from apps/orchestrator_3_stream/frontend/ (Vue.js/nginx, port 80)
+3. Auth from apps/orchestrator_3_stream/auth-service/ (Hono, port 9404)
 Link them in the same project and configure domains.
 ```
 

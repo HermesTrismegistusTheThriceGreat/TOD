@@ -1,0 +1,466 @@
+{
+  "extraction_metadata": {
+    "extraction_date": "2026-01-29",
+    "sources_count": 4,
+    "extraction_focus": "Alpaca MCP Server implementation details for integration"
+  },
+  "sources": [
+    {
+      "source_id": 1,
+      "url": "https://github.com/alpacahq/alpaca-mcp-server",
+      "source_type": "GitHub Repository",
+      "date_accessed": "2026-01-29",
+      "context": "Official Alpaca MCP Server GitHub repository - Primary implementation source",
+      "key_facts": [
+        {
+          "category": "MCP Protocol Implementation",
+          "fact": "Python-based server implementing Model Context Protocol standard",
+          "details": "Architecture consists of: MCP Server Component (server.py), Configuration Management (config.py), CLI Interface (cli.py), Helper Functions (helper.py)",
+          "quote": "The server implements the Model Context Protocol standard, exposing trading functionality as tools that LLMs can discover and invoke."
+        },
+        {
+          "category": "Supported Asset Classes",
+          "fact": "Multi-asset support across stocks, crypto, and options",
+          "details": "Stocks & ETFs: Full trading capabilities including market, limit, stop, stop-limit, and trailing-stop orders. Cryptocurrencies: Market, limit, and stop-limit orders with GTC/IOC time-in-force options. Options: Single-leg and multi-leg strategies (spreads, straddles, etc.) with Greeks analysis. Market Data: Real-time quotes, historical bars, trades, and comprehensive snapshots",
+          "exact_quote": "The MCP server enables trading and analysis across multiple asset classes: Stocks & ETFs, Cryptocurrencies, Options, Market Data"
+        },
+        {
+          "category": "Available Tools - Account Management",
+          "fact": "7 account and portfolio management tools",
+          "details": "get_account_info(), get_all_positions(), get_open_position(symbol), get_portfolio_history(), close_position(), close_all_positions()",
+          "technical_note": "View balance, margin, account status, positions, P/L over time, partial/full liquidation"
+        },
+        {
+          "category": "Available Tools - Market Data",
+          "fact": "Comprehensive market data access across asset classes",
+          "details": "Stock Data: Bars, quotes, trades, latest data with configurable timeframes (1Min to 1Month). Crypto Data: Historical bars, quotes, trades, orderbooks. Options Data: Contract search, Greeks, implied volatility, snapshots. Market Status: Clock information, calendar, corporate actions",
+          "supported_timeframes": "1Min, 5Min, 15Min, 1Hour, 4Hour, 1Day, 1Week, 1Month"
+        },
+        {
+          "category": "Available Tools - Order Management",
+          "fact": "5 order management functions",
+          "details": "place_stock_order(), place_crypto_order(), place_option_order(), get_orders(), cancel_all_orders(), cancel_order_by_id()",
+          "technical_note": "Supports market, limit, stop, stop-limit, trailing-stop orders for stocks; crypto-specific orders with quantity/notional sizing; single/multi-leg options strategies"
+        },
+        {
+          "category": "Available Tools - Watchlist Management",
+          "fact": "5 watchlist management functions",
+          "details": "create_watchlist(), get_watchlists(), update_watchlist_by_id(), add_asset_to_watchlist_by_id(), remove_asset_from_watchlist_by_id()"
+        },
+        {
+          "category": "Available Tools - Asset Search",
+          "fact": "2 asset search functions with filtering",
+          "details": "get_asset(), get_all_assets() with filtering by status, class, exchange, attributes"
+        },
+        {
+          "category": "Available Tools - Options Trading",
+          "fact": "4 options-specific tools",
+          "details": "get_option_contracts() with expiration/strike filtering, get_option_latest_quote(), get_option_snapshot() with Greeks, exercise_options_position()"
+        },
+        {
+          "category": "Installation Method 1",
+          "fact": "uvx installation (recommended)",
+          "code_example": "uvx alpaca-mcp-server init",
+          "details": "Automatically configures API keys and client settings with guided prompts"
+        },
+        {
+          "category": "Installation Method 2",
+          "fact": "Python installation script",
+          "code_example": "git clone https://github.com/alpacahq/alpaca-mcp-server.git\ncd alpaca-mcp-server\npython3 install.py",
+          "details": "Sets up virtual environment, creates .env file, and configures MCP clients"
+        },
+        {
+          "category": "Installation Method 3",
+          "fact": "Docker deployment",
+          "code_example": "docker build -t mcp/alpaca:latest .",
+          "details": "Suitable for remote hosting and containerized environments"
+        },
+        {
+          "category": "Installation Method 4",
+          "fact": "Cursor Directory one-click install",
+          "details": "Users can install directly from Cursor Directory by clicking 'Add to Cursor', then entering API credentials"
+        },
+        {
+          "category": "Client Configuration - Claude Desktop",
+          "fact": "JSON configuration for Claude Desktop using uvx",
+          "code_example": "{\n  \"mcpServers\": {\n    \"alpaca\": {\n      \"type\": \"stdio\",\n      \"command\": \"uvx\",\n      \"args\": [\"alpaca-mcp-server\", \"serve\"],\n      \"env\": {\n        \"ALPACA_API_KEY\": \"your_alpaca_api_key\",\n        \"ALPACA_SECRET_KEY\": \"your_alpaca_secret_key\"\n      }\n    }\n  }\n}",
+          "config_locations": {
+            "mac": "~/Library/Application Support/Claude/claude_desktop_config.json",
+            "windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+            "cursor": "~/.cursor/mcp.json",
+            "vscode": ".vscode/mcp.json"
+          }
+        },
+        {
+          "category": "Prerequisites",
+          "fact": "System requirements for installation",
+          "details": "Python 3.10+, uv package manager, Alpaca Trading API keys (free paper trading available), MCP client (Claude Desktop, Cursor, VS Code, etc.), Terminal/Command Prompt access"
+        },
+        {
+          "category": "Configuration - Environment File",
+          "fact": "Environment variable configuration",
+          "code_example": "ALPACA_API_KEY = \"your_alpaca_api_key\"\nALPACA_SECRET_KEY = \"your_alpaca_secret_key\"\nALPACA_PAPER_TRADE = True\nTRADE_API_URL = None\nTRADE_API_WSS = None\nDATA_API_URL = None\nSTREAM_DATA_WSS = None",
+          "technical_note": "For live trading, set ALPACA_PAPER_TRADE = False and update both .env file and MCP client configuration JSON (client config takes precedence)"
+        },
+        {
+          "category": "Use Case Examples - Basic Trading",
+          "fact": "Natural language trading examples",
+          "examples": [
+            "Buy 5 shares of AAPL at market price",
+            "Sell 5 shares of TSLA with a limit price of $300",
+            "Liquidate my entire position in GOOGL",
+            "Close 10% of my position in NVDA"
+          ]
+        },
+        {
+          "category": "Use Case Examples - Options Trading",
+          "fact": "Natural language options examples",
+          "examples": [
+            "Show me available option contracts for AAPL expiring next month",
+            "Place a bull call spread using AAPL June 6th options: $190 and $200 strikes",
+            "Get the Greeks for TSLA250620P00500000 option",
+            "Exercise my NVDA call option"
+          ]
+        },
+        {
+          "category": "Use Case Examples - Market Analysis",
+          "fact": "Natural language market data examples",
+          "examples": [
+            "Show me AAPL's daily price history for the last 5 trading days",
+            "Get a comprehensive stock snapshot for AAPL",
+            "Compare market snapshots for TSLA, NVDA, and MSFT",
+            "Show me recent cash dividends for AAPL, MSFT, GOOGL"
+          ]
+        },
+        {
+          "category": "Use Case Examples - Crypto Trading",
+          "fact": "Natural language crypto examples",
+          "examples": [
+            "Place a market order to buy 0.01 ETH/USD",
+            "Place a limit order to sell 0.01 BTC/USD at $110,000"
+          ]
+        },
+        {
+          "category": "Project Structure",
+          "fact": "Repository organization",
+          "code_example": "alpaca-mcp-server/\n├── src/alpaca_mcp_server/\n│   ├── __init__.py\n│   ├── cli.py           (Command-line interface)\n│   ├── config.py        (Configuration management)\n│   ├── helper.py        (Helper functions)\n│   └── server.py        (MCP server implementation)\n├── .env.example         (Environment template)\n├── Dockerfile           (Docker configuration)\n├── pyproject.toml       (Package configuration)\n├── requirements.txt     (Python dependencies)\n└── install.py          (Installation script)"
+        },
+        {
+          "category": "API Integration",
+          "fact": "Alpaca API integration capabilities",
+          "details": "Communicates with Alpaca's Trading API and Data API endpoints, supporting: Paper trading mode (default, risk-free), Live trading mode (real funds), Multiple account switching, Real-time and historical data feeds"
+        },
+        {
+          "category": "Limitations - Data Subscription",
+          "fact": "Latest 15-minute market data requires 'Algo Trader Plus Plan'",
+          "technical_note": "Data subscription level affects access to real-time data"
+        },
+        {
+          "category": "Limitations - Watchlist Viewing",
+          "fact": "Currently limited to watchlists created via Trading API (not web interface)"
+        },
+        {
+          "category": "Limitations - Options Greeks",
+          "fact": "Greeks calculated from market data; availability depends on data subscription level"
+        },
+        {
+          "category": "Limitations - Paper vs Live",
+          "fact": "Paper trading account recommended for testing before live trading"
+        },
+        {
+          "category": "Limitations - MCP Requirement",
+          "fact": "Both server and client installation/configuration needed"
+        },
+        {
+          "category": "License",
+          "fact": "MIT License (open source, freely usable with attribution)"
+        }
+      ]
+    },
+    {
+      "source_id": 2,
+      "url": "https://docs.alpaca.markets/docs/alpaca-mcp-server",
+      "source_type": "Official Documentation",
+      "date_accessed": "2026-01-29",
+      "last_updated": "November 20, 2025",
+      "context": "Official Alpaca MCP Server documentation",
+      "key_facts": [
+        {
+          "category": "MCP Architecture",
+          "fact": "MCP server acts as bridge between AI interfaces and trading capabilities",
+          "exact_quote": "An MCP server itself acts as a bridge between the MCP client (AI interfaces) and the capabilities."
+        },
+        {
+          "category": "Function Count",
+          "fact": "Server exposes 43 functions across multiple categories",
+          "categories": "Account & Portfolio, Market Data, Trading Operations, Data Management"
+        },
+        {
+          "category": "Supported MCP Clients",
+          "fact": "Multiple client support with local and remote options",
+          "clients": {
+            "claude_desktop": "Local or Remote",
+            "claude_web_mobile": "Remote only",
+            "chatgpt": "Remote only",
+            "vs_code": "Local or Remote",
+            "cursor": "Local or Remote",
+            "pycharm": "Local or Remote",
+            "claude_code_cli": "Local or Remote",
+            "gemini_cli": "Local or Remote"
+          },
+          "important_note": "Remote hosting is currently unavailable; self-hosting is required for remote deployments"
+        },
+        {
+          "category": "Prerequisites",
+          "fact": "System requirements identical to GitHub source",
+          "details": "Python 3.10+, uv package manager, Terminal access, Alpaca API keys (paper trading available), MCP client application"
+        },
+        {
+          "category": "Authentication",
+          "fact": "API key authentication required",
+          "technical_note": "Alpaca API keys must be linked to correct account type (live or paper)"
+        },
+        {
+          "category": "Safety Considerations",
+          "fact": "Manual verification recommended for orders",
+          "exact_quote": "Review and confirm orders directly on your Alpaca dashboard. You can do this in real time to ensure accuracy before or after submitting trades."
+        },
+        {
+          "category": "Security - Remote Deployment",
+          "fact": "Security requirements for remote hosting",
+          "exact_quote": "Remote deployment should include HTTPS or TLS for encrypted communication and a reliable token based authentication method to protect credentials"
+        },
+        {
+          "category": "Main Benefits - Decision Support",
+          "fact": "Access to data without autonomous execution",
+          "details": "Real-time market data and portfolio details accessible for human decision making"
+        },
+        {
+          "category": "Main Benefits - Multi-Asset Interface",
+          "fact": "Unified workflow across asset classes",
+          "details": "Single interface for equities, ETFs, crypto, and options"
+        },
+        {
+          "category": "Main Benefits - Progressive Complexity",
+          "fact": "Natural language to code progression",
+          "details": "Begin with natural language prompts, advancing to code-based optimization"
+        },
+        {
+          "category": "Legal Disclaimer",
+          "fact": "Educational purposes only disclaimer",
+          "exact_quote": "Insights generated by our MCP server and connected AI agents are for educational and informational purposes only and should not be taken as investment advice."
+        }
+      ]
+    },
+    {
+      "source_id": 3,
+      "url": "https://alpaca.markets/mcp-server",
+      "source_type": "Product Page",
+      "date_accessed": "2026-01-29",
+      "context": "Official product marketing page",
+      "key_facts": [
+        {
+          "category": "Product Tagline",
+          "fact": "Ask. Build. Analyze. Automate. Execute.",
+          "details": "Trading operations through AI interfaces without traditional coding"
+        },
+        {
+          "category": "Core Value Proposition",
+          "fact": "Natural language to structured API translation",
+          "details": "Integrates with popular AI platforms to translate natural language prompts into structured API requests"
+        },
+        {
+          "category": "Trading Capabilities",
+          "fact": "Multi-asset execution with transparency",
+          "details": "Execute trades in fractional equities, cryptocurrencies, ETFs, and multi-leg options (spreads, condors). Full visibility with 'every prompt, parameter, and order payload' viewable before market execution",
+          "exact_quote": "Full visibility into AI-driven trades with every prompt, parameter, and order payload viewable before market execution"
+        },
+        {
+          "category": "Market Access Features",
+          "fact": "Comprehensive market data and analysis",
+          "details": "Live and historical market data retrieval, Portfolio P&L analysis, Corporate actions information, Real-time pricing across supported asset classes"
+        },
+        {
+          "category": "Testing Environment",
+          "fact": "Paper trading with realistic simulation",
+          "details": "Paper trading with simulated $100K funds and real market data. Live trading activation by updating API keys"
+        },
+        {
+          "category": "Supported AI Platforms",
+          "fact": "Wide platform compatibility",
+          "platforms": [
+            "Claude Desktop",
+            "Claude Mobile",
+            "ChatGPT",
+            "Cursor IDE",
+            "Visual Studio Code (with Copilot)",
+            "PyCharm",
+            "Claude Code (CLI)",
+            "Gemini CLI",
+            "Postman Desktop"
+          ]
+        },
+        {
+          "category": "Account Requirements",
+          "fact": "Low barrier to entry",
+          "details": "No minimum deposit, Free account creation available, Paper and live trading both supported"
+        },
+        {
+          "category": "Documentation Reference",
+          "fact": "Complete setup documentation available",
+          "details": "Step-by-step configuration for each supported platform in official GitHub repository (alpacahq/alpaca-mcp-server)"
+        }
+      ]
+    },
+    {
+      "source_id": 4,
+      "url": "https://alpaca.markets/learn/how-traders-are-using-ai-agents-to-create-trading-bots-with-alpaca",
+      "source_type": "Tutorial/Educational Article",
+      "date_accessed": "2026-01-29",
+      "context": "Guide on AI agent integration with Alpaca",
+      "key_facts": [
+        {
+          "category": "MCP Implementation Reference",
+          "fact": "Community MCP implementation cited",
+          "details": "References Model Context Protocol implementation by GitHub user tedlikeskix that enables LLMs like Claude to interact with Alpaca's Trading API",
+          "capability": "Trades and market data queries through natural language without requiring traditional coding",
+          "exact_quote": "Trade stocks, check balances, and fetch data via chat with context memory and dynamic prompts"
+        },
+        {
+          "category": "Implementation Approach 1",
+          "fact": "No-Code Automation with Zapier",
+          "details": "Using ChatGPT 3.5, Alpaca's API, and Zapier integration enables automated, zero-code stock trading bot by analyzing data from stock news RSS feed",
+          "benefits": "Rapid prototyping and natural language command execution"
+        },
+        {
+          "category": "Implementation Approach 2",
+          "fact": "Zapier Agents",
+          "exact_quote": "Build a no-code AI assistant that researches and understands stock trading commands and routes them to Alpaca using Zapier Agents"
+        },
+        {
+          "category": "Implementation Approach 3",
+          "fact": "Technical Analysis Integration",
+          "exact_quote": "Set up a zero-code AI trading bot using TAAPI for technical analysis combined with ChatGPT for analysis and Alpaca for execution"
+        },
+        {
+          "category": "Critical Limitation 1",
+          "fact": "Command interpretation issues",
+          "exact_quote": "NLPs, MCPs, AI Agents, and LLMs aren't perfect and can misinterpret commands",
+          "risk_level": "High"
+        },
+        {
+          "category": "Critical Limitation 2",
+          "fact": "Mathematical limitations",
+          "details": "Math limitations in some LLMs affect backtesting accuracy"
+        },
+        {
+          "category": "Critical Limitation 3",
+          "fact": "Risk logic failures",
+          "details": "Risk logic failures without proper guardrails can lead to unintended trades"
+        },
+        {
+          "category": "Critical Limitation 4",
+          "fact": "API rate limiting",
+          "details": "API rate limits can affect high-frequency operations"
+        },
+        {
+          "category": "Safety Recommendation 1",
+          "fact": "Start with paper trading",
+          "details": "Test all functionality in paper trading environment before live execution"
+        },
+        {
+          "category": "Safety Recommendation 2",
+          "fact": "Add explicit trade confirmations",
+          "details": "Implement manual confirmation steps for trade execution"
+        },
+        {
+          "category": "Safety Recommendation 3",
+          "fact": "Use limit orders and cap position sizes",
+          "details": "Implement risk controls through order types and position sizing"
+        },
+        {
+          "category": "Safety Recommendation 4",
+          "fact": "Test every new command thoroughly",
+          "details": "Comprehensive testing required before deploying new trading commands"
+        }
+      ]
+    }
+  ],
+  "integration_implementation_summary": {
+    "core_architecture": {
+      "protocol": "Model Context Protocol (MCP)",
+      "language": "Python 3.10+",
+      "communication": "stdio-based tool invocation",
+      "key_components": [
+        "server.py - MCP protocol implementation",
+        "config.py - Configuration and credentials management",
+        "cli.py - Command-line interface",
+        "helper.py - Utility functions"
+      ]
+    },
+    "deployment_options": [
+      {
+        "method": "uvx (recommended)",
+        "command": "uvx alpaca-mcp-server init",
+        "use_case": "Quick setup with guided configuration"
+      },
+      {
+        "method": "Python installation script",
+        "use_case": "Manual setup with full control"
+      },
+      {
+        "method": "Docker",
+        "use_case": "Containerized deployment, remote hosting"
+      },
+      {
+        "method": "IDE integration",
+        "use_case": "Direct installation in Cursor, VS Code, PyCharm"
+      }
+    ],
+    "configuration_pattern": {
+      "type": "JSON configuration file",
+      "location_varies_by_client": true,
+      "required_fields": [
+        "command (uvx or python path)",
+        "args (alpaca-mcp-server serve)",
+        "env.ALPACA_API_KEY",
+        "env.ALPACA_SECRET_KEY",
+        "env.ALPACA_PAPER_TRADE (optional, defaults to true)"
+      ]
+    },
+    "api_surface": {
+      "total_functions": 43,
+      "categories": {
+        "account_portfolio": 7,
+        "market_data": "Multiple per asset class",
+        "order_management": 5,
+        "watchlist": 5,
+        "asset_search": 2,
+        "options": 4
+      }
+    },
+    "security_considerations": [
+      "API keys stored in environment variables",
+      "HTTPS/TLS required for remote deployment",
+      "Token-based authentication for remote access",
+      "Manual order verification recommended",
+      "Paper trading default for safety"
+    ],
+    "limitations_to_address": [
+      "Real-time data requires paid subscription",
+      "Watchlists limited to API-created only",
+      "LLM command misinterpretation possible",
+      "API rate limits apply",
+      "Math limitations affect backtesting"
+    ],
+    "integration_best_practices": [
+      "Start with paper trading environment",
+      "Implement explicit trade confirmations",
+      "Use limit orders and position size caps",
+      "Test all commands thoroughly",
+      "Monitor all executions in real-time via dashboard",
+      "Implement proper error handling for API failures",
+      "Add guardrails for risk management"
+    ]
+  }
+}

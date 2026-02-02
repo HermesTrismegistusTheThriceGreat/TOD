@@ -13,6 +13,7 @@ Models:
 """
 
 from typing import Optional, Literal, Dict, Any
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 
 
@@ -29,6 +30,7 @@ class AlpacaAgentChatRequest(BaseModel):
 
     Attributes:
         message: User's natural language input (e.g., "What are my current positions?")
+        credential_id: UUID of the credential to use for this trading operation
     """
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,6 +40,11 @@ class AlpacaAgentChatRequest(BaseModel):
         min_length=1
     )
 
+    credential_id: str = Field(
+        ...,
+        description="UUID of the credential to use for this trading operation"
+    )
+
     @field_validator('message')
     @classmethod
     def validate_message_not_empty(cls, v: str) -> str:
@@ -45,6 +52,16 @@ class AlpacaAgentChatRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("Message cannot be empty or whitespace only")
         return v.strip()
+
+    @field_validator('credential_id')
+    @classmethod
+    def validate_credential_id(cls, v: str) -> str:
+        """Validate credential_id is a valid UUID."""
+        try:
+            UUID(v)
+            return v
+        except ValueError:
+            raise ValueError("credential_id must be a valid UUID")
 
 
 class AlpacaAgentChatResponse(BaseModel):

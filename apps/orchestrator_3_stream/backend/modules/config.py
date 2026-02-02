@@ -68,6 +68,21 @@ DATABASE_POOL_SIZE = int(os.getenv("DATABASE_POOL_SIZE", "10"))
 DATABASE_MAX_OVERFLOW = int(os.getenv("DATABASE_MAX_OVERFLOW", "20"))
 
 # ============================================================================
+# ENCRYPTION CONFIGURATION
+# ============================================================================
+
+# Encryption key for credential storage (Fernet)
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "")
+
+# Validate encryption key is set (required for credential storage)
+if not ENCRYPTION_KEY:
+    config_logger.warning(
+        "ENCRYPTION_KEY not set - credential encryption disabled. "
+        "Generate with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
+
+# ============================================================================
 # LOGGING CONFIGURATION
 # ============================================================================
 
@@ -232,6 +247,7 @@ config_logger.info(
     if len(DATABASE_URL) > 40
     else f"Database URL:    {DATABASE_URL}"
 )
+config_logger.info(f"Encryption Key:  {'configured' if ENCRYPTION_KEY else 'NOT SET (required for credentials)'}")
 config_logger.info(f"Log Level:       {LOG_LEVEL}")
 config_logger.info(f"Log Directory:   {LOG_DIR}")
 config_logger.info(f"CORS Origins:    {', '.join(CORS_ORIGINS)}")

@@ -1,6 +1,6 @@
 frontend_expertise:
   meta:
-    last_validated: "2026-01-21"
+    last_validated: "2026-02-02"
     codebase_path: "apps/orchestrator_3_stream/frontend"
     skill_file: ".claude/skills/orchestrator-frontend/SKILL.md"
     max_lines: 600
@@ -112,6 +112,20 @@ frontend_expertise:
         path: "src/components/FilterControls.vue"
         purpose: "Reusable filter UI with tabs, search, quick filters"
 
+    account:
+      - name: "AccountListView"
+        path: "src/components/AccountListView.vue"
+        purpose: "Account/credential list management with table, add/edit/delete actions"
+      - name: "AccountDataDisplay"
+        path: "src/components/AccountDataDisplay.vue"
+        purpose: "Real-time Alpaca account data display (balance, equity, buying power)"
+      - name: "AccountManagerDialog"
+        path: "src/components/AccountManagerDialog.vue"
+        purpose: "Add/edit credential dialog with form validation"
+      - name: "AccountSelector"
+        path: "src/components/AccountSelector.vue"
+        purpose: "Account selection dropdown for active credential"
+
     auth:
       - name: "LoginForm"
         path: "src/components/auth/LoginForm.vue"
@@ -153,6 +167,9 @@ frontend_expertise:
       - name: "OpenPositionCard"
         path: "src/components/OpenPositionCard.vue"
         purpose: "Open position display card"
+      - name: "TradeStats"
+        path: "src/components/TradeStats.vue"
+        purpose: "Trade performance statistics display"
 
   websocket:
     connection:
@@ -252,113 +269,51 @@ frontend_expertise:
 
       system:
         - type: "connection_established"
-          handler: "orchestratorStore.ts:handleConnectionEstablished"
-          description: "WebSocket connection confirmed"
+          handler: "chatService.ts:inline console.log"
+          description: "WebSocket connection confirmed (logs client_id)"
         - type: "error"
-          handler: "orchestratorStore.ts:handleError"
+          handler: "chatService.ts:callbacks.onError"
           description: "Error message from backend"
-        - type: "heartbeat"
-          handler: "orchestratorStore.ts:handleHeartbeat"
-          description: "Connection keepalive"
+        # Note: heartbeat is NOT currently implemented in chatService.ts switch
 
-  store:
-    file: "src/stores/orchestratorStore.ts"
-    pattern: "Composition API with defineStore"
-
-    state:
-      agents:
-        - name: "agents"
-          type: "Agent[]"
-          description: "All registered agents"
-        - name: "selectedAgentId"
-          type: "string | null"
-          description: "Currently selected agent ID"
-        - name: "orchestratorAgentId"
-          type: "string"
-          description: "Main orchestrator agent ID"
-        - name: "orchestratorAgent"
-          type: "OrchestratorAgent | null"
-          description: "Main orchestrator agent object"
-
-      events:
-        - name: "eventStreamEntries"
-          type: "EventStreamEntry[]"
-          description: "Event log entries"
-        - name: "eventStreamFilter"
-          type: "EventStreamFilter"
-          description: "Current filter ('all', agent name, etc.)"
-        - name: "autoScroll"
-          type: "boolean"
-          description: "Auto-scroll to latest events"
-
-      chat:
-        - name: "chatMessages"
-          type: "ChatMessage[]"
-          description: "Chat message history"
-        - name: "isTyping"
-          type: "boolean"
-          description: "Typing indicator state"
-        - name: "chatWidth"
-          type: "'sm' | 'md' | 'lg'"
-          description: "Chat panel width"
-
-      websocket:
-        - name: "isConnected"
-          type: "boolean"
-          description: "WebSocket connection status"
-        - name: "websocketEventCount"
-          type: "number"
-          description: "Total events received"
-
-      adw:
-        - name: "viewMode"
-          type: "ViewMode"
-          description: "Current view ('logs' | 'adws' | 'open-positions' | 'calendar' | 'trade-stats')"
-        - name: "adws"
-          type: "ADW[]"
-          description: "All ADW workflows"
-        - name: "selectedAdwId"
-          type: "string | null"
-          description: "Currently selected ADW ID"
-
-      alpaca:
-        - name: "alpacaPositions"
-          type: "AlpacaPosition[]"
-          description: "Current trading positions"
-        - name: "alpacaPriceCache"
-          type: "Map<string, OptionPriceUpdate>"
-          description: "Option prices by symbol (shallowRef)"
-        - name: "spotPriceCache"
-          type: "Map<string, SpotPriceUpdate>"
-          description: "Spot prices by symbol (shallowRef)"
-
-    getters:
-      - name: "selectedAgent"
-        returns: "Agent | undefined"
-        description: "Currently selected agent object"
-      - name: "filteredEventStream"
-        returns: "EventStreamEntry[]"
-        description: "Filtered event stream based on current filter"
-
-    actions:
-      - name: "initialize"
-        params: []
-        description: "Load initial data and connect WebSocket"
-      - name: "selectAgent"
-        params: ["id: string"]
-        description: "Select an agent by ID"
-      - name: "sendUserMessage"
-        params: ["content: string"]
-        description: "Send chat message to orchestrator"
-      - name: "setViewMode"
-        params: ["mode: ViewMode"]
-        description: "Switch dashboard view mode"
-      - name: "connectWebSocket"
-        params: []
-        description: "Establish WebSocket connection"
-      - name: "disconnectWebSocket"
-        params: []
-        description: "Close WebSocket connection"
+  stores:
+    - name: "orchestratorStore"
+      file: "src/stores/orchestratorStore.ts"
+      pattern: "Composition API with defineStore"
+      purpose: "Main application state for agents, events, chat, ADW, Alpaca"
+    - name: "accountStore"
+      file: "src/stores/accountStore.ts"
+      pattern: "Composition API with defineStore"
+      purpose: "User account and credential management state"
+      state:
+        - "userAccount: UserAccountResponse | null"
+        - "credentials: CredentialResponse[]"
+        - "activeCredentialId: string | null"
+        - "isLoading: boolean"
+        - "error: string | null"
+        - "isInitialized: boolean"
+        - "accountData: AccountDataResponse | null"
+        - "accountDataLoading: boolean"
+      getters:
+        - "activeCredential: computed credential object"
+        - "hasCredentials: boolean"
+        - "alpacaCredentials: filtered by type"
+        - "hasAccountData: boolean"
+      actions:
+        - "initialize(): Get/create account and fetch credentials (idempotent)"
+        - "reset(): Clear all state for logout"
+        - "fetchCredentials(accountId?): Fetch credentials for account"
+        - "addCredential(input): Store new credential"
+        - "updateCredential(id, data): Update existing credential"
+        - "removeCredential(id): Delete credential"
+        - "setActiveCredential(id): Set active credential for trading"
+        - "loadActiveCredential(): Load from localStorage"
+        - "fetchAccountData(id): Fetch real-time Alpaca account data"
+        - "clearAccountData(): Clear account data"
+    - name: "authStore"
+      file: "src/stores/authStore.ts"
+      pattern: "Composition API with defineStore"
+      purpose: "Authentication state with Better Auth"
 
   composables:
     - name: "useEventStreamFilter"
@@ -420,6 +375,15 @@ frontend_expertise:
     - name: "fileService"
       path: "src/services/fileService.ts"
       purpose: "File operations API"
+    - name: "credentialService"
+      path: "src/services/credentialService.ts"
+      purpose: "Account/credential HTTP service for CRUD operations"
+      exports: ["default", "credentialService", "storeCredential", "listCredentials", "updateCredential", "deleteCredential", "validateCredential", "getAccountData", "getOrCreateAccount", "listAccounts"]
+    - name: "positionsService"
+      path: "src/services/positionsService.ts"
+      purpose: "Trading positions and orders HTTP service"
+      exports: ["default", "fetchPositions", "fetchPositionById", "fetchOrders"]
+      types: ["Position", "PositionsResponse", "Order", "OrdersResponse"]
 
   config:
     - name: "constants"
@@ -469,22 +433,57 @@ frontend_expertise:
 
   types:
     file: "src/types.d.ts"
-    additional: "src/types/*.ts"
+    additional_files:
+      - path: "src/types/alpaca.ts"
+        description: "Alpaca trading types with snake_case to camelCase transforms"
+        key_types:
+          - "RawOpenPosition"
+          - "RawOptionLeg"
+          - "RawOptionPriceUpdate"
+          - "OpenPosition"
+          - "OptionLeg"
+          - "OptionPriceUpdate"
+          - "GetPositionsResponse"
+          - "CloseStrategyResponse"
+      - path: "src/types/trades.ts"
+        description: "Trade history and statistics types"
+        key_types:
+          - "Trade"
+          - "TradeListResponse"
+          - "TradeStats"
+          - "DetailedTrade"
+          - "LegDetail"
+          - "TradeSummary"
+          - "OrderDetail"
+      - path: "src/types/account.ts"
+        description: "Account and credential management types"
+        key_types:
+          - "CredentialResponse"
+          - "ListCredentialsResponse"
+          - "ValidateCredentialResponse"
+          - "CredentialInput"
+          - "CredentialUpdate"
+          - "UserAccountResponse"
+          - "ListAccountsResponse"
+          - "GetOrCreateAccountResponse"
+          - "AccountDataResponse"
     key_interfaces:
       - name: "Agent"
         description: "Agent metadata"
       - name: "ChatMessage"
-        description: "Chat message structure"
+        description: "Chat message structure (union: text | thinking | tool_use)"
       - name: "EventStreamEntry"
-        description: "Event log entry"
-      - name: "ADW"
-        description: "ADW workflow"
-      - name: "AlpacaPosition"
-        description: "Trading position"
-      - name: "OptionPriceUpdate"
-        description: "Real-time option price"
-      - name: "SpotPriceUpdate"
-        description: "Real-time spot price"
+        description: "Unified event log entry with sourceType discriminator"
+      - name: "AiDeveloperWorkflow"
+        description: "ADW workflow state"
+      - name: "OrchestratorAgent"
+        description: "Main orchestrator agent"
+      - name: "SystemMessageInfo"
+        description: "System message metadata (session_id, cwd, tools, model)"
+      - name: "SlashCommand"
+        description: "Slash command definition"
+      - name: "SubagentTemplate"
+        description: "Subagent template with frontmatter and prompt_body"
       - name: "ViewMode"
         values: ["logs", "adws", "open-positions", "calendar", "trade-stats"]
 
@@ -526,6 +525,31 @@ frontend_expertise:
     shallow_refs:
       - "alpacaPriceCache"
       - "spotPriceCache"
+
+  design_standards:
+    reference: ".claude/skills/orchestrator-frontend/design-standards.md"
+    mobile_responsive: ".claude/skills/orchestrator-frontend/mobile-responsive-synthesis.md"
+    research_report: "app_docs/research/vue-ui-ux-design-best-practices-2026-02-02.md"
+    color_system:
+      primary_bg: "#0a0a0a"
+      secondary_bg: "#1a1a1a"
+      accent_primary: "#06b6d4"
+      accent_hover: "#0891b2"
+      agent_purple: "#a855f7"
+    typography:
+      font_sans: "system-ui, -apple-system, sans-serif"
+      font_mono: "JetBrains Mono, Fira Code, monospace"
+      base_size: "1rem"
+    spacing_scale: "4px increments (0.25rem to 2rem)"
+    mobile_breakpoints:
+      primary: "650px"
+      tablet: "768px"
+      desktop: "1024px"
+    touch_targets: "44x44px minimum"
+    animation_timing:
+      micro: "150ms"
+      standard: "200ms"
+      layout: "300ms"
 
   build:
     config: "vite.config.ts"

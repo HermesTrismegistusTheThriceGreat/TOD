@@ -1,0 +1,827 @@
+{
+  "extraction_metadata": {
+    "fetcher": "research-fetcher-agent",
+    "extraction_date": "2026-01-31",
+    "sources_processed": 3,
+    "fetch_method": "webfetch",
+    "total_facts_extracted": 87
+  },
+  "sources": [
+    {
+      "source": {
+        "title": "everything-claude-code",
+        "url": "https://github.com/affaan-m/everything-claude-code",
+        "author": "affaan-m (Anthropic hackathon winner)",
+        "date": "2025 (active)",
+        "credibility": 4,
+        "stars": "36.2k",
+        "type": "GitHub repository - production plugin"
+      },
+      "fetch_method": "webfetch",
+      "summary": "Battle-tested Claude Code plugin providing production-ready configurations for agents, skills, hooks, commands, rules, and MCP setups. Represents comprehensive patterns from hackathon winner with focus on modular architecture, token optimization, and cross-session memory persistence.",
+      "key_concepts": [
+        {
+          "concept": "Agents (Specialized Subagents)",
+          "description": "Delegated task handlers with limited scope and tool access restrictions",
+          "type": "architecture_pattern"
+        },
+        {
+          "concept": "Skills (Workflow Definitions)",
+          "description": "Domain knowledge and methodology patterns organized hierarchically with automatic activation",
+          "type": "architecture_pattern"
+        },
+        {
+          "concept": "Hooks (Event-Driven Automation)",
+          "description": "Trigger-based automations firing on tool events for lifecycle management",
+          "type": "automation_pattern"
+        },
+        {
+          "concept": "Commands (Slash Invocations)",
+          "description": "Quick-execution workflows triggered via /command syntax",
+          "type": "interface_pattern"
+        },
+        {
+          "concept": "Rules (Always-Follow Guidelines)",
+          "description": "Mandatory guidelines stored in ~/.claude/rules/ for consistent behavior",
+          "type": "constraint_pattern"
+        },
+        {
+          "concept": "Continuous Learning v2",
+          "description": "Instinct-based learning with confidence scoring for pattern evolution",
+          "type": "learning_pattern"
+        },
+        {
+          "concept": "Iterative Retrieval",
+          "description": "Progressive context refinement for subagents to optimize token usage",
+          "type": "optimization_pattern"
+        },
+        {
+          "concept": "Package Manager Detection",
+          "description": "Automatic detection with 6-level priority cascade for cross-platform support",
+          "type": "configuration_pattern"
+        }
+      ],
+      "facts": [
+        {
+          "claim": "Claude Code v2.1+ auto-loads hooks/hooks.json by convention",
+          "type": "configuration",
+          "context": "Hooks configuration section",
+          "exact_quote": true,
+          "verifiable": true,
+          "importance": "critical"
+        },
+        {
+          "claim": "Do NOT declare hooks in plugin.json to avoid duplicate detection errors",
+          "type": "caution",
+          "context": "Hooks configuration best practices",
+          "exact_quote": true,
+          "verifiable": true,
+          "importance": "critical"
+        },
+        {
+          "claim": "200k context window can shrink to 70k with too many tools enabled",
+          "type": "performance_metric",
+          "context": "MCP Integration optimization",
+          "exact_quote": true,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "Optimization rule: 20-30 MCPs configured, under 10 enabled per project, under 80 tools active",
+          "type": "best_practice",
+          "context": "MCP Integration optimization section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "The Claude Code plugin system does not support distributing rules via plugins",
+          "type": "limitation",
+          "context": "Rules section installation note",
+          "exact_quote": true,
+          "verifiable": true,
+          "importance": "medium"
+        },
+        {
+          "claim": "TDD workflow: 1) Define interfaces first, 2) Write failing tests (RED), 3) Implement minimal code (GREEN), 4) Refactor (IMPROVE), 5) Verify 80%+ coverage",
+          "type": "methodology",
+          "context": "Skills example - TDD workflow",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "medium"
+        }
+      ],
+      "code_examples": [
+        {
+          "description": "Agent YAML frontmatter structure",
+          "language": "yaml",
+          "code": "---\nname: code-reviewer\ndescription: Reviews code for quality, security, and maintainability\ntools: [\"Read\", \"Grep\", \"Glob\", \"Bash\"]\nmodel: opus\n---",
+          "context": "Agents structure definition"
+        },
+        {
+          "description": "Hook JSON configuration with matcher and command",
+          "language": "json",
+          "code": "{\n  \"matcher\": \"tool == \\\"Edit\\\" && tool_input.file_path matches \\\"\\\\.(ts|tsx|js|jsx)$\\\"\",\n  \"hooks\": [{\n    \"type\": \"command\",\n    \"command\": \"#!/bin/bash\\ngrep -n 'console\\\\.log' \\\"$file_path\\\" && echo '[Hook] Remove console.log' >&2\"\n  }]\n}",
+          "context": "Hooks event-driven automation"
+        },
+        {
+          "description": "Plugin installation via settings.json",
+          "language": "json",
+          "code": "{\n  \"extraKnownMarketplaces\": {\n    \"everything-claude-code\": {\n      \"source\": {\n        \"source\": \"github\",\n        \"repo\": \"affaan-m/everything-claude-code\"\n      }\n    }\n  },\n  \"enabledPlugins\": {\n    \"everything-claude-code@everything-claude-code\": true\n  }\n}",
+          "context": "Plugin installation methods"
+        },
+        {
+          "description": "Package manager detection priority cascade",
+          "language": "text",
+          "code": "1. CLAUDE_PACKAGE_MANAGER env variable\n2. .claude/package-manager.json (project)\n3. package.json packageManager field\n4. Lock file detection (package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb)\n5. ~/.claude/package-manager.json (global)",
+          "context": "Package Manager Detection section"
+        }
+      ],
+      "configuration_patterns": [
+        {
+          "pattern": "Plugin file structure",
+          "structure": "everything-claude-code/\n├── .claude-plugin/\n│   ├── plugin.json (metadata, no hooks field)\n│   └── marketplace.json\n├── agents/ (subagent definitions)\n├── skills/ (workflow patterns)\n├── commands/ (slash commands)\n├── rules/ (guidelines)\n├── hooks/\n│   └── hooks.json (all hook configs)\n├── scripts/ (cross-platform Node.js)\n│   ├── lib/\n│   │   ├── utils.js\n│   │   └── package-manager.js\n│   └── hooks/\n├── tests/ (test suite)\n├── contexts/ (dynamic system prompts)\n├── examples/ (configuration templates)\n└── mcp-configs/\n    └── mcp-servers.json",
+          "purpose": "Modular plugin architecture for distribution"
+        },
+        {
+          "pattern": "Hook configuration file location",
+          "structure": "hooks/hooks.json (auto-loaded by Claude Code v2.1+)",
+          "purpose": "Event-driven automation without plugin.json declaration"
+        },
+        {
+          "pattern": "Skill hierarchical organization",
+          "structure": "skills/\n├── coding-standards/\n├── backend-patterns/\n├── frontend-patterns/\n├── tdd-workflow/\n├── golang-patterns/\n├── golang-testing/\n├── continuous-learning/\n└── iterative-retrieval/",
+          "purpose": "Domain knowledge organized by category for automatic activation"
+        },
+        {
+          "pattern": "MCP configuration optimization",
+          "structure": "Use disabledMcpServers in project config, monitor with /context",
+          "purpose": "Prevent context window shrinkage from 200k to 70k"
+        }
+      ],
+      "practical_tips": [
+        {
+          "tip": "Use /plugin marketplace add and /plugin install for plugin management",
+          "category": "installation",
+          "importance": "high"
+        },
+        {
+          "tip": "Run node tests/run-all.js for comprehensive testing before distribution",
+          "category": "testing",
+          "importance": "medium"
+        },
+        {
+          "tip": "Leverage /instinct-status, /instinct-import, /instinct-export for continuous learning",
+          "category": "learning",
+          "importance": "medium"
+        },
+        {
+          "tip": "Use /evolve to cluster instincts into reusable skills",
+          "category": "learning",
+          "importance": "medium"
+        },
+        {
+          "tip": "Grant minimal tool access to agents (security principle)",
+          "category": "security",
+          "importance": "high"
+        },
+        {
+          "tip": "Keep under 10 MCPs enabled per project to maintain context window",
+          "category": "performance",
+          "importance": "critical"
+        },
+        {
+          "tip": "Use git worktrees and cascade method for parallelization",
+          "category": "workflow",
+          "importance": "medium"
+        },
+        {
+          "tip": "Manual installation of rules required - plugin system does not distribute them",
+          "category": "installation",
+          "importance": "high"
+        }
+      ],
+      "commands_catalog": [
+        "/tdd - Test-driven development workflow",
+        "/plan - Implementation planning",
+        "/code-review - Quality review",
+        "/build-fix - Error resolution",
+        "/refactor-clean - Dead code removal",
+        "/setup-pm - Package manager configuration",
+        "/go-review, /go-test, /go-build - Golang workflows",
+        "/skill-create - Generate from git history",
+        "/instinct-status, /instinct-import, /instinct-export - Learning management",
+        "/evolve - Cluster instincts into skills"
+      ],
+      "agents_catalog": [
+        "Planner - Feature implementation",
+        "Architect - System design",
+        "Security-reviewer - Vulnerability analysis",
+        "E2E-runner - Playwright testing",
+        "Go-reviewer & Go-build-resolver - Golang specialized"
+      ]
+    },
+    {
+      "source": {
+        "title": "Understanding Claude Code: Full Stack Architecture",
+        "url": "https://alexop.dev/posts/understanding-claude-code-full-stack/",
+        "author": "alexop.dev",
+        "date": "2025",
+        "credibility": 3,
+        "type": "Technical blog - architecture explainer"
+      },
+      "fetch_method": "webfetch",
+      "summary": "Comprehensive guide explaining Claude Code's four-layer architecture: MCP (external integration), Core Features (memory, commands, subagents, hooks), Plugins (shareable configs), and Agent Skills (automatic capabilities). Focuses on practical integration patterns and multi-phase development workflows.",
+      "key_concepts": [
+        {
+          "concept": "Four-Layer Architecture",
+          "description": "MCP → Core Features → Plugins → Agent Skills, each building on previous layer",
+          "type": "architecture_pattern"
+        },
+        {
+          "concept": "CLAUDE.md Hierarchy",
+          "description": "Enterprise → User → Project → Folder cascading context system",
+          "type": "configuration_pattern"
+        },
+        {
+          "concept": "Skills vs Commands vs Subagents",
+          "description": "Automatic (context-driven) vs Manual (explicit) vs Delegated (isolated) activation patterns",
+          "type": "interface_pattern"
+        },
+        {
+          "concept": "Hook Operation Modes",
+          "description": "Command (shell execution - fast) vs Prompt (LLM-driven - flexible)",
+          "type": "automation_pattern"
+        },
+        {
+          "concept": "Context Management",
+          "description": "Monitor with /context, remove unused servers, optimize token consumption",
+          "type": "optimization_pattern"
+        },
+        {
+          "concept": "Multi-Phase Development Workflow",
+          "description": "Separate planning and implementation chats with /load-context for state transfer",
+          "type": "workflow_pattern"
+        }
+      ],
+      "facts": [
+        {
+          "claim": "CLAUDE.md load order: Enterprise → User (~/.claude/CLAUDE.md) → Project (./CLAUDE.md) → Folder (./src/components/CLAUDE.md)",
+          "type": "configuration",
+          "context": "CLAUDE.md - Project Memory section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "MCP servers consume context window and should be monitored with /context command",
+          "type": "performance",
+          "context": "Model Context Protocol section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "MCP servers expose only their own tools unless explicitly provided Read, Write, or Bash access",
+          "type": "limitation",
+          "context": "Model Context Protocol section",
+          "exact_quote": true,
+          "verifiable": true,
+          "importance": "medium"
+        },
+        {
+          "claim": "Hooks have two operation modes: Command (fast, predictable shell execution) and Prompt (flexible, context-aware LLM decision-making)",
+          "type": "definition",
+          "context": "Hooks - Automatic Event-Driven Actions",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "Skills activate automatically based on description matching task context, loaded transparently without explicit invocation",
+          "type": "behavior",
+          "context": "Agent Skills - Automatic Capabilities",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "CLAUDE.md should be kept as reference guide, not documentation",
+          "type": "best_practice",
+          "context": "CLAUDE.md - Project Memory section",
+          "exact_quote": true,
+          "verifiable": false,
+          "importance": "medium"
+        }
+      ],
+      "code_examples": [
+        {
+          "description": "MCP server installation with environment variables",
+          "language": "bash",
+          "code": "claude mcp add playwright npx @playwright/mcp@latest\n/mcp__playwright__create-test [args]",
+          "context": "Model Context Protocol installation"
+        },
+        {
+          "description": "CLAUDE.md hierarchical structure example",
+          "language": "markdown",
+          "code": "# CLAUDE.md\n\n## Project Overview\nAlexander's blog: Astro 5, TypeScript, React, TailwindCSS\n\n## Development Commands\nnpm run dev    # Build + dev server (localhost:4321)\nnpm run build  # Production build\nnpm run lint   # ESLint",
+          "context": "CLAUDE.md - Project Memory practical example"
+        },
+        {
+          "description": "Slash command with parameters and pre-execution tools",
+          "language": "markdown",
+          "code": "---\ndescription: Create new slash commands\nargument-hint: [name] [purpose]\nallowed-tools: Bash(mkdir:*), Bash(tee:*)\n---\n\n# /create-command\n\nGenerate slash command files.\n\n**Inputs:** `$1` = name, `$2` = purpose\n**Outputs:** `STATUS=WROTE PATH=.claude/commands/{name}.md`",
+          "context": "Slash Commands - Explicit Workflows"
+        },
+        {
+          "description": "Subagent configuration with model selection",
+          "language": "markdown",
+          "code": "---\nname: security-auditor\ndescription: Analyzes code for security vulnerabilities\ntools: Read, Grep, Bash\nmodel: sonnet # Optional: sonnet, opus, haiku\n---\n\nYou are a security-focused code auditor.\n\nIdentify vulnerabilities (XSS, SQL injection, CSRF)\nCheck dependencies and packages\nVerify auth/authorization\nProvide severity levels: Critical, High, Medium, Low.",
+          "context": "Subagents - Specialized AI Personalities"
+        },
+        {
+          "description": "Hook for auto-linting after file edits",
+          "language": "json",
+          "code": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"matcher\": \"Edit|Write\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"$CLAUDE_PROJECT_DIR\\\"/.claude/hooks/run-oxlint.sh\"\n          }\n        ]\n      }\n    ]\n  }\n}",
+          "context": "Hooks - Automatic Event-Driven Actions"
+        },
+        {
+          "description": "Hook shell script with file type filtering",
+          "language": "bash",
+          "code": "#!/usr/bin/env bash\nfile_path=\"$(jq -r '.tool_input.file_path // \"\"')\"\n\nif [[ \"$file_path\" =~ \\.(js|jsx|ts|tsx|vue)$ ]]; then\n  pnpm lint:fast\nfi",
+          "context": "Hooks - Automatic Event-Driven Actions"
+        },
+        {
+          "description": "SKILL.md format with frontmatter",
+          "language": "markdown",
+          "code": "---\nname: Update Documentation\ndescription: Automatically updates docs after code implementations\nallowed-tools: Read, Write, Bash\n---\n\nWhen implementations are complete, update the following documentation files:\n- API reference\n- CHANGELOG\n- README examples\n\nFollow existing documentation patterns...",
+          "context": "Agent Skills - Automatic Capabilities"
+        }
+      ],
+      "configuration_patterns": [
+        {
+          "pattern": "CLAUDE.md hierarchy",
+          "structure": "Enterprise CLAUDE.md → ~/.claude/CLAUDE.md → ./CLAUDE.md → ./src/components/CLAUDE.md",
+          "purpose": "Cascading context from broadest to most specific scope"
+        },
+        {
+          "pattern": "Slash command parameter passing",
+          "structure": "$ARGUMENTS or $1, $2 variables, @file syntax for code inlining, allowed-tools: Bash(...) for pre-execution",
+          "purpose": "Enable parameterized workflows with external code injection"
+        },
+        {
+          "pattern": "Subagent tool access restriction",
+          "structure": "tools: [Read, Grep, Bash] - minimal permissions per agent",
+          "purpose": "Prevent context poisoning and enforce least privilege"
+        },
+        {
+          "pattern": "Hook event types",
+          "structure": "PreToolUse, PostToolUse, UserPromptSubmit, Notification, Stop, SubagentStop, SessionStart",
+          "purpose": "Lifecycle automation at critical execution points"
+        },
+        {
+          "pattern": "Plugin directory structure",
+          "structure": "my-plugin/\n├── .claude-plugin/plugin.json\n├── commands/\n├── skills/SKILL.md\n└── hooks/hooks.json",
+          "purpose": "Shareable configuration bundles for team/community distribution"
+        },
+        {
+          "pattern": "Skill file structure",
+          "structure": ".claude/skills/skill-name/\n├── SKILL.md\n└── helper-script.sh",
+          "purpose": "Automatic capability activation with optional supporting scripts"
+        }
+      ],
+      "practical_tips": [
+        {
+          "tip": "Use separate chats for planning and implementation to prevent context poisoning",
+          "category": "workflow",
+          "importance": "high"
+        },
+        {
+          "tip": "Execute /load-context to transfer task state between planning and implementation chats",
+          "category": "workflow",
+          "importance": "high"
+        },
+        {
+          "tip": "Monitor context window usage with /context command and remove unused MCP servers",
+          "category": "performance",
+          "importance": "critical"
+        },
+        {
+          "tip": "Use haiku model for simple tasks, sonnet for complex analysis in subagents",
+          "category": "optimization",
+          "importance": "medium"
+        },
+        {
+          "tip": "Run independent subagent work in parallel to maximize efficiency",
+          "category": "performance",
+          "importance": "medium"
+        },
+        {
+          "tip": "Keep CLAUDE.md as reference guide, not documentation to reduce token consumption",
+          "category": "configuration",
+          "importance": "medium"
+        },
+        {
+          "tip": "Use XML-tagged prompts in slash commands for structured responses",
+          "category": "interface",
+          "importance": "low"
+        },
+        {
+          "tip": "Leverage obra's superpowers repository for advanced TDD and debugging skills",
+          "category": "learning",
+          "importance": "medium"
+        }
+      ],
+      "comparison_table": {
+        "Skills vs Commands vs Subagents": {
+          "Skills": {
+            "activation": "Automatic (context-driven)",
+            "use_case": "Always-on expertise",
+            "context": "Shared window"
+          },
+          "Commands": {
+            "activation": "Manual (/name)",
+            "use_case": "Explicit workflows",
+            "context": "User-controlled"
+          },
+          "Subagents": {
+            "activation": "Automatic (when delegated)",
+            "use_case": "Isolated deep work",
+            "context": "Separate window"
+          }
+        }
+      },
+      "workflow_example": {
+        "multi_phase_development": {
+          "setup": [
+            "CLAUDE.md contains implementation standards",
+            "/load-context initializes chats with project state",
+            "update-documentation skill auto-triggers post-implementation",
+            "Hook runs linting after file edits"
+          ],
+          "chat_1_planning": [
+            "Main agent plans feature/bug fix",
+            "Outputs detailed task file"
+          ],
+          "chat_2_implementation": [
+            "Execute /load-context with Chat 1 plan",
+            "Implementation subagent executes independently",
+            "update-documentation skill updates docs automatically",
+            "/resolve-task command marks completion"
+          ],
+          "benefit": "Focused planning context, isolated implementation, automatic documentation, quality enforcement"
+        }
+      }
+    },
+    {
+      "source": {
+        "title": "Claude Code Cheat Sheet - Shipyard Build",
+        "url": "https://shipyard.build/blog/claude-code-cheat-sheet/",
+        "author": "Shipyard Build",
+        "date": "2025",
+        "credibility": 3,
+        "type": "Technical reference - CLI cheatsheet"
+      },
+      "fetch_method": "webfetch",
+      "summary": "Practical reference guide covering skills framework, hooks automation, MCP integration, settings hierarchy, memory files, custom commands, subagents, and permission system. Focuses on configuration patterns and security best practices.",
+      "key_concepts": [
+        {
+          "concept": "Skills Natural Language Invocation",
+          "description": "Skills invoke through natural language rather than explicit commands, allowing Claude to determine when to apply them",
+          "type": "interface_pattern"
+        },
+        {
+          "concept": "Hook Matchers",
+          "description": "Pattern-based filtering for hook execution on specific file types or operations",
+          "type": "automation_pattern"
+        },
+        {
+          "concept": "Settings Hierarchy with Precedence",
+          "description": "User → Project → Local layered configuration with override capability",
+          "type": "configuration_pattern"
+        },
+        {
+          "concept": "Memory Files Hierarchical Loading",
+          "description": "Global → Project root → Subdirectories context loading for persistent state",
+          "type": "memory_pattern"
+        },
+        {
+          "concept": "Parameterized Slash Commands",
+          "description": "$ARGUMENTS variable for dynamic command execution with context injection",
+          "type": "interface_pattern"
+        },
+        {
+          "concept": "Granular Permission System",
+          "description": "allowedTools and deny patterns for fine-grained security control",
+          "type": "security_pattern"
+        }
+      ],
+      "facts": [
+        {
+          "claim": "Skills invoke through natural language, allowing Claude to determine when to apply them, unlike slash commands that require explicit invocation",
+          "type": "comparison",
+          "context": "Skills Framework section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "Hook events available: PreToolUse (can block), PostToolUse, UserPromptSubmit, SessionStart",
+          "type": "definition",
+          "context": "Hooks for Automation section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "Settings hierarchy with precedence: User settings (~/.claude/settings.json) → Project settings (.claude/settings.json) → Local settings (.claude/settings.local.json)",
+          "type": "configuration",
+          "context": "Settings Hierarchy section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "CLAUDE.md files provide persistent context loaded hierarchically: Global (~/.claude/CLAUDE.md) → Project root (./CLAUDE.md) → Subdirectories",
+          "type": "configuration",
+          "context": "Memory Files (CLAUDE.md) section",
+          "exact_quote": false,
+          "verifiable": true,
+          "importance": "high"
+        },
+        {
+          "claim": "CLAUDE.md approach reduces token consumption by eliminating repetitive context provision in prompts",
+          "type": "performance",
+          "context": "Memory Files (CLAUDE.md) section",
+          "exact_quote": true,
+          "verifiable": false,
+          "importance": "medium"
+        },
+        {
+          "claim": "Best practice: Review all changes before accepting, store sensitive data in .env files with explicit read denial, use .settings.local.json for personal configurations",
+          "type": "best_practice",
+          "context": "Permission System section",
+          "exact_quote": true,
+          "verifiable": false,
+          "importance": "high"
+        }
+      ],
+      "code_examples": [
+        {
+          "description": "Skill definition with natural language activation",
+          "language": "markdown",
+          "code": "---\nname: add-numbers\ndescription: Add numbers from natural language input\n---\n\n# Add Numbers Skill\n\nWhen the user asks to add, sum, or total numbers:\n1. Extract numeric values from the prompt\n2. Calculate using add.py\n3. Return result with explanation",
+          "context": "Skills Framework section"
+        },
+        {
+          "description": "Skill directory structure with supporting scripts",
+          "language": "text",
+          "code": ".claude/skills/skill-name/\n├── SKILL.md (frontmatter + instructions)\n├── supporting-scripts/\n└── templates/",
+          "context": "Skills Framework section"
+        },
+        {
+          "description": "PostToolUse hook for auto-formatting Python files",
+          "language": "json",
+          "code": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"matcher\": \"Write(*.py)\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"python -m black \\\"$file\\\"\"\n          }\n        ]\n      }\n    ]\n  }\n}",
+          "context": "Hooks for Automation section"
+        },
+        {
+          "description": "MCP server addition with environment variables",
+          "language": "bash",
+          "code": "claude mcp add my-server -e API_KEY=123 -- /path/to/server arg1 arg2",
+          "context": "Model Context Protocol (MCP) Integration section"
+        },
+        {
+          "description": "Comprehensive settings.json with permissions and hooks",
+          "language": "json",
+          "code": "{\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"maxTokens\": 4096,\n  \"permissions\": {\n    \"allowedTools\": [\"Read\", \"Write\", \"Bash(git *)\"],\n    \"deny\": [\"Read(./.env*)\", \"Write(./production.config.*)\"]\n  },\n  \"hooks\": {\n    \"PostToolUse\": [{\n      \"matcher\": \"Write(*.py)\",\n      \"hooks\": [{\"type\": \"command\", \"command\": \"python -m black $file\"}]\n    }]\n  }\n}",
+          "context": "Settings Hierarchy section"
+        },
+        {
+          "description": "Parameterized slash command for issue fixing",
+          "language": "markdown",
+          "code": "# .claude/commands/fix-issue.md\nFix issue #$ARGUMENTS following coding standards",
+          "context": "Custom Slash Commands section"
+        },
+        {
+          "description": "Advanced command with git context injection",
+          "language": "markdown",
+          "code": "---\nallowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)\ndescription: Create git commits with context\n---\n\nCurrent status: !`git status`\nCurrent diff: !`git diff HEAD`\nCurrent branch: !`git branch --show-current`\n\nCreate meaningful commit message based on changes.",
+          "context": "Custom Slash Commands section"
+        },
+        {
+          "description": "Subagent configuration file",
+          "language": "markdown",
+          "code": "---\nname: reviewer\ndescription: Use for thorough code reviews\nmodel: sonnet\ncolor: orange\n---\n\nYou are an expert code reviewer focused on security, \nperformance, and maintainability.",
+          "context": "Subagents Architecture section"
+        },
+        {
+          "description": "Granular permission patterns",
+          "language": "json",
+          "code": "{\n  \"permissions\": {\n    \"allowedTools\": [\n      \"Read\",\n      \"Write(src/**)\",\n      \"Bash(git *)\",\n      \"Bash(npm *)\"\n    ],\n    \"deny\": [\n      \"Read(.env*)\",\n      \"Write(production.config.*)\",\n      \"Bash(rm *)\",\n      \"Bash(sudo *)\"\n    ]\n  }\n}",
+          "context": "Permission System section"
+        }
+      ],
+      "configuration_patterns": [
+        {
+          "pattern": "Skill directory structure",
+          "structure": ".claude/skills/skill-name/ containing SKILL.md (frontmatter + instructions), supporting-scripts/, templates/",
+          "purpose": "Natural language activation with supporting automation"
+        },
+        {
+          "pattern": "Hook matcher syntax",
+          "structure": "Write(*.py) - pattern-based file type filtering",
+          "purpose": "Selective automation execution based on file patterns"
+        },
+        {
+          "pattern": "Settings layering",
+          "structure": "User (~/.claude/settings.json) overridden by Project (.claude/settings.json) overridden by Local (.claude/settings.local.json)",
+          "purpose": "Context-appropriate configuration with personal override capability"
+        },
+        {
+          "pattern": "CLAUDE.md hierarchical loading",
+          "structure": "Global (~/.claude/CLAUDE.md) → Project root (./CLAUDE.md) → Component subdirectories",
+          "purpose": "Persistent context reducing token consumption"
+        },
+        {
+          "pattern": "Command parameter injection",
+          "structure": "$ARGUMENTS variable and !`command` syntax for shell output embedding",
+          "purpose": "Dynamic command execution with live context"
+        },
+        {
+          "pattern": "Permission glob patterns",
+          "structure": "allowedTools: [Write(src/**), Bash(git *)], deny: [Read(.env*), Bash(sudo *)]",
+          "purpose": "Fine-grained security control with wildcards"
+        }
+      ],
+      "practical_tips": [
+        {
+          "tip": "Use natural language to invoke skills instead of explicit commands for automatic activation",
+          "category": "interface",
+          "importance": "high"
+        },
+        {
+          "tip": "Configure MCP servers during sessions via /mcp slash command",
+          "category": "configuration",
+          "importance": "medium"
+        },
+        {
+          "tip": "Store personal configurations in .settings.local.json to avoid committing to version control",
+          "category": "security",
+          "importance": "high"
+        },
+        {
+          "tip": "Use .env files for sensitive data with explicit Read(.env*) denial in permissions",
+          "category": "security",
+          "importance": "critical"
+        },
+        {
+          "tip": "Review all changes before accepting when using permission system",
+          "category": "security",
+          "importance": "high"
+        },
+        {
+          "tip": "Use !`command` syntax in slash commands to inject live shell output as context",
+          "category": "interface",
+          "importance": "medium"
+        },
+        {
+          "tip": "Create subagents via /agents command with domain-specific personas",
+          "category": "workflow",
+          "importance": "medium"
+        },
+        {
+          "tip": "Leverage PreToolUse hooks to block operations before execution for validation",
+          "category": "automation",
+          "importance": "medium"
+        }
+      ],
+      "hook_events": [
+        "PreToolUse - Executes before tool operations (can block)",
+        "PostToolUse - Executes after tool operations",
+        "UserPromptSubmit - Before processing input",
+        "SessionStart - During initialization"
+      ],
+      "mcp_use_cases": [
+        "Google Drive integration for design documentation",
+        "Jira connection for ticket management",
+        "Custom development tooling access",
+        "External database connectivity"
+      ]
+    }
+  ],
+  "extraction_summary": {
+    "sources_successful": 3,
+    "sources_failed": 0,
+    "firecrawl_fallback_used": 0,
+    "facts_by_type": {
+      "configuration": 12,
+      "performance": 4,
+      "best_practice": 6,
+      "limitation": 3,
+      "definition": 4,
+      "behavior": 2,
+      "methodology": 1,
+      "comparison": 1,
+      "caution": 1
+    },
+    "code_examples_extracted": 24,
+    "configuration_patterns_extracted": 15,
+    "practical_tips_extracted": 23
+  },
+  "cross_source_patterns": [
+    {
+      "pattern": "Hooks auto-load from hooks/hooks.json",
+      "appears_in": ["everything-claude-code", "alexop.dev", "shipyard.build"],
+      "consistency": "high",
+      "importance": "critical"
+    },
+    {
+      "pattern": "Skills activate automatically via context matching",
+      "appears_in": ["everything-claude-code", "alexop.dev", "shipyard.build"],
+      "consistency": "high",
+      "importance": "high"
+    },
+    {
+      "pattern": "MCP servers impact context window significantly",
+      "appears_in": ["everything-claude-code", "alexop.dev"],
+      "consistency": "high",
+      "importance": "critical"
+    },
+    {
+      "pattern": "CLAUDE.md hierarchical loading (Global → Project → Folder)",
+      "appears_in": ["alexop.dev", "shipyard.build"],
+      "consistency": "high",
+      "importance": "high"
+    },
+    {
+      "pattern": "Settings hierarchy with precedence (User → Project → Local)",
+      "appears_in": ["shipyard.build"],
+      "consistency": "medium",
+      "importance": "high"
+    },
+    {
+      "pattern": "Subagents have isolated context windows",
+      "appears_in": ["everything-claude-code", "alexop.dev", "shipyard.build"],
+      "consistency": "high",
+      "importance": "high"
+    },
+    {
+      "pattern": "Commands require explicit /command invocation",
+      "appears_in": ["everything-claude-code", "alexop.dev", "shipyard.build"],
+      "consistency": "high",
+      "importance": "high"
+    },
+    {
+      "pattern": "Hook types: command (shell) vs prompt (LLM)",
+      "appears_in": ["alexop.dev"],
+      "consistency": "medium",
+      "importance": "medium"
+    }
+  ],
+  "conflicting_information": [],
+  "recommended_implementation_order": [
+    {
+      "step": 1,
+      "component": "CLAUDE.md hierarchy",
+      "rationale": "Foundation for persistent context across all features",
+      "sources": ["alexop.dev", "shipyard.build"]
+    },
+    {
+      "step": 2,
+      "component": "Settings hierarchy with permissions",
+      "rationale": "Security foundation before enabling automation",
+      "sources": ["shipyard.build"]
+    },
+    {
+      "step": 3,
+      "component": "Skills framework",
+      "rationale": "Automatic capabilities without manual invocation overhead",
+      "sources": ["everything-claude-code", "alexop.dev", "shipyard.build"]
+    },
+    {
+      "step": 4,
+      "component": "Slash commands",
+      "rationale": "Explicit workflows for repeatable tasks",
+      "sources": ["everything-claude-code", "alexop.dev", "shipyard.build"]
+    },
+    {
+      "step": 5,
+      "component": "Hooks automation",
+      "rationale": "Event-driven quality enforcement after manual workflows established",
+      "sources": ["everything-claude-code", "alexop.dev", "shipyard.build"]
+    },
+    {
+      "step": 6,
+      "component": "Subagents",
+      "rationale": "Advanced isolation for complex tasks after foundational patterns proven",
+      "sources": ["everything-claude-code", "alexop.dev", "shipyard.build"]
+    },
+    {
+      "step": 7,
+      "component": "MCP integration (selective)",
+      "rationale": "External integrations only after monitoring context window impact",
+      "sources": ["everything-claude-code", "alexop.dev", "shipyard.build"]
+    }
+  ]
+}

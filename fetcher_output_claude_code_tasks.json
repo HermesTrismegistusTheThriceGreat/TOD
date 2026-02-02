@@ -1,0 +1,277 @@
+{
+  "extraction_summary": {
+    "sources_processed": 3,
+    "sources_successful": 3,
+    "sources_requiring_firecrawl": 0,
+    "sources_failed": 0,
+    "total_facts_extracted": 23,
+    "fact_type_breakdown": {
+      "statistic": 2,
+      "quote": 6,
+      "definition": 8,
+      "comparison": 2,
+      "risk": 5
+    }
+  },
+  "sources": [
+    {
+      "source": {
+        "title": "Task Agent Tools - Claude Code Mechanics",
+        "url": "https://claudelog.com/mechanics/task-agent-tools/",
+        "author": "Not specified",
+        "date": "Not specified",
+        "credibility": 4
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Claude Code supports up to 7 simultaneous sub-agents for parallel execution",
+          "type": "statistic",
+          "context": "Core Concept section discussing parallel execution capabilities",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Like programming with threads, explicit orchestration of which steps get delegated to sub-agents yields the best results",
+          "type": "quote",
+          "context": "Key Principles section on orchestration requirements",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Claude uses Task agents conservatively unless you provide detailed delegation instructions",
+          "type": "definition",
+          "context": "Key Principles explaining default behavior",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Documentation recommends launching parallel Tasks immediately upon requests rather than seeking clarification as the default approach",
+          "type": "definition",
+          "context": "Parallel-by-Default Strategy principle",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Recommended 7-step parallel execution model: 1) Component creation, 2) Styling/CSS, 3) Test files, 4) Type definitions, 5) Custom hooks/utilities, 6) Integration (routing, imports, exports), 7) Configuration and documentation updates",
+          "type": "definition",
+          "context": "Workflow Structure section outlining task organization pattern",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Group related tasks rather than creating agents for every operation for token efficiency",
+          "type": "definition",
+          "context": "Optimization Guidelines on token efficiency",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Remove comments when reading code files for analysis to optimize context",
+          "type": "definition",
+          "context": "Optimization Guidelines on context stripping",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "The main agent carries various overheads making it slower than delegated operations",
+          "type": "comparison",
+          "context": "Performance Consideration explaining latency issues",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "This source provides technical details on Claude Code's Task tool architecture, which supports up to 7 parallel sub-agents. It emphasizes explicit orchestration like thread programming, recommends immediate parallel task launching, and outlines a 7-step workflow model for efficient delegation with token optimization strategies."
+    },
+    {
+      "source": {
+        "title": "Enabling Claude Code to Work More Autonomously - Anthropic News",
+        "url": "https://www.anthropic.com/news/enabling-claude-code-to-work-more-autonomously",
+        "author": "Anthropic",
+        "date": "Not specified",
+        "credibility": 4
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Subagents delegate specialized tasks like spinning up a backend API while the main agent builds the frontend, allowing parallel development workflows",
+          "type": "quote",
+          "context": "Subagents for Parallel Execution feature description",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Hooks automatically trigger actions at specific points, such as running your test suite after code changes or linting before commits",
+          "type": "quote",
+          "context": "Hooks for Automation feature explanation",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Background tasks keep long-running processes like dev servers active without blocking Claude Code's progress on other work",
+          "type": "quote",
+          "context": "Background Tasks feature description",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Checkpoint system allows developers to instantly rewind to previous versions by tapping Esc twice or using the /rewind command",
+          "type": "definition",
+          "context": "Checkpoint System for workflow control",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Features are powered by Sonnet 4.5 and work in both VS Code extension and terminal interface",
+          "type": "definition",
+          "context": "Integration Notes on platform support",
+          "exact_quote": false,
+          "verifiable": true
+        }
+      ],
+      "summary": "Anthropic's official documentation describes Claude Code's autonomous workflow features including subagents for parallel development, hooks for automated actions at specific points, background task support for non-blocking operations, and checkpoint/rewind capabilities. These features are powered by Sonnet 4.5 across VS Code and terminal interfaces."
+    },
+    {
+      "source": {
+        "title": "How I Use Every Claude Code Feature - SSHH.io Blog",
+        "url": "https://blog.sshh.io/p/how-i-use-every-claude-code-feature",
+        "author": "Not specified",
+        "date": "Not specified",
+        "credibility": 3
+      },
+      "fetch_method": "webfetch",
+      "facts": [
+        {
+          "claim": "Author uses Claude's built-in Task(...) feature to spawn clones of the general agent for parallel processing rather than creating custom subagents",
+          "type": "definition",
+          "context": "Task Tool for Parallel Execution practical usage",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Simple bash scripts that call claude -p in parallel enable large-scale refactors and migrations",
+          "type": "quote",
+          "context": "Key Implementation Strategy for parallel processing",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Custom subagents gatekeep context by hiding domain knowledge from the main agent, requiring unnecessary invocations",
+          "type": "risk",
+          "context": "Subagent Architecture Philosophy - issues with custom agents",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Custom subagents force rigid workflows that prevent agents from optimizing their own orchestration",
+          "type": "risk",
+          "context": "Subagent Architecture Philosophy explaining workflow limitations",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Master-Clone architecture gives main agent complete context via CLAUDE.md and lets it spawn identical clones for specific tasks",
+          "type": "definition",
+          "context": "Preferred Model explanation",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "In monorepo, baseline context costs approximately 20% of the 200k token window, leaving 180k for actual changes",
+          "type": "statistic",
+          "context": "Context and Token Management metrics",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Use /context mid-session to monitor token usage",
+          "type": "definition",
+          "context": "Context and Token Management best practice",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "/clear + /catchup workflow restarts sessions with fresh file reading",
+          "type": "definition",
+          "context": "Token management workflows",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Document & Clear workflow dumps large tasks to markdown before clearing state",
+          "type": "definition",
+          "context": "Token management workflows for preserving work",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Avoid /compact command as it is opaque and error-prone",
+          "type": "risk",
+          "context": "Token management workflows - cautionary advice",
+          "exact_quote": true,
+          "verifiable": true
+        },
+        {
+          "claim": "Use minimal custom slash commands; treat them as shortcuts only, not as mandatory workflow requirements",
+          "type": "risk",
+          "context": "Best Practices Summary on configuration",
+          "exact_quote": false,
+          "verifiable": true
+        },
+        {
+          "claim": "Treat CLAUDE.md as a high-level, curated set of guardrails rather than comprehensive manual",
+          "type": "quote",
+          "context": "Best Practices Summary on documentation approach",
+          "exact_quote": true,
+          "verifiable": true
+        }
+      ],
+      "summary": "A practitioner's perspective advocating for master-clone architecture over custom subagents to avoid context gatekeeping and rigid workflows. Recommends using built-in Task(...) feature with bash scripts for parallel execution, provides token management strategies (/context, /clear + /catchup, Document & Clear), warns against /compact, and treats CLAUDE.md as high-level guardrails rather than comprehensive documentation."
+    }
+  ],
+  "implementation_guidance": {
+    "parallel_execution": {
+      "max_agents": 7,
+      "invocation_method": "Task(...) built-in feature or 'claude -p' in bash scripts",
+      "architecture_recommendation": "Master-clone over custom subagents to preserve context fluidity",
+      "workflow_pattern": "Launch parallel tasks immediately rather than seeking clarification first"
+    },
+    "task_organization": {
+      "recommended_7_step_model": [
+        "Component creation",
+        "Styling/CSS",
+        "Test files",
+        "Type definitions",
+        "Custom hooks/utilities",
+        "Integration (routing, imports, exports)",
+        "Configuration and documentation updates"
+      ],
+      "grouping_strategy": "Group related tasks for token efficiency, don't create agents for every operation"
+    },
+    "token_management": {
+      "monitoring": "Use /context mid-session",
+      "baseline_cost_monorepo": "~20% of 200k window",
+      "workflows": {
+        "refresh": "/clear + /catchup for fresh file reading",
+        "preserve_large_tasks": "Document & Clear - dump to markdown before clearing",
+        "avoid": "/compact (opaque, error-prone)"
+      }
+    },
+    "context_optimization": {
+      "code_reading": "Strip comments when reading files for analysis",
+      "configuration": "CLAUDE.md as high-level guardrails, not comprehensive manual",
+      "custom_commands": "Minimal usage - shortcuts only, not mandatory workflow"
+    },
+    "automation": {
+      "hooks": "Auto-trigger actions at specific points (tests after changes, linting before commits)",
+      "background_tasks": "Non-blocking long-running processes (dev servers)",
+      "checkpoints": "Esc twice or /rewind to restore previous versions"
+    },
+    "risks_and_cautions": {
+      "custom_subagents": "Gatekeep context and force rigid workflows",
+      "compact_command": "Opaque and error-prone - avoid",
+      "mandatory_workflows": "Don't make custom commands required - reduces agent flexibility",
+      "orchestration": "Like thread programming - requires explicit coordination for best results"
+    }
+  }
+}
