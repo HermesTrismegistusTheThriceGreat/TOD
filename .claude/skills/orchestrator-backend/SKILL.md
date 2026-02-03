@@ -45,9 +45,12 @@ A comprehensive skill for implementing features, designing APIs, and understandi
 | Events | `/get_events` | Event stream |
 | ADWs | `/adws` | AI Developer Workflows |
 | Positions | `/api/positions` | Trading positions |
+| Orders | `/api/orders` | Alpaca orders |
 | Alpaca Agent | `/api/alpaca-agent/chat` | Natural language trading |
 | Greeks | `/api/greeks` | Options Greeks |
 | Trades | `/api/trades`, `/api/trade-stats` | Trade history |
+| Accounts | `/api/accounts` | User trading accounts (router) |
+| Credentials | `/api/credentials` | Encrypted API credentials (router) |
 
 ### Technology Stack
 | Technology | Version | Purpose |

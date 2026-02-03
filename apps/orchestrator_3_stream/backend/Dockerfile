@@ -24,6 +24,9 @@ RUN uv sync --frozen --no-dev
 # ---- Production Stage ----
 FROM python:3.12-slim AS production
 
+# Copy uvx from Astral UV (needed for spawning MCP servers at runtime)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # Install runtime dependencies for asyncpg and Node.js for Claude CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \

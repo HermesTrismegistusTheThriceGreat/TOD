@@ -1,6 +1,6 @@
 backend_expertise:
   meta:
-    last_validated: "2026-02-01"
+    last_validated: "2026-02-02"
     codebase_path: "apps/orchestrator_3_stream/backend"
     skill_file: ".claude/skills/orchestrator-backend/SKILL.md"
     max_lines: 600
@@ -151,6 +151,48 @@ backend_expertise:
       - method: "POST"
         path: "/api/sync-orders"
         purpose: "Manual Alpaca order sync"
+
+    orders:
+      - method: "GET"
+        path: "/api/orders"
+        purpose: "Alpaca orders with filtering"
+
+    accounts:
+      router: "routers/accounts.py"
+      prefix: "/api/accounts"
+      endpoints:
+        - method: "GET"
+          path: ""
+          purpose: "List user trading accounts"
+        - method: "POST"
+          path: ""
+          purpose: "Create user account"
+        - method: "POST"
+          path: "/get-or-create"
+          purpose: "Get or create account for auth user"
+
+    credentials:
+      router: "routers/credentials.py"
+      prefix: "/api/credentials"
+      endpoints:
+        - method: "POST"
+          path: "/store"
+          purpose: "Store encrypted API credentials"
+        - method: "GET"
+          path: ""
+          purpose: "List credentials for account"
+        - method: "POST"
+          path: "/{id}/validate"
+          purpose: "Validate Alpaca credentials"
+        - method: "GET"
+          path: "/{id}/account-data"
+          purpose: "Fetch Alpaca account data"
+        - method: "PUT"
+          path: "/{id}"
+          purpose: "Update credential"
+        - method: "DELETE"
+          path: "/{id}"
+          purpose: "Delete credential"
 
     websocket:
       - method: "WebSocket"
@@ -453,6 +495,20 @@ backend_expertise:
         - "UserAccountORM"
         - "UserCredentialORM"
 
+    schemas:
+      directory: "schemas/"
+      files:
+        - name: "account_schemas.py"
+          models: ["UserAccountResponse", "ListAccountsResponse", "CreateAccountRequest", "GetOrCreateAccountResponse", "AccountDataResponse"]
+        - name: "credential_schemas.py"
+          models: ["StoreCredentialRequest", "UpdateCredentialRequest", "CredentialResponse", "ValidateCredentialRequest", "ValidateCredentialResponse", "ListCredentialsResponse"]
+
+    alpaca_db:
+      file: "modules/alpaca_models_db.py"
+      models:
+        - "AlpacaOrder"
+        - "AlpacaPosition"
+
   hooks:
     command_agent:
       file: "modules/command_agent_hooks.py"
@@ -513,51 +569,23 @@ backend_expertise:
 
   environment:
     file: ".env"
-    variables:
-      - name: "DATABASE_URL"
-        required: true
-        description: "PostgreSQL connection string"
-      - name: "ENCRYPTION_KEY"
-        required: true
-        description: "Fernet key for credential encryption"
-      - name: "ALPACA_API_KEY"
-        required: false
-        description: "Alpaca trading API key"
-      - name: "ALPACA_SECRET_KEY"
-        required: false
-        description: "Alpaca secret key"
-      - name: "ALPACA_BASE_URL"
-        default: "https://paper-api.alpaca.markets"
-        description: "Paper or live trading URL"
-      - name: "ANTHROPIC_API_KEY"
-        required: true
-        description: "Claude API access"
-      - name: "CORS_ORIGINS"
-        default: "http://localhost:5175"
-        description: "Allowed CORS origins"
-      - name: "LOG_LEVEL"
-        default: "INFO"
-        description: "Logging level"
+    required: ["DATABASE_URL", "ENCRYPTION_KEY", "ANTHROPIC_API_KEY"]
+    optional:
+      - "ALPACA_API_KEY"
+      - "ALPACA_SECRET_KEY"
+      - "ALPACA_BASE_URL (default: paper-api)"
+      - "CORS_ORIGINS (default: localhost:5175)"
+      - "LOG_LEVEL (default: INFO)"
 
   testing:
     directory: "tests/"
     pattern: "Real database, real agents, no mocks"
-    files:
-      - "test_database.py"
-      - "test_websocket_raw.py"
-      - "test_websocket_alpaca.py"
-      - "test_alpaca_endpoints.py"
-      - "test_alpaca_models.py"
-      - "test_alpaca_service.py"
-      - "test_autocomplete_*.py"
-      - "test_agent_events.py"
-      - "test_slash_command_discovery.py"
-      - "test_encryption_service.py"
-      - "test_user_credentials.py"
-      - "test_credential_lifecycle.py"
-      - "test_credential_endpoints.py"
-      - "test_real_alpaca_integration.py"
-      - "test_display.py"
+    categories:
+      database: ["test_database.py", "test_data_isolation.py", "test_rls_debug.py"]
+      websocket: ["test_websocket_raw.py", "test_websocket_alpaca.py"]
+      alpaca: ["test_alpaca_*.py", "test_real_alpaca_integration.py"]
+      credentials: ["test_encryption_service.py", "test_user_credentials.py", "test_credential_*.py"]
+      other: ["test_autocomplete_*.py", "test_agent_events.py", "test_slash_command_discovery.py", "test_display.py"]
 
   cli:
     arguments:
