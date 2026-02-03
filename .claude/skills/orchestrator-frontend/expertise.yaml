@@ -1,6 +1,7 @@
 frontend_expertise:
   meta:
     last_validated: "2026-02-02"
+    last_self_improved: "2026-02-02"
     codebase_path: "apps/orchestrator_3_stream/frontend"
     skill_file: ".claude/skills/orchestrator-frontend/SKILL.md"
     max_lines: 600
@@ -125,6 +126,14 @@ frontend_expertise:
       - name: "AccountSelector"
         path: "src/components/AccountSelector.vue"
         purpose: "Account selection dropdown for active credential"
+      - name: "HeaderAccountInfo"
+        path: "src/components/HeaderAccountInfo.vue"
+        purpose: "Compact header display of active Alpaca account with selector, buying power metric, and account type badge (paper/live)"
+        features:
+          - "Inline account selector dropdown"
+          - "Buying power metric (formatted as K/M)"
+          - "Account type badge (paper=amber, live=red)"
+          - "Hidden on mobile (<768px)"
 
     auth:
       - name: "LoginForm"
@@ -424,6 +433,10 @@ frontend_expertise:
       - path: "/alpaca-agent"
         name: "AlpacaAgent"
         component: "AlpacaAgentView"
+        meta: { requiresAuth: true }
+      - path: "/accounts"
+        name: "Accounts"
+        component: "AccountListView"
         meta: { requiresAuth: true }
     guards:
       - type: "beforeEach"

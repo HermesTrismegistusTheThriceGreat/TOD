@@ -21,7 +21,16 @@ A comprehensive skill for implementing features, designing pages, and understand
 | Types | `src/types.d.ts` |
 | WebSocket | `src/services/chatService.ts` |
 
-### View Modes
+### Routes
+| Path | Name | Component | Auth |
+|------|------|-----------|------|
+| `/` | Home | HomeView | Required |
+| `/login` | Login | LoginView | Guest only |
+| `/signup` | Signup | SignupView | Guest only |
+| `/alpaca-agent` | AlpacaAgent | AlpacaAgentView | Required |
+| `/accounts` | Accounts | AccountListView | Required |
+
+### View Modes (Home page)
 | Mode | Component | Layout |
 |------|-----------|--------|
 | `logs` | EventStream | 3-column |

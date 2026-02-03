@@ -132,8 +132,8 @@
       <div ref="bottomAnchor"></div>
     </div>
 
-    <!-- Input Area -->
-    <div class="input-area">
+    <!-- Mobile Input Area - Sticky bottom with keyboard avoidance -->
+    <div class="input-area" :style="inputAreaStyle">
       <!-- Warning when no credential selected -->
       <div v-if="!accountStore.activeCredentialId" class="no-credential-warning">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -141,27 +141,50 @@
         </svg>
         <span>Select a trading account to start chatting</span>
       </div>
-      <div class="input-wrapper">
-        <textarea
-          ref="inputRef"
-          v-model="userInput"
-          @keydown="handleKeydown"
-          placeholder="Ask about your account, positions, or place orders..."
-          :disabled="isLoading"
-          rows="1"
-        ></textarea>
-        <button
-          class="send-btn"
-          @click="sendMessage"
-          :disabled="!userInput.trim() || isLoading || !accountStore.activeCredentialId"
-          title="Send message (Enter)"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 2L11 13" />
-            <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-          </svg>
-        </button>
+
+      <!-- Input accessory toolbar -->
+      <div class="input-accessory-toolbar">
+        <div class="toolbar-left">
+          <button
+            class="accessory-btn attach-btn"
+            @click="handleAttach"
+            title="Attach file"
+            :disabled="isLoading"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="input-container">
+          <textarea
+            ref="inputRef"
+            v-model="userInput"
+            @keydown="handleKeydown"
+            @focus="handleInputFocus"
+            @blur="handleInputBlur"
+            placeholder="Ask about your account, positions, or place orders..."
+            :disabled="isLoading"
+            rows="1"
+          ></textarea>
+        </div>
+
+        <div class="toolbar-right">
+          <button
+            class="accessory-btn send-btn"
+            @click="sendMessage"
+            :disabled="!userInput.trim() || isLoading || !accountStore.activeCredentialId"
+            title="Send message (Enter)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13" />
+              <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+            </svg>
+          </button>
+        </div>
       </div>
+
       <div class="input-hints">
         <span class="hint">Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</span>
       </div>
@@ -170,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { renderMarkdown } from '../utils/markdown'
 import { useAccountStore } from '@/stores/accountStore'
 
@@ -204,6 +227,11 @@ const isLoading = ref(false)
 const connectionStatus = ref<'ready' | 'loading' | 'error'>('ready')
 const currentStreamingMessage = ref<ChatMessage | null>(null)
 
+// Mobile keyboard avoidance state
+const keyboardHeight = ref(0)
+const isInputFocused = ref(false)
+const isMobile = ref(false)
+
 // Refs
 const messagesRef = ref<HTMLElement | null>(null)
 const bottomAnchor = ref<HTMLElement | null>(null)
@@ -219,6 +247,16 @@ const statusText = computed(() => {
     case 'error': return 'Error'
     default: return 'Ready'
   }
+})
+
+// Dynamic style for input area to handle keyboard avoidance
+const inputAreaStyle = computed(() => {
+  if (isMobile.value && keyboardHeight.value > 0) {
+    return {
+      paddingBottom: `calc(${keyboardHeight.value}px + env(safe-area-inset-bottom, 0px) + 12px)`
+    }
+  }
+  return {}
 })
 
 // Methods
@@ -249,6 +287,25 @@ function handleKeydown(event: KeyboardEvent) {
     event.preventDefault()
     sendMessage()
   }
+}
+
+function handleInputFocus() {
+  isInputFocused.value = true
+  // On mobile, scroll to bottom when focusing input to ensure messages stay visible
+  if (isMobile.value) {
+    setTimeout(() => {
+      scrollToBottom()
+    }, 300) // Wait for keyboard animation
+  }
+}
+
+function handleInputBlur() {
+  isInputFocused.value = false
+}
+
+function handleAttach() {
+  // Placeholder for file attachment functionality
+  console.log('Attach button clicked - functionality to be implemented')
 }
 
 async function sendMessage() {
@@ -449,21 +506,60 @@ function autoResizeTextarea() {
   }
 }
 
+// Visual viewport resize handler for keyboard avoidance
+function handleViewportResize() {
+  if (window.visualViewport) {
+    const viewport = window.visualViewport
+    // Calculate keyboard height as difference between window height and viewport height
+    const newKeyboardHeight = window.innerHeight - viewport.height
+    keyboardHeight.value = newKeyboardHeight > 0 ? newKeyboardHeight : 0
+  }
+}
+
+// Detect mobile device
+function detectMobile() {
+  isMobile.value = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.matchMedia('(max-width: 768px)').matches
+}
+
 // Lifecycle
 onMounted(() => {
-  // Focus input on mount
-  inputRef.value?.focus()
+  // Detect mobile on mount
+  detectMobile()
+
+  // Focus input on mount (skip on mobile to avoid keyboard pop-up)
+  if (!isMobile.value) {
+    inputRef.value?.focus()
+  }
 
   // Watch for input changes to auto-resize
   if (inputRef.value) {
     inputRef.value.addEventListener('input', autoResizeTextarea)
   }
+
+  // Set up visualViewport listener for keyboard avoidance (mobile)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize)
+    window.visualViewport.addEventListener('scroll', handleViewportResize)
+  }
+
+  // Listen for window resize to re-detect mobile
+  window.addEventListener('resize', detectMobile)
 })
 
 onUnmounted(() => {
   if (ws) {
     ws.close()
   }
+
+  // Clean up visualViewport listeners
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize)
+    window.visualViewport.removeEventListener('scroll', handleViewportResize)
+  }
+
+  // Clean up window resize listener
+  window.removeEventListener('resize', detectMobile)
 })
 </script>
 
@@ -1087,81 +1183,140 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
-/* Input Area */
+/* Input Area - Sticky bottom with safe area insets */
 .input-area {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: rgba(0, 0, 0, 0.2);
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0, 0, 0, 0.95);
   border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100;
+  transition: padding-bottom 0.25s ease-out;
 }
 
-.input-wrapper {
+/* Input Accessory Toolbar */
+.input-accessory-toolbar {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: 8px;
   align-items: flex-end;
 }
 
-.input-wrapper textarea {
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.input-container {
   flex: 1;
-  padding: 12px 16px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-family: inherit;
-  resize: none;
-  min-height: 44px;
-  max-height: 150px;
-  line-height: 1.5;
-  transition: border-color 0.2s;
+  min-width: 0;
 }
 
-.input-wrapper textarea:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-}
-
-.input-wrapper textarea::placeholder {
-  color: var(--text-muted);
-}
-
-.input-wrapper textarea:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.send-btn {
+/* Accessory buttons (attach, send) */
+.accessory-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  color: white;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s;
-  flex-shrink: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.send-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+.accessory-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: rgb(59, 130, 246);
 }
 
-.send-btn:disabled {
+.accessory-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.accessory-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.send-btn svg {
+.accessory-btn svg {
   width: 20px;
   height: 20px;
 }
 
+/* Attach button */
+.attach-btn {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Send button - primary action */
+.accessory-btn.send-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border: none;
+  color: white;
+}
+
+.accessory-btn.send-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.accessory-btn.send-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
+/* Textarea input */
+.input-container textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 1rem; /* 16px prevents iOS zoom on focus */
+  font-family: inherit;
+  resize: none;
+  min-height: 48px; /* 48px touch target */
+  max-height: 150px;
+  line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-container textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-container textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.input-container textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .input-hints {
-  margin-top: var(--spacing-xs);
+  margin-top: 8px;
   text-align: center;
 }
 
@@ -1204,6 +1359,10 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .chat-header {
     padding: var(--spacing-sm) var(--spacing-md);
+    /* Safe area inset for notched devices */
+    padding-top: max(var(--spacing-sm), env(safe-area-inset-top, 0px));
+    padding-left: max(var(--spacing-md), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--spacing-md), env(safe-area-inset-right, 0px));
   }
 
   .header-info h1 {
@@ -1216,6 +1375,8 @@ onUnmounted(() => {
 
   .messages-area {
     padding: var(--spacing-md);
+    padding-left: max(var(--spacing-md), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--spacing-md), env(safe-area-inset-right, 0px));
   }
 
   .message {
@@ -1226,12 +1387,26 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 
+  /* Mobile input area with keyboard avoidance */
   .input-area {
-    padding: var(--spacing-sm) var(--spacing-md);
+    position: sticky;
+    bottom: 0;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
   }
 
   .input-hints {
     display: none;
+  }
+
+  /* Ensure toolbar buttons stay 44px on tablet */
+  .accessory-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -1240,10 +1415,14 @@ onUnmounted(() => {
   .alpaca-chat-container {
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height - accounts for mobile browser chrome */
+    height: 100svh; /* Small viewport height fallback */
+    border-radius: 0; /* Full screen on mobile */
+    border: none;
   }
 
   .chat-header {
-    padding: 0.5rem 0.75rem;
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
   }
 
   .header-info h1 {
@@ -1257,38 +1436,145 @@ onUnmounted(() => {
 
   .message-content {
     font-size: 0.875rem;
-    padding: 0.625rem 0.75rem;
+    padding: 10px 12px;
   }
 
-  /* Touch-friendly input area */
+  /* Touch-optimized input area - floats above keyboard */
   .input-area {
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    background: rgba(0, 0, 0, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
-  .input-wrapper textarea {
+  /* Adjust input toolbar spacing */
+  .input-accessory-toolbar {
+    gap: 6px;
+  }
+
+  /* Touch-optimized textarea */
+  .input-container textarea {
     min-height: 44px;
-    font-size: 1rem; /* Prevents iOS zoom on focus */
-    padding: 0.625rem 0.75rem;
+    font-size: 1rem; /* 16px prevents iOS zoom on focus */
+    padding: 10px 12px;
+    border-radius: 22px; /* Pill shape on mobile */
   }
 
-  .send-btn {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0.625rem;
+  /* Touch-optimized buttons - 48px for better touch targets */
+  .accessory-btn {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 24px; /* Circular on mobile */
   }
 
-  /* Compact position indicators */
+  .accessory-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Compact status badge */
   .status-badge {
     font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
+    padding: 4px 8px;
   }
 
-  /* Scrollable messages area takes remaining space */
+  /* Messages area with bottom padding to account for fixed input */
   .messages-area {
     flex: 1;
     min-height: 0;
-    padding: 0.5rem;
+    padding: 8px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); /* Space for fixed input */
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
+  }
+
+  /* Welcome message adjustments */
+  .welcome-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+  }
+
+  .welcome-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .welcome-message h2 {
+    font-size: 1.25rem;
+  }
+
+  .welcome-desc {
+    font-size: 0.875rem;
+  }
+
+  .command-chip {
+    padding: 12px 16px; /* Larger touch targets */
+    font-size: 0.875rem;
+  }
+}
+
+/* Extra small phones (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  .input-accessory-toolbar {
+    gap: 4px;
+  }
+
+  .accessory-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 22px;
+  }
+
+  .accessory-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .input-container textarea {
+    padding: 8px 12px;
+    font-size: 1rem;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+  .alpaca-chat-container {
+    height: 100dvh;
+  }
+
+  .messages-area {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .input-area {
+    padding: 6px 16px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .accessory-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .input-container textarea {
+    min-height: 40px;
+    padding: 8px 12px;
   }
 }
 </style>
